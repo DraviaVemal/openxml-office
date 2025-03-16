@@ -1,4 +1,4 @@
-## Info : Due to busy schedule V4 development is moving in slow phase. Rust Excel is almost comepleted now moving on to Global chart support that will lead to Powerpoint module. Will update release note info or this Readme once I'm back on regular schedule.
+## Info : Due to busy schedule V4 development is moving in slow phase. Rust Excel is almost completed now moving on to Global chart support that will lead to Powerpoint module. Will update release note info or this Readme once I'm back on regular schedule.
 
 # Effortless Creation of Excel, PowerPoint, and Word Documents
 

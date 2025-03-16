@@ -1,3 +1,17 @@
+/// TODO : Features to cover
+/// Remove Cell
+/// Remove row
+/// Remove Column
+/// Clear row
+/// clear column
+/// validate insert merge
+/// Remove Merge Range
+/// Remove Hyperlink
+/// Read current excel data
+/// Insert New Row
+/// Insert New Column
+/// Insert Hyperlink
+
 use crate::{
     converters::ConverterUtil,
     element_dictionary::EXCEL_TYPE_COLLECTION,
@@ -9,7 +23,9 @@ use crate::{
     log_elapsed,
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
-        models::{CellDataType, CellProperties, ColumnProperties, RowProperties, StyleId},
+        models::{
+            CellDataType, CellProperties, ColumnProperties, ReferenceRange, RowProperties, StyleId,
+        },
         services::CommonServices,
     },
 };
@@ -128,8 +144,8 @@ pub struct WorkSheet {
     sheet_data: Option<BTreeMap<u32, RowData>>,
     // sheet_calculation_property:Option<_>
     // protected_range:Option<_>
-    // merge_cells:Option<_>
-    // hyperlinks:Option<_>
+    merge_cells: Option<Vec<ReferenceRange>>,
+    hyperlinks: Option<Vec<(String, ReferenceRange)>>,
     file_path: String,
     sheet_name: String,
 }
@@ -183,12 +199,16 @@ impl XmlDocumentPartCommon for WorkSheet {
                         log_elapsed!(self.serialize_sheet_views(&mut xml_doc_mut))?;
                         // Add Sheet Data to Document
                         log_elapsed!(self.serialize_sheet_data(&mut xml_doc_mut))?;
+                        // Add Merge Cell to Document
+                        log_elapsed!(self.serialize_merge_cells(&mut xml_doc_mut))?;
+                        // Add Hyperlink to Document
+                        log_elapsed!(self.serialize_hyperlinks(&mut xml_doc_mut))?;
                         if let Some(root_element) = xml_doc_mut.get_root_mut() {
                             log_elapsed!(root_element
                                 .order_child_mut(
                                     EXCEL_ORDER_COLLECTION
                                         .get("worksheet")
-                                        .ok_or(anyhow!("Failed to get worksheet default order"),)?,
+                                        .context("Failed to get worksheet default order")?,
                                 )
                                 .context("Failed Reorder the element child's"))?;
                         }
@@ -238,7 +258,7 @@ impl WorkSheet {
             )
             .context("Creating Relation ship part for workbook failed.")?,
         ));
-        let (column_collection, sheet_data, sheet_views, dimension) = log_elapsed!(
+        let (column_collection, sheet_data, merge_cells, hyperlinks, sheet_views, dimension) = log_elapsed!(
             || { Self::initialize_worksheet(&xml_document).context("Failed to open Worksheet") },
             "Worksheet Initialize Time"
         )?;
@@ -253,6 +273,8 @@ impl WorkSheet {
             sheet_collection,
             column_collection,
             sheet_data,
+            merge_cells,
+            hyperlinks,
             file_path: file_path.to_string(),
             sheet_name,
         })
@@ -264,6 +286,8 @@ impl WorkSheet {
         (
             Option<VecDeque<ColumnProperties>>,
             Option<BTreeMap<u32, RowData>>,
+            Option<Vec<ReferenceRange>>,
+            Option<Vec<(String, ReferenceRange)>>,
             WorkSheetViews,
             Dimension,
         ),
@@ -275,6 +299,13 @@ impl WorkSheet {
                 .context("Failed to get XML doc handle")?;
             // unwrap dimension
             xml_doc_mut.pop_elements_by_tag_mut("dimension", None);
+            let worksheet_views = log_elapsed!(
+                || {
+                    deserialize_worksheet_views(&mut xml_doc_mut)
+                        .context("Failed to deserialize Worksheet View")
+                },
+                "Worksheet View Deserialization"
+            )?;
             // unwrap columns to local collection
             let column_collection = log_elapsed!(
                 || { deserialize_cols(&mut xml_doc_mut).context("Failed To Deserialize Cols") },
@@ -288,16 +319,37 @@ impl WorkSheet {
                 },
                 "Sheet Data Deserialize"
             )?;
-            let worksheet_views = log_elapsed!(
+            let merge_cells = log_elapsed!(
                 || {
-                    deserialize_worksheet_views(&mut xml_doc_mut)
-                        .context("Failed to deserialize Worksheet View")
+                    deserialize_merge_cells(&mut xml_doc_mut)
+                        .context("Failed To Deserialize Merge Cells")
                 },
-                "Worksheet View Deserialization"
+                "Merge Cell Deserialize"
             )?;
-            Ok((column_collection, sheet_data, worksheet_views, dimension))
+            let hyperlinks = log_elapsed!(
+                || {
+                    deserialize_hyperlinks(&mut xml_doc_mut)
+                        .context("Failed To Deserialize hyperlinks")
+                },
+                "Hyperlink Deserialize"
+            )?;
+            Ok((
+                column_collection,
+                sheet_data,
+                merge_cells,
+                hyperlinks,
+                worksheet_views,
+                dimension,
+            ))
         } else {
-            Ok((None, None, WorkSheetViews::default(), Dimension::default()))
+            Ok((
+                None,
+                None,
+                None,
+                None,
+                WorkSheetViews::default(),
+                Dimension::default(),
+            ))
         }
     }
 
@@ -603,18 +655,111 @@ impl WorkSheet {
                                         .context("Failed to insert Inline string element")?;
                                     formula_element.set_value_mut(formula);
                                 }
-                                xml_doc_mut
-                                    .append_child_mut("v", Some(&cell_id))
-                                    .context("Failed to insert Inline string element")?
-                                    .set_value_mut(if let Some(value) = cell_record.value {
-                                        value
-                                    } else {
-                                        "".to_string()
-                                    });
+                                if let Some(value) = cell_record.value {
+                                    xml_doc_mut
+                                        .append_child_mut("v", Some(&cell_id))
+                                        .context("Failed to insert Inline string element")?
+                                        .set_value_mut(value);
+                                }
                             }
                         }
                     }
                 }
+            }
+        }
+        Ok(())
+    }
+
+    fn serialize_merge_cells(&mut self, xml_doc_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
+        if let Some(merge_cells) = self.merge_cells.take() {
+            let merge_cells_id = xml_doc_mut
+                .insert_children_after_tag_mut("mergeCells", "sheetData", None)
+                .context("Failed to Insert Cols Element")?
+                .get_id();
+            {
+                let merge_cells_element = xml_doc_mut
+                    .get_element_mut(&merge_cells_id)
+                    .context("Failed to get element")?;
+                let mut attributes = HashMap::new();
+                attributes.insert("count".to_string(), merge_cells.len().to_string());
+                merge_cells_element
+                    .set_attribute_mut(attributes)
+                    .context("Failed to set Merge Cells Attribute")?;
+            }
+            for merge_cell in merge_cells {
+                let element = xml_doc_mut
+                    .append_child_mut("mergeCell", Some(&merge_cells_id))
+                    .context("Failed to add MergeCell Node")?;
+                let mut attribute = HashMap::new();
+                if merge_cell.row_start == merge_cell.row_end
+                    && merge_cell.column_start == merge_cell.column_end
+                {
+                    attribute.insert(
+                        "ref".to_string(),
+                        ConverterUtil::get_cell_ref(merge_cell.row_start, merge_cell.column_start)?,
+                    );
+                } else {
+                    attribute.insert(
+                        "ref".to_string(),
+                        format!(
+                            "{}:{}",
+                            ConverterUtil::get_cell_ref(
+                                merge_cell.row_start,
+                                merge_cell.column_start
+                            )?,
+                            ConverterUtil::get_cell_ref(merge_cell.row_end, merge_cell.column_end)?,
+                        ),
+                    );
+                }
+                element
+                    .set_attribute_mut(attribute)
+                    .context("Failed to add Merge Cell Attribute")?;
+            }
+        }
+        Ok(())
+    }
+
+    fn serialize_hyperlinks(&mut self, xml_doc_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
+        if let Some(hyperlinks) = self.hyperlinks.take() {
+            let hyperlinks_id = xml_doc_mut
+                .insert_children_after_tag_mut("hyperlinks", "mergeCells", None)
+                .context("Failed to Insert Cols Element")?
+                .get_id();
+            for (hyperlink_id, hyperlink_range) in hyperlinks {
+                let hyperlink_element_id = xml_doc_mut
+                    .append_child_mut("hyperlink", Some(&hyperlinks_id))
+                    .context("Failed tp Add element")?;
+                let mut attributes = HashMap::new();
+                if hyperlink_range.row_start == hyperlink_range.row_end
+                    && hyperlink_range.column_start == hyperlink_range.column_end
+                {
+                    attributes.insert(
+                        "ref".to_string(),
+                        ConverterUtil::get_cell_ref(
+                            hyperlink_range.row_start,
+                            hyperlink_range.column_start,
+                        )?,
+                    );
+                } else {
+                    attributes.insert(
+                        "ref".to_string(),
+                        format!(
+                            "{}:{}",
+                            ConverterUtil::get_cell_ref(
+                                hyperlink_range.row_start,
+                                hyperlink_range.column_start
+                            )?,
+                            ConverterUtil::get_cell_ref(
+                                hyperlink_range.row_end,
+                                hyperlink_range.column_end
+                            )?,
+                        ),
+                    );
+                }
+                attributes.insert("r:id".to_string(), hyperlink_id);
+                hyperlink_element_id
+                    .set_attribute_mut(attributes)
+                    .context("Failed to set hyperlink attribute element")?;
             }
         }
         Ok(())
@@ -632,9 +777,8 @@ fn deserialize_cols(
                 if let Some((col_elements, _)) = cols.pop_child_mut() {
                     if let Some(col) = xml_doc_mut.pop_element_mut(&col_elements) {
                         let mut column_properties = ColumnProperties::default();
-                        let attributes = col
-                            .get_attribute()
-                            .ok_or(anyhow!("Error Getting col attribute"))?;
+                        let attributes =
+                            col.get_attribute().context("Error Getting col attribute")?;
                         if let Some(min) = attributes.get("min") {
                             column_properties.min =
                                 min.parse().context("Failed to parse min value")?;
@@ -664,7 +808,7 @@ fn deserialize_cols(
                                 column_properties.width = Some(
                                     attributes
                                         .get("width")
-                                        .ok_or(anyhow!("Failed to get custom width"))?
+                                        .context("Failed to get custom width")?
                                         .parse()
                                         .context("Failed to parse custom width")?,
                                 );
@@ -759,8 +903,9 @@ fn deserialize_worksheet_views(
                         }
                         // show white space
                         if let Some(show_white_space) = attributes.get("showWhiteSpace") {
-                            worksheet_view.show_white_space =
-                                Some(ConverterUtil::normalize_bool_property_bool(&show_white_space));
+                            worksheet_view.show_white_space = Some(
+                                ConverterUtil::normalize_bool_property_bool(&show_white_space),
+                            );
                         }
                         // Show outlined Symbols
                         if let Some(show_outline_symbol) = attributes.get("showOutlineSymbols") {
@@ -844,11 +989,11 @@ fn deserialize_sheet_data(
                         let mut row_record = RowProperties::default();
                         let row_attribute = row_element
                             .get_attribute()
-                            .ok_or(anyhow!("Failed to pull Row Attribute."))?;
+                            .context("Failed to pull Row Attribute.")?;
                         // Get Row Id
                         let row_index = row_attribute
                             .get("r")
-                            .ok_or(anyhow!("Missing mandatory row id attribute"))?
+                            .context("Missing mandatory row id attribute")?
                             .parse()
                             .context("Failed to parse row id")?;
                         if let Some(row_span) = row_attribute.get("spans") {
@@ -919,12 +1064,12 @@ fn deserialize_sheet_data(
                                 {
                                     let cell_attribute = col_element
                                         .get_attribute()
-                                        .ok_or(anyhow!("Failed to pull attribute for Column"))?;
+                                        .context("Failed to pull attribute for Column")?;
                                     // Get Col Id
                                     let col_index = ConverterUtil::get_column_index(
                                         cell_attribute
                                             .get("r")
-                                            .ok_or(anyhow!("Missing mandatory col id attribute"))?,
+                                            .context("Missing mandatory col id attribute")?,
                                     )
                                     .context("Failed to Convert col worksheet initialize")?;
                                     if let Some(style_id) = cell_attribute.get("s") {
@@ -1029,6 +1174,123 @@ fn deserialize_sheet_data(
     Ok((None, dimension))
 }
 
+/// Deserialize Merge Cell Collection
+fn deserialize_merge_cells(
+    xml_doc_mut: &mut XmlDocument,
+) -> AnyResult<Option<Vec<ReferenceRange>>> {
+    if let Some(mut merge_cells_element) = xml_doc_mut.pop_elements_by_tag_mut("mergeCells", None) {
+        let mut merge_cell_collection = Vec::new();
+        if let Some(merge_cells) = merge_cells_element.pop() {
+            loop {
+                if let Some((merge_cell_id, _)) = merge_cells.pop_child_mut() {
+                    let merge_cell_element = xml_doc_mut
+                        .pop_element_mut(&merge_cell_id)
+                        .context("Failed to Get Element")?;
+                    let attribute = merge_cell_element
+                        .get_attribute()
+                        .context("Failed to pull Mandatory Attributes")?;
+                    let merge_range = attribute.get("ref").context("Failed to get merge ref")?;
+                    if merge_range.contains(":") {
+                        let range: Vec<&str> = merge_range.split(':').collect();
+                        let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
+                            .context("Failed to parse Cell Ref")?;
+                        let (row_end, column_end) = ConverterUtil::get_cell_index(range[1])
+                            .context("Failed to parse Cell Ref")?;
+                        merge_cell_collection.push(ReferenceRange {
+                            column_start,
+                            row_start,
+                            column_end,
+                            row_end,
+                        });
+                    } else {
+                        let (row, col) = ConverterUtil::get_cell_index(merge_range)
+                            .context("Failed to parse Cell Ref")?;
+                        merge_cell_collection.push(ReferenceRange {
+                            column_start: col,
+                            row_start: row,
+                            column_end: col,
+                            row_end: row,
+                        });
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+        if merge_cell_collection.len() > 0 {
+            Ok(Some(merge_cell_collection))
+        } else {
+            Ok(None)
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+/// Deserialize Hyperlink Collection
+fn deserialize_hyperlinks(
+    xml_doc_mut: &mut XmlDocument,
+) -> AnyResult<Option<Vec<(String, ReferenceRange)>>> {
+    if let Some(mut hyperlinks_element) = xml_doc_mut.pop_elements_by_tag_mut("hyperlinks", None) {
+        let mut hyperlink_collection = Vec::new();
+        if let Some(hyperlinks) = hyperlinks_element.pop() {
+            loop {
+                if let Some((hyperlink_id, _)) = hyperlinks.pop_child_mut() {
+                    let merge_cell_element = xml_doc_mut
+                        .pop_element_mut(&hyperlink_id)
+                        .context("Failed to Get Element")?;
+                    let attribute = merge_cell_element
+                        .get_attribute()
+                        .context("Failed to pull Mandatory Attributes")?;
+                    let hyperlink_id = attribute
+                        .get("r:id")
+                        .context("Failed to get hyperlink id")?;
+                    let hyperlink_ref = attribute
+                        .get("ref")
+                        .context("Failed to get hyperlink ref")?;
+                    if hyperlink_ref.contains(":") {
+                        let range: Vec<&str> = hyperlink_ref.split(':').collect();
+                        let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
+                            .context("Failed to parse Cell Ref")?;
+                        let (row_end, column_end) = ConverterUtil::get_cell_index(range[1])
+                            .context("Failed to parse Cell Ref")?;
+                        hyperlink_collection.push((
+                            hyperlink_id.clone(),
+                            ReferenceRange {
+                                column_start,
+                                row_start,
+                                column_end,
+                                row_end,
+                            },
+                        ));
+                    } else {
+                        let (row, col) = ConverterUtil::get_cell_index(hyperlink_ref)
+                            .context("Failed to parse Cell Ref")?;
+                        hyperlink_collection.push((
+                            hyperlink_id.clone(),
+                            ReferenceRange {
+                                column_start: col,
+                                row_start: row,
+                                column_end: col,
+                                row_end: row,
+                            },
+                        ));
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+        if hyperlink_collection.len() > 0 {
+            Ok(Some(hyperlink_collection))
+        } else {
+            Ok(None)
+        }
+    } else {
+        Ok(None)
+    }
+}
+
 impl WorkSheet {
     fn get_sheet_file_name(
         sheet_name: Option<String>,
@@ -1053,7 +1315,7 @@ impl WorkSheet {
                                 .context("Failed to Get Workbook relationship")?
                                 .get_target_by_id(&rel_id)
                                 .context("Failed to Get Target Path")?
-                                .ok_or(anyhow!("Failed to Get Relationship path"))?,
+                                .context("Failed to Get Relationship path")?,
                             sheet_name,
                         ));
                     }
@@ -1130,7 +1392,7 @@ impl WorkSheet {
 // ##################################### Feature Function ################################
 impl WorkSheet {
     /// Set Active cell of the current sheet
-    pub fn set_active_cell_mut(&mut self, cell_ref: &str, selected_range: Vec<&str>) {}
+    pub fn set_active_cell_mut(&mut self, selected_range: Vec<&str>) {}
 
     /// Set Column property
     pub fn set_column_ref_properties_mut(
@@ -1348,13 +1610,27 @@ impl WorkSheet {
     }
 
     /// Set Cell Range to merge
-    pub fn set_merge_cell_mut(&mut self) {}
+    pub fn set_merge_cell_mut(&mut self) -> AnyResult<(), AnyError> {
+        Ok(())
+    }
 
     /// List all Cell Range merged
-    pub fn list_merge_cell_(&mut self) {}
+    pub fn list_merge_cell_(&mut self) -> Option<Vec<ReferenceRange>> {
+        self.merge_cells.clone()
+    }
 
     /// Remove merged cell range
-    pub fn remove_merge_cell_mut(&mut self) {}
+    pub fn remove_merge_cell_mut(&mut self, range: ReferenceRange) -> AnyResult<(), AnyError> {
+        if let Some(hyperlinks) = self.hyperlinks.as_mut() {
+            hyperlinks.retain(|(_, reference_range)| {
+                reference_range.row_start != range.row_start
+                    && reference_range.row_end != range.row_end
+                    && reference_range.column_start != range.column_start
+                    && reference_range.column_end != range.column_end
+            });
+        }
+        Ok(())
+    }
 
     /// Delete Current sheet and all its components
     pub fn delete_sheet_mut(self) -> AnyResult<(), AnyError> {

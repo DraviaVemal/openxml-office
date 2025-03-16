@@ -17,11 +17,11 @@ impl ConverterUtil {
         Ok(index)
     }
     /// Return String ref of the column
-    pub fn get_column_ref(cell_id: u16) -> AnyResult<String, AnyError> {
-        if cell_id == 0 {
+    pub fn get_column_ref(column_id: u16) -> AnyResult<String, AnyError> {
+        if column_id == 0 {
             return Err(anyhow!("Index must be greater than 0"));
         }
-        let mut index = cell_id;
+        let mut index = column_id;
         let mut column_name = String::new();
 
         while index > 0 {
@@ -32,6 +32,16 @@ impl ConverterUtil {
         }
 
         Ok(column_name)
+    }
+
+    /// Return
+    pub fn get_cell_ref(row_index: u32, column_index: u16) -> AnyResult<String, AnyError> {
+        Ok(format!(
+            "{}{}",
+            ConverterUtil::get_column_ref(column_index)
+                .context("Failed to Convert Column to ref")?,
+            row_index
+        ))
     }
 
     /// Return

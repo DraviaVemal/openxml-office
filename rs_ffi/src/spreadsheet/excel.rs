@@ -275,7 +275,7 @@ pub extern "C" fn get_style_id_mut(
                 .custom_number_format()
                 .map(|s| s.to_string());
             // border
-            style_setting.border_left = fbs_style_setting.border_left();
+            // style_setting.border_left = fbs_style_setting.border_left();
             // font
             if let Some(font_family) = fbs_style_setting.font_family() {
                 style_setting.font_family = font_family.to_string();
