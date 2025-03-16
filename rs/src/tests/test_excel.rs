@@ -1,12 +1,9 @@
 use crate::{
     global_2007::traits::XmlDocumentPartCommon, log_elapsed, spreadsheet_2007::models::StyleSetting,
 };
+use anyhow::Context;
 use chrono::Utc;
-use rand::Rng;
-use std::{
-    fs::{create_dir, exists},
-    time::Instant,
-};
+use std::fs::{create_dir, exists};
 
 fn get_save_file(dynamic_path: Option<&str>) -> String {
     let result_path = "test_results";
@@ -197,6 +194,27 @@ fn set_row_property() {
         )
         .expect("Failed to set row height");
     row_prop.flush().expect("Failed to write Data");
+    file.save_as(&get_save_file(None))
+        .expect("Save File Failed");
+    assert_eq!(true, true);
+}
+
+#[test]
+fn merge_cell_property() {
+    let mut file = crate::spreadsheet_2007::Excel::new(
+        Some("src/tests/TestFiles/merge.xlsx".to_string()),
+        crate::spreadsheet_2007::ExcelPropertiesModel {
+            is_in_memory: false,
+            is_editable: true,
+        },
+    )
+    .expect("Open Existing File Failed");
+    {
+        let mut worksheet = file
+            .get_worksheet_mut("Sheet1".to_string())
+            .expect("Failed to open the sheet");
+        let result = worksheet.list_merge_cell_();
+    }
     file.save_as(&get_save_file(None))
         .expect("Save File Failed");
     assert_eq!(true, true);

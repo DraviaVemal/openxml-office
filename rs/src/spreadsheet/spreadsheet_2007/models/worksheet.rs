@@ -117,3 +117,11 @@ impl Default for CellProperties {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct ReferenceRange {
+    pub column_start: u16,
+    pub column_end: u16,
+    pub row_start: u32,
+    pub row_end: u32,
+}
