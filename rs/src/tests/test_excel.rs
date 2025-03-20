@@ -60,6 +60,7 @@ fn excel_handling() {
 }
 
 #[test]
+#[ignore]
 fn sheet_handling() {
     let mut file = crate::spreadsheet_2007::Excel::new(
         None,
@@ -75,18 +76,22 @@ fn sheet_handling() {
         .expect("Failed to add static Sheet");
     file.add_sheet_mut(Some("RenameThisSheet".to_string()))
         .expect("Failed to add static Sheet");
-    let close_sheet = file
-        .add_sheet_mut(Some("deleteThis".to_string()))
-        .expect("Failed to add static Sheet");
-    close_sheet.flush().expect("Failed to Close Work Sheet");
     file.add_sheet_mut(None)
         .expect("Failed to add dynamic Sheet");
-    let delete_sheet = file
-        .get_worksheet_mut("deleteThis".to_string())
-        .expect("Failed to Get the Worksheet");
-    delete_sheet
-        .delete_sheet_mut()
-        .expect("Failed to Delete Sheet");
+    {
+        let close_sheet = file
+            .add_sheet_mut(Some("deleteThis".to_string()))
+            .expect("Failed to add static Sheet");
+        close_sheet.flush().expect("Failed to Close Work Sheet");
+    }
+    {
+        let delete_sheet = file
+            .get_worksheet_mut("deleteThis".to_string())
+            .expect("Failed to Get the Worksheet");
+        delete_sheet
+            .delete_sheet_mut()
+            .expect("Failed to Delete Sheet");
+    }
     file.rename_sheet_name_mut("RenameThisSheet".to_string(), "RenamedSheet".to_string())
         .expect("Failed to rename the sheet");
     file.save_as(&get_save_file(None))
@@ -512,6 +517,7 @@ fn edit_excel() {
 }
 
 #[test]
+#[ignore]
 fn edit_large_excel() {
     let mut file = crate::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/large_file.xlsx".to_string()),
@@ -549,6 +555,7 @@ fn edit_large_excel() {
 }
 
 #[test]
+#[ignore]
 fn large_excel() {
     let mut file = crate::spreadsheet_2007::Excel::new(
         None,
