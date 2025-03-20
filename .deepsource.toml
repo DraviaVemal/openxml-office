@@ -1,0 +1,46 @@
+version = 1
+
+[[analyzers]]
+name = "csharp"
+
+[[analyzers]]
+name = "rust"
+
+[analyzers.meta]
+msrv = "stable"
+
+[[analyzers]]
+name = "python"
+
+[analyzers.meta]
+runtime_version = "3.x.x"
+
+[[analyzers]]
+name = "go"
+
+[analyzers.meta]
+import_root = "github.com/DraviaVemal/openxml-office"
+
+[[analyzers]]
+name = "java"
+
+[analyzers.meta]
+runtime_version = "11"
+
+[[analyzers]]
+name = "shell"
+
+[[transformers]]
+name = "gofmt"
+
+[[transformers]]
+name = "rustfmt"
+
+[[transformers]]
+name = "dotnet-format"
+
+[[transformers]]
+name = "google-java-format"
+
+[[transformers]]
+name = "autopep8"
