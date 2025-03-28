@@ -504,7 +504,7 @@ impl XmlElement {
                     .try_borrow_mut()
                     .context("Namespace Collection Borrow Failed")?;
                 for ns_key in ns_keys.clone() {
-                    let ns_alias = ns_key.split(":").collect::<Vec<&str>>();
+                    let ns_alias = ns_key.split(':').collect::<Vec<&str>>();
                     if ns_alias.len() > 1 {
                         if !namespace_collection.contains_key(&ns_alias[1].to_string()) {
                             namespace_collection.insert(

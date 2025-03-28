@@ -60,7 +60,6 @@ fn excel_handling() {
 }
 
 #[test]
-#[ignore]
 fn sheet_handling() {
     let mut file = crate::spreadsheet_2007::Excel::new(
         None,
@@ -283,7 +282,7 @@ fn set_cell_style() {
     .expect("Open Existing File Failed");
     let style_id = file
         .get_style_id_mut(crate::spreadsheet_2007::models::StyleSetting {
-            ..Default::default()
+            ..crate::spreadsheet_2007::models::StyleSetting::default()
         })
         .expect("Failed to get Style Id");
     {
@@ -333,31 +332,31 @@ fn blank_style_excel() {
     let bold_id = file
         .get_style_id_mut(StyleSetting {
             is_bold: true,
-            ..Default::default()
+            ..StyleSetting::default()
         })
         .expect("Failed bold ID");
     let italic_id = file
         .get_style_id_mut(StyleSetting {
             is_italic: true,
-            ..Default::default()
+            ..StyleSetting::default()
         })
         .expect("Failed italic ID");
     let underline_id = file
         .get_style_id_mut(StyleSetting {
             is_underline: true,
-            ..Default::default()
+            ..StyleSetting::default()
         })
         .expect("Failed underline ID");
     let double_id = file
         .get_style_id_mut(StyleSetting {
             is_double_underline: true,
-            ..Default::default()
+            ..StyleSetting::default()
         })
         .expect("Failed double underline ID");
     let wrap_text_id = file
         .get_style_id_mut(StyleSetting {
             is_wrap_text: true,
-            ..Default::default()
+            ..StyleSetting::default()
         })
         .expect("Failed wrape ID");
     {
@@ -425,31 +424,31 @@ fn edit_excel() {
     let bold_id = file
         .get_style_id_mut(StyleSetting {
             is_bold: true,
-            ..Default::default()
+            ..StyleSetting::default()
         })
         .expect("Failed bold ID");
     let italic_id = file
         .get_style_id_mut(StyleSetting {
             is_italic: true,
-            ..Default::default()
+            ..StyleSetting::default()
         })
         .expect("Failed italic ID");
     let underline_id = file
         .get_style_id_mut(StyleSetting {
             is_underline: true,
-            ..Default::default()
+            ..StyleSetting::default()
         })
         .expect("Failed underline ID");
     let double_id = file
         .get_style_id_mut(StyleSetting {
             is_double_underline: true,
-            ..Default::default()
+            ..StyleSetting::default()
         })
         .expect("Failed double underline ID");
     let wrap_text_id = file
         .get_style_id_mut(StyleSetting {
             is_wrap_text: true,
-            ..Default::default()
+            ..StyleSetting::default()
         })
         .expect("Failed wrape ID");
     {
@@ -584,7 +583,7 @@ fn large_excel() {
                             (1..10)
                                 .map(|_| crate::spreadsheet_2007::models::CellProperties {
                                     value: Some("Test".to_string()),
-                                    ..Default::default()
+                                    ..crate::spreadsheet_2007::models::CellProperties::default()
                                 })
                                 .collect(),
                         )

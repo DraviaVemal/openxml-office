@@ -1,4 +1,3 @@
-use anyhow::Context;
 use chrono::Utc;
 use std::fs::{create_dir, exists};
 
@@ -27,10 +26,7 @@ fn blank_document() {
 #[test]
 fn edit_document() {
     let file = crate::document_2007::Word::new(
-        Some(
-            "/home/draviavemal/repo/OpenXML-Office/rs/document/src/tests/TestFiles/test_file.docx"
-                .to_string(),
-        ),
+        Some("src/tests/TestFiles/basic_test.docx".to_string()),
         crate::document_2007::Word::default(),
     )
     .expect("Edit existing file failed");

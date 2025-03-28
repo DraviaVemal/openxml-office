@@ -14,7 +14,7 @@ fn main() {
             include_version:true,
             package_version:true,
             no_includes:true,
-            ..Default::default()
+            ..Config::default()
         })
         .generate()
         .unwrap();
@@ -28,7 +28,7 @@ fn main() {
             header:Some("/* Dravia Vemal. MIT License */".to_string()),
             include_version:true,
             package_version:true,
-            ..Default::default()
+            ..Config::default()
         })
         .generate()
         .unwrap();

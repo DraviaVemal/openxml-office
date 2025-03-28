@@ -301,11 +301,11 @@ impl Default for BorderStyle {
     fn default() -> Self {
         Self {
             id: 0,
-            bottom: Default::default(),
-            left: Default::default(),
-            right: Default::default(),
-            top: Default::default(),
-            diagonal: Default::default(),
+            bottom: BorderSetting::default(),
+            left: BorderSetting::default(),
+            right: BorderSetting::default(),
+            top: BorderSetting::default(),
+            diagonal: BorderSetting::default(),
         }
     }
 }
@@ -403,7 +403,7 @@ impl Default for FontStyle {
             size: 11,
             color: ColorSetting {
                 value: "1".to_string(),
-                ..Default::default()
+                ..ColorSetting::default()
             },
             family: 2,
             font_scheme: FontSchemeValues::None,
@@ -509,11 +509,11 @@ impl Default for StyleSetting {
             number_format: NumberFormatValues::General,
             custom_number_format: None,
             // border
-            border_left: Default::default(),
-            border_top: Default::default(),
-            border_right: Default::default(),
-            border_bottom: Default::default(),
-            border_diagonal: Default::default(),
+            border_left: BorderSetting::default(),
+            border_top: BorderSetting::default(),
+            border_right: BorderSetting::default(),
+            border_bottom: BorderSetting::default(),
+            border_diagonal: BorderSetting::default(),
             // font
             font_family: "Calibri".to_string(),
             font_size: 11,

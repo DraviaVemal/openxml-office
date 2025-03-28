@@ -31,7 +31,7 @@ fn blank_power_point() {
 fn edit_power_point() {
     let file = crate::presentation_2007::PowerPoint::new(
         Some(
-            "/home/draviavemal/repo/OpenXML-Office/rs/presentation/src/tests/TestFiles/test_file.pptx"
+            "src/tests/TestFiles/basic_test.pptx"
                 .to_string(),
         ),
         crate::presentation_2007::PowerPoint::default(),

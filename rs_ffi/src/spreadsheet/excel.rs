@@ -267,7 +267,7 @@ pub extern "C" fn get_style_id_mut(
     let buffer_slice = unsafe { from_raw_parts(buffer, buffer_size) };
     match flatbuffers::root::<openxml_office_fbs::spreadsheet_2007::StyleSetting>(buffer_slice) {
         Ok(fbs_style_setting) => {
-            let mut style_setting: StyleSetting = Default::default();
+            let mut style_setting: StyleSetting = StyleSetting::default();
             // number format
             style_setting.number_format =
                 NumberFormatValues::get_enum(&fbs_style_setting.number_format().to_string());
