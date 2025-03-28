@@ -151,8 +151,8 @@ impl RelationsPart {
             let relative_path = self
                 .get_relative_path()
                 .context("Get Relative Path for Part File")?;
-            if file_path.starts_with("/") {
-                Ok(Some(file_path.strip_prefix("/").unwrap().to_string()))
+            if file_path.starts_with('/') {
+                Ok(Some(file_path.strip_prefix('/').unwrap().to_string()))
             } else {
                 Ok(Some(format!("{}{}", relative_path, file_path)))
             }
@@ -179,8 +179,8 @@ impl RelationsPart {
             let relative_path = self
                 .get_relative_path()
                 .context("Get Relative Path for Part File")?;
-            if file_path.starts_with("/") {
-                Ok(file_path.strip_prefix("/").unwrap().to_string())
+            if file_path.starts_with('/') {
+                Ok(file_path.strip_prefix('/').unwrap().to_string())
             } else {
                 Ok(format!("{}{}", relative_path, file_path))
             }
@@ -274,7 +274,7 @@ impl RelationsPart {
     pub(crate) fn delete_relationship_mut(&mut self, file_path: &str) {
         self.relationships.retain(|item| {
             item.1
-                != if file_path.starts_with("/") {
+                != if file_path.starts_with('/') {
                     file_path.to_string()
                 } else {
                     format!("/{}", file_path)

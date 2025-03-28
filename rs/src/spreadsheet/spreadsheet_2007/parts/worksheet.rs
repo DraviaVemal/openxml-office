@@ -11,7 +11,6 @@
 /// Insert New Row
 /// Insert New Column
 /// Insert Hyperlink
-
 use crate::{
     converters::ConverterUtil,
     element_dictionary::EXCEL_TYPE_COLLECTION,
@@ -252,8 +251,8 @@ impl WorkSheet {
                 office_document.clone(),
                 &format!(
                     "{}/_rels/{}.rels",
-                    &file_path[..file_path.rfind("/").unwrap()],
-                    file_path.rsplit("/").next().unwrap()
+                    &file_path[..file_path.rfind('/').unwrap()],
+                    file_path.rsplit('/').next().unwrap()
                 ),
             )
             .context("Creating Relation ship part for workbook failed.")?,
@@ -416,10 +415,10 @@ impl WorkSheet {
                         if let Some(style_id) = item.style_id {
                             attribute.insert("style".to_string(), style_id.id.to_string());
                         }
-                        if let Some(_) = item.hidden {
+                        if item.hidden.is_some() {
                             attribute.insert("hidden".to_string(), "1".to_string());
                         }
-                        if let Some(_) = item.best_fit {
+                        if item.best_fit.is_some() {
                             attribute.insert("bestFit".to_string(), "1".to_string());
                         }
                         xml_doc_mut
@@ -571,22 +570,22 @@ impl WorkSheet {
                     row_attribute.insert("customHeight".to_string(), "1".to_string());
                     row_attribute.insert("ht".to_string(), row_height.to_string());
                 }
-                if let Some(_) = db_row.row_record.hidden {
+                if db_row.row_record.hidden.is_some() {
                     row_attribute.insert("hidden".to_string(), "1".to_string());
                 }
                 if let Some(row_group_level) = db_row.row_record.group_level {
                     row_attribute.insert("outlineLevel".to_string(), row_group_level.to_string());
                 }
-                if let Some(_) = db_row.row_record.collapsed {
+                if db_row.row_record.collapsed.is_some() {
                     row_attribute.insert("collapsed".to_string(), "1".to_string());
                 }
-                if let Some(_) = db_row.row_record.thick_top {
+                if db_row.row_record.thick_top.is_some() {
                     row_attribute.insert("thickTop".to_string(), "1".to_string());
                 }
-                if let Some(_) = db_row.row_record.thick_bottom {
+                if db_row.row_record.thick_bottom.is_some() {
                     row_attribute.insert("thickBot".to_string(), "1".to_string());
                 }
-                if let Some(_) = db_row.row_record.place_holder {
+                if db_row.row_record.place_holder.is_some() {
                     row_attribute.insert("ph".to_string(), "1".to_string());
                 }
                 row_element
@@ -624,7 +623,7 @@ impl WorkSheet {
                         if let Some(cell_metadata) = cell_record.metadata {
                             cell_attribute.insert("vm".to_string(), cell_metadata.to_string());
                         }
-                        if let Some(_) = cell_record.place_holder {
+                        if cell_record.place_holder.is_some() {
                             cell_attribute.insert("ph".to_string(), "1".to_string());
                         }
                         cell_element
@@ -1190,7 +1189,7 @@ fn deserialize_merge_cells(
                         .get_attribute()
                         .context("Failed to pull Mandatory Attributes")?;
                     let merge_range = attribute.get("ref").context("Failed to get merge ref")?;
-                    if merge_range.contains(":") {
+                    if merge_range.contains(':') {
                         let range: Vec<&str> = merge_range.split(':').collect();
                         let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
                             .context("Failed to parse Cell Ref")?;
@@ -1248,7 +1247,7 @@ fn deserialize_hyperlinks(
                     let hyperlink_ref = attribute
                         .get("ref")
                         .context("Failed to get hyperlink ref")?;
-                    if hyperlink_ref.contains(":") {
+                    if hyperlink_ref.contains(':') {
                         let range: Vec<&str> = hyperlink_ref.split(':').collect();
                         let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
                             .context("Failed to parse Cell Ref")?;

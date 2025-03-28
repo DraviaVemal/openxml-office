@@ -273,7 +273,7 @@ impl OfficeDocument {
             let mut file_extension = String::new();
             let mut extension_type = String::new();
             let mut uncompressed_data = Vec::new();
-            let f_extension = file_name.rsplit(".").next();
+            let f_extension = file_name.rsplit('.').next();
             if let Some(f_extension) = f_extension {
                 if let Some(extensions) = extension_collection.clone() {
                     let item = extensions.iter().find(|item| item.0 == f_extension);

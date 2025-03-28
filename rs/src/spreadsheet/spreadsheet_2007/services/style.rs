@@ -1090,7 +1090,7 @@ impl StylePart {
                     let number_format = NumberFormat {
                         format_code: custom_format,
                         format_type: NumberFormatValues::Custom,
-                        ..Default::default()
+                        ..NumberFormat::default()
                     };
                     number_format.hash(&mut hasher);
                     let current_hash = hasher.finish();
@@ -1123,7 +1123,7 @@ impl StylePart {
                     is_double_underline: style_setting.is_double_underline,
                     color: style_setting.text_color,
                     size: style_setting.font_size,
-                    ..Default::default()
+                    ..FontStyle::default()
                 };
                 font_style.hash(&mut hasher);
                 let current_hash = hasher.finish();
@@ -1165,7 +1165,7 @@ impl StylePart {
                         None
                     },
                     pattern_type: style_setting.pattern_type,
-                    ..Default::default()
+                    ..FillStyle::default()
                 };
                 fill_style.hash(&mut hasher);
                 let current_hash = hasher.finish();
@@ -1193,7 +1193,7 @@ impl StylePart {
                     right: style_setting.border_right,
                     bottom: style_setting.border_bottom,
                     diagonal: style_setting.border_diagonal,
-                    ..Default::default()
+                    ..BorderStyle::default()
                 };
                 border_style.hash(&mut hasher);
                 let current_hash = hasher.finish();
