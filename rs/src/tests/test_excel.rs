@@ -1,7 +1,6 @@
 use crate::{
     global_2007::traits::XmlDocumentPartCommon, log_elapsed, spreadsheet_2007::models::StyleSetting,
 };
-use anyhow::Context;
 use chrono::Utc;
 use std::fs::{create_dir, exists};
 
