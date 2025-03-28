@@ -832,10 +832,12 @@ impl StylePart {
                                 ConverterUtil::normalize_bool_property_u8(apply_border);
                         }
                         if let Some(apply_fill) = attributes.get("applyFill") {
-                            cell_xf.apply_fill = ConverterUtil::normalize_bool_property_u8(apply_fill);
+                            cell_xf.apply_fill =
+                                ConverterUtil::normalize_bool_property_u8(apply_fill);
                         }
                         if let Some(apply_font) = attributes.get("applyFont") {
-                            cell_xf.apply_font = ConverterUtil::normalize_bool_property_u8(apply_font);
+                            cell_xf.apply_font =
+                                ConverterUtil::normalize_bool_property_u8(apply_font);
                         }
                         if let Some(apply_number_format) = attributes.get("applyNumberFormat") {
                             cell_xf.apply_number_format =

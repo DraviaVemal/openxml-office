@@ -30,10 +30,7 @@ fn blank_power_point() {
 #[test]
 fn edit_power_point() {
     let file = crate::presentation_2007::PowerPoint::new(
-        Some(
-            "src/tests/TestFiles/basic_test.pptx"
-                .to_string(),
-        ),
+        Some("src/tests/TestFiles/basic_test.pptx".to_string()),
         crate::presentation_2007::PowerPoint::default(),
     )
     .expect("Open Existing file failed");
