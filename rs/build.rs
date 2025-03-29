@@ -3,7 +3,7 @@ use std::process::Command;
 
 fn main() {
     Command::new("git")
-        .args(["fetch", "--tags","--force"])
+        .args(["fetch", "--tags", "--force"])
         .output()
         .expect("Failed to pull latest tags");
     // Get the latest Git tag matching "v*"
