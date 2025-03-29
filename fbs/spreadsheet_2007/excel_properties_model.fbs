@@ -4,7 +4,6 @@ namespace openxml_office_fbs.spreadsheet_2007;
 
 // Define the ExcelPropertiesModel table with three fields
 table ExcelPropertiesModel {
-  is_in_memory:bool;
   is_editable:bool;
   settings: ExcelSettingsModel;
   // theme: global_2007.ThemePalletModel;

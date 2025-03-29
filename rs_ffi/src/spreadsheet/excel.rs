@@ -42,7 +42,6 @@ pub extern "C" fn excel_create(
     ) {
         Ok(fbs_excel_properties) => {
             let excel_properties = ExcelPropertiesModel {
-                is_in_memory: fbs_excel_properties.is_in_memory(),
                 is_editable: fbs_excel_properties.is_editable(),
             };
             let excel = if let Some(file_name) = file_name {
@@ -281,7 +280,7 @@ pub extern "C" fn get_style_id_mut(
                 style_setting.font_family = font_family.to_string();
             }
             style_setting.font_size = fbs_style_setting.font_size();
-            if let Some(text_color) = fbs_style_setting.text_color() {
+            if let Some(_text_color) = fbs_style_setting.text_color() {
                 // style_setting.text_color = text_color;
             }
             style_setting.is_bold = fbs_style_setting.is_bold();

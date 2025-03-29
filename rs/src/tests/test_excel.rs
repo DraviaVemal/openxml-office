@@ -22,8 +22,8 @@ fn blank_excel() {
     let file = crate::spreadsheet_2007::Excel::new(
         None,
         crate::spreadsheet_2007::ExcelPropertiesModel {
-            is_in_memory: false,
             is_editable: true,
+            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Create New File Failed");
@@ -62,10 +62,7 @@ fn excel_handling() {
 fn sheet_handling() {
     let mut file = crate::spreadsheet_2007::Excel::new(
         None,
-        crate::spreadsheet_2007::ExcelPropertiesModel {
-            is_in_memory: false,
-            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
-        },
+        crate::spreadsheet_2007::ExcelPropertiesModel::default(),
     )
     .expect("Create New File Failed");
     file.add_sheet_mut(Some("Test".to_string()))
@@ -152,8 +149,8 @@ fn set_row_property() {
     let mut file = crate::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
         crate::spreadsheet_2007::ExcelPropertiesModel {
-            is_in_memory: false,
             is_editable: true,
+            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
@@ -207,8 +204,8 @@ fn merge_cell_property() {
     let mut file = crate::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/merge.xlsx".to_string()),
         crate::spreadsheet_2007::ExcelPropertiesModel {
-            is_in_memory: false,
             is_editable: true,
+            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
@@ -217,6 +214,7 @@ fn merge_cell_property() {
             .get_worksheet_mut("Sheet1".to_string())
             .expect("Failed to open the sheet");
         let result = worksheet.list_merge_cell_();
+        assert!(result.is_some())
     }
     file.save_as(&get_save_file(None))
         .expect("Save File Failed");
@@ -228,8 +226,8 @@ fn set_column_property() {
     let mut file = crate::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
         crate::spreadsheet_2007::ExcelPropertiesModel {
-            is_in_memory: false,
             is_editable: true,
+            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
@@ -274,8 +272,8 @@ fn set_cell_style() {
     let mut file = crate::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
         crate::spreadsheet_2007::ExcelPropertiesModel {
-            is_in_memory: false,
             is_editable: true,
+            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
@@ -415,8 +413,8 @@ fn edit_excel() {
     let mut file = crate::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
         crate::spreadsheet_2007::ExcelPropertiesModel {
-            is_in_memory: false,
             is_editable: true,
+            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
@@ -520,8 +518,8 @@ fn edit_large_excel() {
     let mut file = crate::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/large_file.xlsx".to_string()),
         crate::spreadsheet_2007::ExcelPropertiesModel {
-            is_in_memory: false,
             is_editable: true,
+            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
@@ -560,14 +558,6 @@ fn large_excel() {
         crate::spreadsheet_2007::ExcelPropertiesModel::default(),
     )
     .expect("Open Existing File Failed");
-    let mut range = rand::thread_rng();
-    let cell_type = [
-        crate::spreadsheet_2007::models::CellDataType::Auto,
-        crate::spreadsheet_2007::models::CellDataType::InlineString,
-        crate::spreadsheet_2007::models::CellDataType::Number,
-        crate::spreadsheet_2007::models::CellDataType::ShareString,
-        crate::spreadsheet_2007::models::CellDataType::String,
-    ];
     {
         let mut sheet = file
             .add_sheet_mut(None)

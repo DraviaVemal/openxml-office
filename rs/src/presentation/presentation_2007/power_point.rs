@@ -17,21 +17,23 @@ pub struct PowerPoint {
 
 #[derive(Debug)]
 pub struct PowerPointPropertiesModel {
-    pub is_in_memory: bool,
+    pub is_editable: bool,
+}
+
+impl Default for PowerPointPropertiesModel {
+    fn default() -> PowerPointPropertiesModel {
+        PowerPointPropertiesModel { is_editable: true }
+    }
 }
 
 impl PowerPoint {
-    /// Default Power Point Setting
-    pub fn default() -> PowerPointPropertiesModel {
-        return PowerPointPropertiesModel { is_in_memory: true };
-    }
     /// Create new or clone source file to start working on Power Point
     pub fn new(
         file_name: Option<String>,
-        power_point_setting: PowerPointPropertiesModel,
+        _power_point_setting: PowerPointPropertiesModel,
     ) -> AnyResult<Self, AnyError> {
         let office_document = Rc::new(RefCell::new(
-            OfficeDocument::new(file_name.clone(), power_point_setting.is_in_memory)
+            OfficeDocument::new(file_name.clone())
                 .context("Creating Office Document Struct Failed")?,
         ));
         let root_relations = Rc::new(RefCell::new(
