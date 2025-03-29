@@ -221,6 +221,16 @@ impl XmlDocumentPartCommon for WorkSheet {
                         "Close worksheet document"
                     )?;
                 }
+                log_elapsed!(
+                    || {
+                        self.sheet_relationship_part
+                            .try_borrow_mut()
+                            .context("Failed to pull relationship handle")?
+                            .close_document()
+                            .context("Failed to Close relationship part")
+                    },
+                    "Worksheet relation part closed"
+                )?;
                 Ok(())
             },
             "Close Worksheet"

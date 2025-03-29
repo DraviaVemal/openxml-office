@@ -35,7 +35,7 @@ pub(crate) struct OfficeDocument {
 
 impl OfficeDocument {
     /// Create or Clone existing document to start with
-    pub(crate) fn new(file_path: Option<String>, is_in_memory: bool) -> AnyResult<Self, AnyError> {
+    pub(crate) fn new(file_path: Option<String>) -> AnyResult<Self, AnyError> {
         let mut archive_collection = HashMap::new();
         if let Some(file_path) = file_path {
             // Load existing file to our system
@@ -53,6 +53,7 @@ impl OfficeDocument {
     }
 
     pub(crate) fn delete_document_mut(&mut self, file_name: &str) {
+        self.xml_document_collection.remove(file_name);
         self.archive_collection.remove(file_name);
     }
 
@@ -187,9 +188,9 @@ impl OfficeDocument {
                     file_extension,
                     extension_type,
                     content_type,
-                    compress_size,
-                    uncompress_size,
-                    compression_level,
+                    _compress_size,
+                    _uncompress_size,
+                    _compression_level,
                     file_content,
                 ),
             ) in self.archive_collection.to_owned()

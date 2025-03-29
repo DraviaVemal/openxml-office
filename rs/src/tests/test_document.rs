@@ -16,8 +16,9 @@ fn get_save_file(dynamic_path: Option<&str>) -> String {
 
 #[test]
 fn blank_document() {
-    let file = crate::document_2007::Word::new(None, crate::document_2007::Word::default())
-        .expect("Blank File Open Failed");
+    let file =
+        crate::document_2007::Word::new(None, crate::document_2007::WordPropertiesModel::default())
+            .expect("Blank File Open Failed");
     file.save_as(&get_save_file(None))
         .expect("Save Result Failed");
     assert_eq!(true, true);
@@ -27,7 +28,7 @@ fn blank_document() {
 fn edit_document() {
     let file = crate::document_2007::Word::new(
         Some("src/tests/TestFiles/basic_test.docx".to_string()),
-        crate::document_2007::Word::default(),
+        crate::document_2007::WordPropertiesModel::default(),
     )
     .expect("Edit existing file failed");
     file.save_as(&get_save_file(None))

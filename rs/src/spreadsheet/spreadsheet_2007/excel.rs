@@ -23,16 +23,12 @@ pub struct Excel {
 
 #[derive(Debug)]
 pub struct ExcelPropertiesModel {
-    pub is_in_memory: bool,
     pub is_editable: bool,
 }
 
-impl ExcelPropertiesModel {
-    pub fn default() -> ExcelPropertiesModel {
-        ExcelPropertiesModel {
-            is_in_memory: true,
-            is_editable: true,
-        }
+impl Default for ExcelPropertiesModel {
+    fn default() -> ExcelPropertiesModel {
+        ExcelPropertiesModel { is_editable: true }
     }
 }
 
@@ -41,12 +37,12 @@ impl Excel {
     /// Create new or clone source file to start working on Excel
     pub fn new(
         file_name: Option<String>,
-        excel_setting: ExcelPropertiesModel,
+        _excel_setting: ExcelPropertiesModel,
     ) -> AnyResult<Self, AnyError> {
         log_elapsed!(
             || {
                 let office_document = Rc::new(RefCell::new(
-                    OfficeDocument::new(file_name.clone(), excel_setting.is_in_memory)
+                    OfficeDocument::new(file_name.clone())
                         .context("Creating Office Document Struct Failed")?,
                 ));
                 let root_relations = Rc::new(RefCell::new(
@@ -64,17 +60,12 @@ impl Excel {
                     Rc::downgrade(&root_relations),
                 )
                 .context("Creating Workbook part Failed")?;
-                let mut excel = Self {
+                let excel = Self {
                     office_document,
                     root_relations,
                     core_properties,
                     workbook,
                 };
-                if file_name.is_none() {
-                    excel
-                        .add_sheet_mut(None)
-                        .context("Failed To Add Default Sheet to excel")?;
-                }
                 Ok(excel)
             },
             if file_name.is_some() {
@@ -151,7 +142,16 @@ impl Excel {
     }
 
     /// Save/Replace the current file into target destination
-    pub fn save_as(self, file_name: &str) -> AnyResult<(), AnyError> {
+    pub fn save_as(mut self, file_name: &str) -> AnyResult<(), AnyError> {
+        if self
+            .list_sheet_names()
+            .context("Failed to get Sheet Name List")?
+            .len()
+            == 0
+        {
+            self.add_sheet_mut(None)
+                .context("Failed To Add Default Sheet to excel")?;
+        }
         log_elapsed!(
             || {
                 self.workbook.flush()?;

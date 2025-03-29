@@ -35,7 +35,7 @@ pub extern "C" fn word_create(
     ) {
         Ok(fbs_word_properties) => {
             let word_properties = WordPropertiesModel {
-                is_in_memory: fbs_word_properties.is_in_memory(),
+                is_editable: fbs_word_properties.is_editable(),
             };
             let word = if let Some(file_name) = file_name {
                 Word::new(Some(file_name), word_properties)

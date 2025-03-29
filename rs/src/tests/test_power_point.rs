@@ -1,4 +1,3 @@
-use anyhow::Context;
 use chrono::Utc;
 use std::fs::{create_dir, exists};
 
@@ -19,7 +18,7 @@ fn get_save_file(dynamic_path: Option<&str>) -> String {
 fn blank_power_point() {
     let file = crate::presentation_2007::PowerPoint::new(
         None,
-        crate::presentation_2007::PowerPoint::default(),
+        crate::presentation_2007::PowerPointPropertiesModel::default(),
     )
     .expect("Create New File Failed");
     file.save_as(&get_save_file(None))
@@ -31,7 +30,7 @@ fn blank_power_point() {
 fn edit_power_point() {
     let file = crate::presentation_2007::PowerPoint::new(
         Some("src/tests/TestFiles/basic_test.pptx".to_string()),
-        crate::presentation_2007::PowerPoint::default(),
+        crate::presentation_2007::PowerPointPropertiesModel::default(),
     )
     .expect("Open Existing file failed");
     file.save_as(&get_save_file(None))

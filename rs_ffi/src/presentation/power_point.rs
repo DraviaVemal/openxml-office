@@ -34,13 +34,20 @@ pub extern "C" fn power_point_create(
         buffer_slice,
     ) {
         Ok(fbs_power_point_properties) => {
-            let power_point_properties = PowerPointPropertiesModel {
-                is_in_memory: fbs_power_point_properties.is_in_memory(),
-            };
             let power_point = if let Some(file_name) = file_name {
-                PowerPoint::new(Some(file_name), power_point_properties)
+                PowerPoint::new(
+                    Some(file_name),
+                    PowerPointPropertiesModel {
+                        is_editable: fbs_power_point_properties.is_editable(),
+                    },
+                )
             } else {
-                PowerPoint::new(None, power_point_properties)
+                PowerPoint::new(
+                    None,
+                    PowerPointPropertiesModel {
+                        is_editable: fbs_power_point_properties.is_editable(),
+                    },
+                )
             };
             match power_point {
                 Ok(power_point) => {

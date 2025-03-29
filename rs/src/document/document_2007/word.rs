@@ -17,21 +17,23 @@ pub struct Word {
 
 #[derive(Debug)]
 pub struct WordPropertiesModel {
-    pub is_in_memory: bool,
+    pub is_editable: bool,
+}
+
+impl Default for WordPropertiesModel {
+    fn default() -> WordPropertiesModel {
+        WordPropertiesModel { is_editable: true }
+    }
 }
 
 impl Word {
-    /// Default Word Setting
-    pub fn default() -> WordPropertiesModel {
-        WordPropertiesModel { is_in_memory: true }
-    }
     /// Create new or clone source file to start working on Word
     pub fn new(
         file_name: Option<String>,
-        word_setting: WordPropertiesModel,
+        _word_setting: WordPropertiesModel,
     ) -> AnyResult<Self, AnyError> {
         let office_document = Rc::new(RefCell::new(
-            OfficeDocument::new(file_name.clone(), word_setting.is_in_memory)
+            OfficeDocument::new(file_name.clone())
                 .context("Creating Office Document Struct Failed")?,
         ));
         let root_relations = Rc::new(RefCell::new(

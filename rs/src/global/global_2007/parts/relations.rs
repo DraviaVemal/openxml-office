@@ -35,12 +35,12 @@ impl XmlDocumentPartCommon for RelationsPart {
                 // Remove Links that are not valid
                 xml_document
                     .try_borrow_mut()
-                    .context("Failed to Pull Open XML Handle")?
+                    .context("Failed to Pull Open XML Relations Handle")?
                     .close_xml_document(&self.file_path)?;
             } else {
                 xml_document
                     .try_borrow_mut()
-                    .context("Failed to Pull Open XML Handle")?
+                    .context("Failed to Pull Open XML Relations Handle")?
                     .delete_document_mut(&self.file_path);
             }
         }
