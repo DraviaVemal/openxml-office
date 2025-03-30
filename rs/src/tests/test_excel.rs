@@ -1,6 +1,7 @@
 use crate::{
     global_2007::traits::XmlDocumentPartCommon, log_elapsed, spreadsheet_2007::models::StyleSetting,
 };
+use anyhow::Context;
 use chrono::Utc;
 use std::fs::{create_dir, exists};
 
@@ -215,6 +216,25 @@ fn merge_cell_property() {
             .expect("Failed to open the sheet");
         let result = worksheet.list_merge_cell_();
         assert!(result.is_some())
+    }
+    {
+        let mut edit_worksheet = file
+            .get_worksheet_mut("edit".to_string())
+            .expect("Failed to open the sheet");
+        let ranges = edit_worksheet.list_merge_cell_();
+        if let Some(ranges) = ranges {
+            edit_worksheet
+                .remove_merge_cell_mut(ranges[2].clone())
+                .expect("Failed to Remove Merge Range");
+        }
+        edit_worksheet
+            .set_merge_cell_mut(crate::spreadsheet_2007::models::ReferenceRange {
+                column_start: 1,
+                column_end: 1,
+                row_start: 1,
+                row_end: 10,
+            })
+            .expect("Failed to Insert Merge Range");
     }
     file.save_as(&get_save_file(None))
         .expect("Save File Failed");
