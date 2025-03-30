@@ -1619,7 +1619,21 @@ impl WorkSheet {
     }
 
     /// Set Cell Range to merge
-    pub fn set_merge_cell_mut(&mut self) -> AnyResult<(), AnyError> {
+    pub fn set_merge_cell_mut(&mut self, ref_range: ReferenceRange) -> AnyResult<(), AnyError> {
+        if let Some(merge_cells) = self.merge_cells.as_mut() {
+            if !merge_cells.iter().any(|range| {
+                ref_range.row_end <= range.row_start
+                    || ref_range.row_start >= range.row_end
+                    || ref_range.column_end >= range.column_start
+                    || ref_range.column_start >= range.column_end
+            }) {
+                return Err(anyhow!("Failed Range Overlap"));
+            } else {
+                merge_cells.push(ref_range);
+            }
+        } else {
+            self.merge_cells = Some(vec![ref_range]);
+        }
         Ok(())
     }
 
@@ -1630,8 +1644,8 @@ impl WorkSheet {
 
     /// Remove merged cell range
     pub fn remove_merge_cell_mut(&mut self, range: ReferenceRange) -> AnyResult<(), AnyError> {
-        if let Some(hyperlinks) = self.hyperlinks.as_mut() {
-            hyperlinks.retain(|(_, reference_range)| {
+        if let Some(merge_range) = self.merge_cells.as_mut() {
+            merge_range.retain(|reference_range| {
                 reference_range.row_start != range.row_start
                     && reference_range.row_end != range.row_end
                     && reference_range.column_start != range.column_start
