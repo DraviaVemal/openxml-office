@@ -114,7 +114,7 @@ impl CorePropertiesPart {
             relations_part
                 .try_borrow_mut()
                 .context("Failed to pull relationship connection")?
-                .get_relationship_target_by_type_mut(
+                .get_relationship_target_path_by_type_mut(
                     &relationship_content.schemas_type,
                     relationship_content,
                     None,

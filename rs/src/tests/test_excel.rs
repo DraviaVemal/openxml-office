@@ -1,7 +1,6 @@
 use crate::{
     global_2007::traits::XmlDocumentPartCommon, log_elapsed, spreadsheet_2007::models::StyleSetting,
 };
-use anyhow::Context;
 use chrono::Utc;
 use std::fs::{create_dir, exists};
 
@@ -203,7 +202,7 @@ fn set_row_property() {
 #[test]
 fn merge_cell_property() {
     let mut file = crate::spreadsheet_2007::Excel::new(
-        Some("src/tests/TestFiles/merge.xlsx".to_string()),
+        Some("src/tests/TestFiles/merge_links.xlsx".to_string()),
         crate::spreadsheet_2007::ExcelPropertiesModel {
             is_editable: true,
             ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -235,6 +234,39 @@ fn merge_cell_property() {
                 row_end: 10,
             })
             .expect("Failed to Insert Merge Range");
+    }
+    file.save_as(&get_save_file(None))
+        .expect("Save File Failed");
+    assert_eq!(true, true);
+}
+
+#[test]
+fn hyperlink_cell_property() {
+    let mut file = crate::spreadsheet_2007::Excel::new(
+        Some("src/tests/TestFiles/merge_links.xlsx".to_string()),
+        crate::spreadsheet_2007::ExcelPropertiesModel {
+            is_editable: true,
+            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
+        },
+    )
+    .expect("Open Existing File Failed");
+    {
+        let worksheet = file
+            .get_worksheet_mut("edit".to_string())
+            .expect("Failed to open the sheet");
+        let result = worksheet.list_hyperlinks();
+        assert!(result.is_some())
+    }
+    {
+        let mut edit_worksheet = file
+            .get_worksheet_mut("edit".to_string())
+            .expect("Failed to open the sheet");
+        let ranges = edit_worksheet.list_hyperlinks();
+        if let Some(ranges) = ranges {
+            edit_worksheet
+                .remove_hyperlink_mut(ranges[2].2.clone())
+                .expect("Failed to Remove Merge Range");
+        }
     }
     file.save_as(&get_save_file(None))
         .expect("Save File Failed");

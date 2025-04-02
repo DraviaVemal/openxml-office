@@ -125,3 +125,11 @@ pub struct ReferenceRange {
     pub row_start: u32,
     pub row_end: u32,
 }
+
+#[derive(Debug)]
+pub struct HyperLinks {
+    pub id: Option<String>,
+    pub display: Option<String>,
+    pub link: String,
+    pub range: ReferenceRange,
+}

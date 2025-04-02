@@ -13,7 +13,7 @@
 /// Insert Hyperlink
 use crate::{
     converters::ConverterUtil,
-    element_dictionary::EXCEL_TYPE_COLLECTION,
+    element_dictionary::{COMMON_TYPE_COLLECTION, EXCEL_TYPE_COLLECTION},
     files::{OfficeDocument, XmlDocument, XmlSerializer},
     global_2007::{
         parts::RelationsPart,
@@ -23,7 +23,8 @@ use crate::{
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
         models::{
-            CellDataType, CellProperties, ColumnProperties, ReferenceRange, RowProperties, StyleId,
+            CellDataType, CellProperties, ColumnProperties, HyperLinks, ReferenceRange,
+            RowProperties, StyleId,
         },
         services::CommonServices,
     },
@@ -144,7 +145,7 @@ pub struct WorkSheet {
     // sheet_calculation_property:Option<_>
     // protected_range:Option<_>
     merge_cells: Option<Vec<ReferenceRange>>,
-    hyperlinks: Option<Vec<(String, ReferenceRange)>>,
+    hyperlinks: Option<Vec<HyperLinks>>,
     file_path: String,
     sheet_name: String,
 }
@@ -201,7 +202,10 @@ impl XmlDocumentPartCommon for WorkSheet {
                         // Add Merge Cell to Document
                         log_elapsed!(self.serialize_merge_cells(&mut xml_doc_mut))?;
                         // Add Hyperlink to Document
-                        log_elapsed!(self.serialize_hyperlinks(&mut xml_doc_mut))?;
+                        log_elapsed!(self.serialize_hyperlinks(
+                            &mut xml_doc_mut,
+                            Rc::clone(&self.sheet_relationship_part)
+                        ))?;
                         if let Some(root_element) = xml_doc_mut.get_root_mut() {
                             log_elapsed!(root_element
                                 .order_child_mut(
@@ -268,7 +272,10 @@ impl WorkSheet {
             .context("Creating Relation ship part for workbook failed.")?,
         ));
         let (column_collection, sheet_data, merge_cells, hyperlinks, sheet_views, dimension) = log_elapsed!(
-            || { Self::initialize_worksheet(&xml_document).context("Failed to open Worksheet") },
+            || {
+                Self::initialize_worksheet(&xml_document, Rc::clone(&sheet_relationship_part))
+                    .context("Failed to open Worksheet")
+            },
             "Worksheet Initialize Time"
         )?;
         Ok(Self {
@@ -291,12 +298,15 @@ impl WorkSheet {
 
     fn initialize_worksheet(
         xml_document: &Weak<RefCell<XmlDocument>>,
+        relationship_part: Rc<RefCell<RelationsPart>>,
     ) -> AnyResult<
         (
             Option<VecDeque<ColumnProperties>>,
             Option<BTreeMap<u32, RowData>>,
+            // Merge Range
             Option<Vec<ReferenceRange>>,
-            Option<Vec<(String, ReferenceRange)>>,
+            // Hyperlinks
+            Option<Vec<HyperLinks>>,
             WorkSheetViews,
             Dimension,
         ),
@@ -337,7 +347,7 @@ impl WorkSheet {
             )?;
             let hyperlinks = log_elapsed!(
                 || {
-                    deserialize_hyperlinks(&mut xml_doc_mut)
+                    deserialize_hyperlinks(&mut xml_doc_mut, &relationship_part)
                         .context("Failed To Deserialize hyperlinks")
                 },
                 "Hyperlink Deserialize"
@@ -728,25 +738,29 @@ impl WorkSheet {
         Ok(())
     }
 
-    fn serialize_hyperlinks(&mut self, xml_doc_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
+    fn serialize_hyperlinks(
+        &mut self,
+        xml_doc_mut: &mut XmlDocument,
+        relationship_part: Rc<RefCell<RelationsPart>>,
+    ) -> AnyResult<(), AnyError> {
         if let Some(hyperlinks) = self.hyperlinks.take() {
             let hyperlinks_id = xml_doc_mut
                 .insert_children_after_tag_mut("hyperlinks", "mergeCells", None)
                 .context("Failed to Insert Cols Element")?
                 .get_id();
-            for (hyperlink_id, hyperlink_range) in hyperlinks {
+            for hyperlink in hyperlinks {
                 let hyperlink_element_id = xml_doc_mut
                     .append_child_mut("hyperlink", Some(&hyperlinks_id))
                     .context("Failed tp Add element")?;
                 let mut attributes = HashMap::new();
-                if hyperlink_range.row_start == hyperlink_range.row_end
-                    && hyperlink_range.column_start == hyperlink_range.column_end
+                if hyperlink.range.row_start == hyperlink.range.row_end
+                    && hyperlink.range.column_start == hyperlink.range.column_end
                 {
                     attributes.insert(
                         "ref".to_string(),
                         ConverterUtil::get_cell_ref(
-                            hyperlink_range.row_start,
-                            hyperlink_range.column_start,
+                            hyperlink.range.row_start,
+                            hyperlink.range.column_start,
                         )?,
                     );
                 } else {
@@ -755,17 +769,30 @@ impl WorkSheet {
                         format!(
                             "{}:{}",
                             ConverterUtil::get_cell_ref(
-                                hyperlink_range.row_start,
-                                hyperlink_range.column_start
+                                hyperlink.range.row_start,
+                                hyperlink.range.column_start
                             )?,
                             ConverterUtil::get_cell_ref(
-                                hyperlink_range.row_end,
-                                hyperlink_range.column_end
+                                hyperlink.range.row_end,
+                                hyperlink.range.column_end
                             )?,
                         ),
                     );
                 }
-                attributes.insert("r:id".to_string(), hyperlink_id);
+                if let Some(display_value) = hyperlink.display {
+                    attributes.insert("display".to_string(), display_value);
+                }
+                // Insert Relationship link
+                if hyperlink.id.is_some() {
+                    let content = COMMON_TYPE_COLLECTION.get("hyperlink").unwrap();
+                    let r_id = relationship_part
+                        .borrow_mut()
+                        .set_new_relationship_mut(&content, hyperlink.link)
+                        .context("Failed to Create Hyperlink Relationship")?;
+                    attributes.insert("r:id".to_string(), r_id);
+                } else {
+                    attributes.insert("location".to_string(), hyperlink.link);
+                }
                 hyperlink_element_id
                     .set_attribute_mut(attributes)
                     .context("Failed to set hyperlink attribute element")?;
@@ -1239,7 +1266,8 @@ fn deserialize_merge_cells(
 /// Deserialize Hyperlink Collection
 fn deserialize_hyperlinks(
     xml_doc_mut: &mut XmlDocument,
-) -> AnyResult<Option<Vec<(String, ReferenceRange)>>> {
+    relationship_part: &Rc<RefCell<RelationsPart>>,
+) -> AnyResult<Option<Vec<HyperLinks>>> {
     if let Some(mut hyperlinks_element) = xml_doc_mut.pop_elements_by_tag_mut("hyperlinks", None) {
         let mut hyperlink_collection = Vec::new();
         if let Some(hyperlinks) = hyperlinks_element.pop() {
@@ -1251,40 +1279,56 @@ fn deserialize_hyperlinks(
                     let attribute = merge_cell_element
                         .get_attribute()
                         .context("Failed to pull Mandatory Attributes")?;
-                    let hyperlink_id = attribute
-                        .get("r:id")
-                        .context("Failed to get hyperlink id")?;
+                    let display = attribute.get("display").cloned();
                     let hyperlink_ref = attribute
                         .get("ref")
                         .context("Failed to get hyperlink ref")?;
-                    if hyperlink_ref.contains(':') {
+                    let hyperlink_id = attribute.get("r:id").cloned();
+                    let range_reference = if hyperlink_ref.contains(':') {
                         let range: Vec<&str> = hyperlink_ref.split(':').collect();
                         let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
                             .context("Failed to parse Cell Ref")?;
                         let (row_end, column_end) = ConverterUtil::get_cell_index(range[1])
                             .context("Failed to parse Cell Ref")?;
-                        hyperlink_collection.push((
-                            hyperlink_id.clone(),
-                            ReferenceRange {
-                                column_start,
-                                row_start,
-                                column_end,
-                                row_end,
-                            },
-                        ));
+                        ReferenceRange {
+                            column_start,
+                            row_start,
+                            column_end,
+                            row_end,
+                        }
                     } else {
                         let (row, col) = ConverterUtil::get_cell_index(hyperlink_ref)
                             .context("Failed to parse Cell Ref")?;
-                        hyperlink_collection.push((
-                            hyperlink_id.clone(),
-                            ReferenceRange {
-                                column_start: col,
-                                row_start: row,
-                                column_end: col,
-                                row_end: row,
-                            },
-                        ));
-                    }
+                        ReferenceRange {
+                            column_start: col,
+                            row_start: row,
+                            column_end: col,
+                            row_end: row,
+                        }
+                    };
+                    // If relationship ID exist pull from relationship part
+                    let link = if let Some(id) = hyperlink_id.as_ref() {
+                        let link = relationship_part
+                            .borrow()
+                            .get_target_by_id(id)
+                            .context("Failed to Pull Target From Relationship file")?
+                            .context("No Target Found in the relationship")?;
+                        relationship_part
+                            .borrow_mut()
+                            .delete_relationship_by_id_mut(&id);
+                        link
+                    } else {
+                        attribute
+                            .get("location")
+                            .context("Failed to Get Internal Location")?
+                            .clone()
+                    };
+                    hyperlink_collection.push(HyperLinks {
+                        id: hyperlink_id,
+                        display,
+                        link,
+                        range: range_reference,
+                    });
                 } else {
                     break;
                 }
@@ -1322,7 +1366,7 @@ impl WorkSheet {
                             workbook_relationship_part
                                 .try_borrow()
                                 .context("Failed to Get Workbook relationship")?
-                                .get_target_by_id(&rel_id)
+                                .get_target_path_by_id(&rel_id)
                                 .context("Failed to Get Target Path")?
                                 .context("Failed to Get Relationship path")?,
                             sheet_name,
@@ -1369,7 +1413,7 @@ impl WorkSheet {
                 let relationship_id = workbook_relationship_part
                     .try_borrow_mut()
                     .context("Failed to Get Relationship Handle")?
-                    .set_new_relationship_mut(
+                    .set_new_relationship_path_mut(
                         worksheet_content,
                         Some(file_path.clone()),
                         Some(format!(
@@ -1638,18 +1682,45 @@ impl WorkSheet {
     }
 
     /// List all Cell Range merged
-    pub fn list_merge_cell_(&mut self) -> Option<Vec<ReferenceRange>> {
+    pub fn list_merge_cell_(&self) -> Option<Vec<ReferenceRange>> {
         self.merge_cells.clone()
+    }
+
+    /// List All hyperlink in the sheet
+    pub fn list_hyperlinks(&self) -> Option<Vec<(Option<String>, String, ReferenceRange)>> {
+        if let Some(links) = self.hyperlinks.as_ref() {
+            Some(
+                links
+                    .iter()
+                    .map(|item| (item.display.clone(), item.link.clone(), item.range.clone()))
+                    .collect(),
+            )
+        } else {
+            None
+        }
+    }
+
+    /// Remove Link
+    pub fn remove_hyperlink_mut(&mut self, range: ReferenceRange) -> AnyResult<(), AnyError> {
+        if let Some(hyperlinks) = self.hyperlinks.as_mut() {
+            hyperlinks.retain(|link| {
+                !(link.range.row_start == range.row_start
+                    && link.range.row_end == range.row_end
+                    && link.range.column_start == range.column_start
+                    && link.range.column_end == range.column_end)
+            });
+        }
+        Ok(())
     }
 
     /// Remove merged cell range
     pub fn remove_merge_cell_mut(&mut self, range: ReferenceRange) -> AnyResult<(), AnyError> {
         if let Some(merge_range) = self.merge_cells.as_mut() {
             merge_range.retain(|reference_range| {
-                reference_range.row_start != range.row_start
-                    && reference_range.row_end != range.row_end
-                    && reference_range.column_start != range.column_start
-                    && reference_range.column_end != range.column_end
+                !(reference_range.row_start == range.row_start
+                    && reference_range.row_end == range.row_end
+                    && reference_range.column_start == range.column_start
+                    && reference_range.column_end == range.column_end)
             });
         }
         Ok(())

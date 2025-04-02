@@ -79,7 +79,7 @@ impl ThemePart {
             Ok(relations_part
                 .try_borrow_mut()
                 .context("Failed to pull relationship connection")?
-                .get_relationship_target_by_type_mut(
+                .get_relationship_target_path_by_type_mut(
                     &theme_content.schemas_type,
                     theme_content,
                     Some(format!("xl/{}", theme_content.default_path)),
