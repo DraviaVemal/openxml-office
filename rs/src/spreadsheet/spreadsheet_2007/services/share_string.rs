@@ -153,7 +153,7 @@ impl ShareStringPart {
             Ok(relations_part
                 .try_borrow_mut()
                 .context("Failed to pull relationship connection")?
-                .get_relationship_target_by_type_mut(
+                .get_relationship_target_path_by_type_mut(
                     &share_string_content.schemas_type,
                     share_string_content,
                     None,

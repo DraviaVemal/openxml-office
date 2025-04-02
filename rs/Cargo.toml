@@ -9,7 +9,7 @@ homepage = "https://openxml-office.draviavemal.com/"
 readme = "./README.md"
 keywords = ["office", "openxml", "xlsx", "pptx", "docx"]
 categories = ["filesystem", "development-tools"]
-version = "4.0.0-alpha.5"
+version = "4.0.0-alpha.6"
 edition = "2021"
 
 [dependencies]

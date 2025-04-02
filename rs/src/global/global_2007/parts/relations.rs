@@ -138,7 +138,7 @@ impl RelationsPart {
         }
     }
 
-    pub(crate) fn get_target_by_id(
+    pub(crate) fn get_target_path_by_id(
         &self,
         relationship_id: &str,
     ) -> AnyResult<Option<String>, AnyError> {
@@ -161,9 +161,25 @@ impl RelationsPart {
         }
     }
 
+    /// User "get_target_path_by_id" If you are trying to pull relative file path to target
+    pub(crate) fn get_target_by_id(
+        &self,
+        relationship_id: &str,
+    ) -> AnyResult<Option<String>, AnyError> {
+        if let Some(record) = self
+            .relationships
+            .iter()
+            .find(|item| item.0 == relationship_id)
+        {
+            Ok(Some(record.1.clone()))
+        } else {
+            Ok(None)
+        }
+    }
+
     /// Get Relation Target based on Type
     /// Note: This will get the first element match the criteria
-    pub(crate) fn get_relationship_target_by_type_mut(
+    pub(crate) fn get_relationship_target_path_by_type_mut(
         &mut self,
         content_type: &str,
         content: &Content,
@@ -185,7 +201,7 @@ impl RelationsPart {
                 Ok(format!("{}{}", relative_path, file_path))
             }
         } else {
-            self.set_new_relationship_mut(content, file_path.clone(), file_name.clone())
+            self.set_new_relationship_path_mut(content, file_path.clone(), file_name.clone())
                 .context("Setting New Theme Relationship Failed.")?;
             Ok(format!(
                 "{}/{}.{}",
@@ -248,8 +264,8 @@ impl RelationsPart {
         }
     }
 
-    /// Create new Relation
-    pub(crate) fn set_new_relationship_mut(
+    /// Create new Relation Path
+    pub(crate) fn set_new_relationship_path_mut(
         &mut self,
         content: &Content,
         file_path: Option<String>,
@@ -268,6 +284,28 @@ impl RelationsPart {
             None,
         ));
         Ok(next_id)
+    }
+
+    /// Create new Relation
+    pub(crate) fn set_new_relationship_mut(
+        &mut self,
+        content: &Content,
+        target: String,
+    ) -> AnyResult<String, AnyError> {
+        let next_id = self.get_next_relationship_id();
+        self.relationships.push((
+            next_id.clone(),
+            target,
+            content.schemas_type.to_string(),
+            // TODO : Make Dynamic on demand
+            Some("External".to_string()),
+        ));
+        Ok(next_id)
+    }
+
+    /// Delete Record by ID
+    pub(crate) fn delete_relationship_by_id_mut(&mut self, id: &str) {
+        self.relationships.retain(|item| item.0 != id)
     }
 
     /// Delete the target file path

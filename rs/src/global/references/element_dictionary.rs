@@ -52,6 +52,16 @@ pub(crate) static COMMON_TYPE_COLLECTION: Map<&'static str, &'static Content> = 
         default_path:"docProps",
         default_name:"core"
     },
+    "hyperlink"=>&Content{
+        schemas_namespace:"http://schemas.openxmlformats.org/officeDocument/2006",
+        schemas_type:"http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
+        alias:"",
+        content_type:"",
+        extension:"",
+        extension_type:"",
+        default_path:"",
+        default_name:""
+    },
     // TODO Move to Drawing
     "theme"=>&Content{
         schemas_namespace:"http://schemas.openxmlformats.org/drawingml/2006/main",

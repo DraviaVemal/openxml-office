@@ -127,7 +127,7 @@ impl CalculationChainPart {
             Ok(relations_part
                 .try_borrow_mut()
                 .context("Failed to pull relationship connection")?
-                .get_relationship_target_by_type_mut(
+                .get_relationship_target_path_by_type_mut(
                     &calc_chain_content.schemas_type,
                     calc_chain_content,
                     None,
