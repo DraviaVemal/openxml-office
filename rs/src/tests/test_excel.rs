@@ -1,5 +1,7 @@
 use crate::{
-    global_2007::traits::XmlDocumentPartCommon, log_elapsed, spreadsheet_2007::models::StyleSetting,
+    global_2007::traits::XmlDocumentPartCommon,
+    log_elapsed,
+    spreadsheet_2007::models::{ReferenceRange, StyleSetting},
 };
 use chrono::Utc;
 use std::fs::{create_dir, exists};
@@ -267,6 +269,23 @@ fn hyperlink_cell_property() {
                 .remove_hyperlink_mut(ranges[2].2.clone())
                 .expect("Failed to Remove Merge Range");
         }
+    }
+    {
+        let mut edit_worksheet = file
+            .get_worksheet_mut("edit".to_string())
+            .expect("Failed to open the sheet");
+        edit_worksheet
+            .set_hyperlink_mut(
+                Some("Test".to_string()),
+                "https://www.draviavemal.com".to_string(),
+                ReferenceRange {
+                    row_start: 10,
+                    row_end: 10,
+                    column_start: 10,
+                    column_end: 10,
+                },
+            )
+            .expect("Failed to Insert Hyperlink")
     }
     file.save_as(&get_save_file(None))
         .expect("Save File Failed");

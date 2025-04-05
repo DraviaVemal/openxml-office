@@ -1,9 +1,7 @@
-
 #[derive(Debug, Clone)]
-pub enum HyperlinkPropertyTypeValues {
+pub enum PowerPointHyperlinkPropertyTypeValues {
     EXISTING_FILE,
     WEB_URL,
-    TARGET_SHEET,
     TARGET_SLIDE,
     NEXT_SLIDE,
     PREVIOUS_SLIDE,
@@ -12,8 +10,15 @@ pub enum HyperlinkPropertyTypeValues {
 }
 
 #[derive(Debug, Clone)]
-pub struct HyperlinkProperties {
-    pub link_type: HyperlinkPropertyTypeValues,
-    pub link: String,
+pub enum ExcelHyperlinkPropertyTypeValues {
+    EXISTING_FILE,
+    WEB_URL,
+    TARGET_SHEET,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExcelHyperlinkProperties {
     pub display: Option<String>,
+    pub link_type: ExcelHyperlinkPropertyTypeValues,
+    pub link: String,
 }

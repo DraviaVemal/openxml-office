@@ -1,4 +1,4 @@
-use crate::global_2007::{models::HyperlinkProperties, traits::Enum};
+use crate::global_2007::{models::ExcelHyperlinkProperties, traits::Enum};
 use crate::spreadsheet_2007::models::StyleId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -95,7 +95,6 @@ pub struct CellProperties {
     pub formula: Option<String>,
     pub value: Option<String>,
     pub data_type: CellDataType,
-    pub hyperlink_properties: Option<HyperlinkProperties>,
     pub style_id: Option<StyleId>,
     // TODO: Future Items
     pub(crate) metadata: Option<String>,
@@ -109,7 +108,6 @@ impl Default for CellProperties {
             formula: None,
             value: None,
             data_type: CellDataType::Auto,
-            hyperlink_properties: None,
             style_id: None,
             metadata: None,
             comment_id: None,
@@ -126,10 +124,16 @@ pub struct ReferenceRange {
     pub row_end: u32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+/// Document Hyperlink
 pub struct HyperLinks {
+    /// Optional identifier for the hyperlink
     pub id: Option<String>,
+    /// Optional display text for the hyperlink
     pub display: Option<String>,
+    /// The URL/Target of the hyperlink
     pub link: String,
+    /// The range of reference in the document
     pub range: ReferenceRange,
 }
+
