@@ -1701,6 +1701,44 @@ impl WorkSheet {
     }
 
     /// Remove Link
+    pub fn set_hyperlink_mut(
+        &mut self,
+        display: Option<String>,
+        link: String,
+        range: ReferenceRange,
+    ) -> AnyResult<(), AnyError> {
+        if let Some(hyperlinks) = self.hyperlinks.as_mut() {
+            if hyperlinks.iter().any(|link| {
+                (link.range.row_start >= range.row_start && link.range.row_end <= range.row_start)
+                    || (link.range.row_start >= range.row_end
+                        && link.range.row_end <= range.row_end)
+                    || (link.range.column_start >= range.column_start
+                        && link.range.column_end <= range.column_start)
+                    || (link.range.column_start >= range.column_end
+                        && link.range.column_end <= range.column_end)
+            }) {
+                // Error if existing any range overlap
+                return Err(anyhow!("New Record overlap with existing range"));
+            } else {
+                hyperlinks.push(HyperLinks {
+                    id: Some("New".to_string()),
+                    display,
+                    link,
+                    range,
+                });
+            }
+        } else {
+            self.hyperlinks = Some(vec![HyperLinks {
+                id: Some("New".to_string()),
+                display,
+                link,
+                range,
+            }]);
+        }
+        Ok(())
+    }
+
+    /// Remove Link
     pub fn remove_hyperlink_mut(&mut self, range: ReferenceRange) -> AnyResult<(), AnyError> {
         if let Some(hyperlinks) = self.hyperlinks.as_mut() {
             hyperlinks.retain(|link| {
