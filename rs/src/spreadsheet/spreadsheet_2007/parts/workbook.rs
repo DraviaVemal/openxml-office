@@ -386,8 +386,9 @@ impl WorkbookPart {
                                                 minimize: if let Some(minimize) =
                                                     attributes.get("minimized")
                                                 {
-                                                    ConverterUtil::normalize_bool_property_u8(minimize)
-                                                        == 1
+                                                    ConverterUtil::normalize_bool_property_u8(
+                                                        minimize,
+                                                    ) == 1
                                                 } else {
                                                     false
                                                 },

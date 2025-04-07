@@ -136,4 +136,3 @@ pub struct HyperLinks {
     /// The range of reference in the document
     pub range: ReferenceRange,
 }
-
