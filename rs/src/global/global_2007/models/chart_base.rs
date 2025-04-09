@@ -170,6 +170,4 @@ pub(crate) struct ChartDataLabel {
     format_code: String,
 }
 
-pub(crate) struct ChartSeriesSetting {
-    
-}
+pub(crate) struct ChartSeriesSetting {}
