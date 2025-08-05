@@ -1,4 +1,4 @@
-use crate::global_2007::{models::ExcelHyperlinkProperties, traits::Enum};
+use crate::global_2007::traits::Enum;
 use crate::spreadsheet_2007::models::StyleId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,6 +55,33 @@ pub struct RowProperties {
     pub(crate) span: Option<String>,
 }
 
+impl RowProperties {
+    pub fn set_height(mut self, height: Option<f32>) -> RowProperties {
+        self.height = height;
+        self
+    }
+
+    pub fn set_style_id(mut self, style_id: Option<StyleId>) -> RowProperties {
+        self.style_id = style_id;
+        self
+    }
+
+    pub fn set_hidden(mut self, hidden: Option<bool>) -> RowProperties {
+        self.hidden = hidden;
+        self
+    }
+
+    pub fn set_thick_top(mut self, thick_top: Option<bool>) -> RowProperties {
+        self.thick_top = thick_top;
+        self
+    }
+
+    pub fn set_thick_bottom(mut self, thick_bottom: Option<bool>) -> RowProperties {
+        self.thick_bottom = thick_bottom;
+        self
+    }
+}
+
 #[derive(Debug)]
 pub struct ColumnProperties {
     // Start Column index
@@ -73,6 +100,28 @@ pub struct ColumnProperties {
     pub(crate) group_level: usize,
     // Collapse the current column
     pub(crate) collapsed: Option<bool>,
+}
+
+impl ColumnProperties {
+    pub fn set_width(mut self, width: Option<f32>) -> ColumnProperties {
+        self.width = width;
+        self
+    }
+
+    pub fn set_hidden(mut self, hidden: Option<bool>) -> ColumnProperties {
+        self.hidden = hidden;
+        self
+    }
+
+    pub fn set_style_id(mut self, style_id: Option<StyleId>) -> ColumnProperties {
+        self.style_id = style_id;
+        self
+    }
+
+    pub fn set_best_fit(mut self, best_fit: Option<bool>) -> ColumnProperties {
+        self.best_fit = best_fit;
+        self
+    }
 }
 
 impl Default for ColumnProperties {
@@ -102,6 +151,25 @@ pub struct CellProperties {
     pub(crate) place_holder: Option<bool>,
 }
 
+impl CellProperties {
+    pub fn set_formula(mut self, formula: Option<String>) -> CellProperties {
+        self.formula = formula;
+        self
+    }
+    pub fn set_value(mut self, value: Option<String>) -> CellProperties {
+        self.value = value;
+        self
+    }
+    pub fn set_data_type(mut self, data_type: CellDataType) -> CellProperties {
+        self.data_type = data_type;
+        self
+    }
+    pub fn set_style_id(mut self, style_id: Option<StyleId>) -> CellProperties {
+        self.style_id = style_id;
+        self
+    }
+}
+
 impl Default for CellProperties {
     fn default() -> Self {
         Self {
@@ -117,11 +185,30 @@ impl Default for CellProperties {
 }
 
 #[derive(Debug, Clone)]
+pub struct CellPackage {
+    pub cell_ref: String,
+    pub cell_property: CellProperties,
+    pub row_index: u32,
+    pub column_index: u16,
+}
+
+#[derive(Debug, Clone)]
 pub struct ReferenceRange {
     pub column_start: u16,
     pub column_end: u16,
     pub row_start: u32,
     pub row_end: u32,
+}
+
+impl Default for ReferenceRange {
+    fn default() -> Self {
+        Self {
+            column_start: 1,
+            column_end: 1,
+            row_start: 1,
+            row_end: 1,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

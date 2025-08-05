@@ -18,8 +18,8 @@ use crate::{
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
         models::{
-            CellDataType, CellProperties, ColumnProperties, HyperLinks, ReferenceRange,
-            RowProperties, StyleId,
+            CellDataType, CellPackage, CellProperties, ColumnProperties, HyperLinks,
+            ReferenceRange, RowProperties, StyleId,
         },
         services::CommonServices,
     },
@@ -33,8 +33,8 @@ use std::{
 };
 
 #[derive(Debug)]
-pub(crate) struct RowData {
-    row_record: RowProperties,
+pub(crate) struct RowRecords {
+    row_property: RowProperties,
     cell_records: Option<BTreeMap<u16, CellProperties>>,
 }
 
@@ -136,7 +136,7 @@ pub struct WorkSheet {
     sheet_views: WorkSheetViews,
     // sheet_format_property: Option<_>,
     column_collection: Option<VecDeque<ColumnProperties>>,
-    sheet_data: Option<BTreeMap<u32, RowData>>,
+    sheet_data: Option<BTreeMap<u32, RowRecords>>,
     // sheet_calculation_property:Option<_>
     // protected_range:Option<_>
     merge_cells: Option<Vec<ReferenceRange>>,
@@ -299,7 +299,7 @@ impl WorkSheet {
     ) -> AnyResult<
         (
             Option<VecDeque<ColumnProperties>>,
-            Option<BTreeMap<u32, RowData>>,
+            Option<BTreeMap<u32, RowRecords>>,
             // Merge Range
             Option<Vec<ReferenceRange>>,
             // Hyperlinks
@@ -579,33 +579,33 @@ impl WorkSheet {
                 let row_element_id = row_element.get_id();
                 let mut row_attribute = HashMap::new();
                 row_attribute.insert("r".to_string(), row_index.to_string());
-                if let Some(row_span) = db_row.row_record.span {
+                if let Some(row_span) = db_row.row_property.span {
                     row_attribute.insert("spans".to_string(), row_span);
                 }
-                if let Some(row_style_id) = db_row.row_record.style_id {
+                if let Some(row_style_id) = db_row.row_property.style_id {
                     row_attribute.insert("customFormat".to_string(), "1".to_string());
                     row_attribute.insert("s".to_string(), row_style_id.id.to_string());
                 }
-                if let Some(row_height) = db_row.row_record.height {
+                if let Some(row_height) = db_row.row_property.height {
                     row_attribute.insert("customHeight".to_string(), "1".to_string());
                     row_attribute.insert("ht".to_string(), row_height.to_string());
                 }
-                if db_row.row_record.hidden.is_some() {
+                if db_row.row_property.hidden.is_some() {
                     row_attribute.insert("hidden".to_string(), "1".to_string());
                 }
-                if let Some(row_group_level) = db_row.row_record.group_level {
+                if let Some(row_group_level) = db_row.row_property.group_level {
                     row_attribute.insert("outlineLevel".to_string(), row_group_level.to_string());
                 }
-                if db_row.row_record.collapsed.is_some() {
+                if db_row.row_property.collapsed.is_some() {
                     row_attribute.insert("collapsed".to_string(), "1".to_string());
                 }
-                if db_row.row_record.thick_top.is_some() {
+                if db_row.row_property.thick_top.is_some() {
                     row_attribute.insert("thickTop".to_string(), "1".to_string());
                 }
-                if db_row.row_record.thick_bottom.is_some() {
+                if db_row.row_property.thick_bottom.is_some() {
                     row_attribute.insert("thickBot".to_string(), "1".to_string());
                 }
-                if db_row.row_record.place_holder.is_some() {
+                if db_row.row_property.place_holder.is_some() {
                     row_attribute.insert("ph".to_string(), "1".to_string());
                 }
                 row_element
@@ -1021,12 +1021,12 @@ impl WorkSheet {
     /// Deserialize Sheet Data
     fn deserialize_sheet_data(
         xml_doc_mut: &mut XmlDocument,
-    ) -> AnyResult<(Option<BTreeMap<u32, RowData>>, Dimension), AnyError> {
+    ) -> AnyResult<(Option<BTreeMap<u32, RowRecords>>, Dimension), AnyError> {
         let mut dimension = Dimension::default();
         if let Some(mut sheet_data_element) = xml_doc_mut.pop_elements_by_tag_mut("sheetData", None)
         {
             if let Some(sheet_data) = sheet_data_element.pop() {
-                let mut sheet_data_collection: BTreeMap<u32, RowData> = BTreeMap::new();
+                let mut sheet_data_collection: BTreeMap<u32, RowRecords> = BTreeMap::new();
                 // Loop All rows of sheet data
                 loop {
                     if let Some((row_element_id, _)) = sheet_data.pop_child_mut() {
@@ -1206,8 +1206,8 @@ impl WorkSheet {
                             }
                             sheet_data_collection.insert(
                                 row_index,
-                                RowData {
-                                    row_record,
+                                RowRecords {
+                                    row_property: row_record,
                                     cell_records: if cell_records.len() > 0 {
                                         Some(cell_records)
                                     } else {
@@ -1472,14 +1472,57 @@ impl WorkSheet {
             Err(anyhow!("Failed to update Share String Record"))
         }
     }
+
+    fn extract_cell_records(
+        range: &ReferenceRange,
+        data_range: &mut Vec<CellPackage>,
+        row_index: &u32,
+        row_records: &RowRecords,
+    ) -> Result<(), AnyError> {
+        if let Some(cols) = row_records.cell_records.as_ref() {
+            if range.column_end == 0 {
+                for (column_index, cell_property) in cols.range(range.column_start..) {
+                    data_range.push(CellPackage {
+                        cell_ref: ConverterUtil::get_cell_ref(
+                            row_index.clone(),
+                            column_index.clone(),
+                        )
+                        .context("Failed to parse Cell Ref")?,
+                        row_index: row_index.clone(),
+                        column_index: column_index.clone(),
+                        cell_property: cell_property.clone(),
+                    });
+                }
+            } else {
+                for (column_index, cell_property) in
+                    cols.range(range.column_start..=range.column_end)
+                {
+                    data_range.push(CellPackage {
+                        cell_ref: ConverterUtil::get_cell_ref(
+                            row_index.clone(),
+                            column_index.clone(),
+                        )
+                        .context("Failed to parse Cell Ref")?,
+                        row_index: row_index.clone(),
+                        column_index: column_index.clone(),
+                        cell_property: cell_property.clone(),
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
-// ##################################### Feature Function ################################
+// ##################################### Mut Feature Function ################################
 impl WorkSheet {
     /// Set Active cell of the current sheet
-    pub fn set_active_cell_mut(&mut self, selected_range: Vec<&str>) {}
+    pub(crate) fn set_active_cell_mut(&mut self, selected_range: Vec<&str>) {}
 
     /// Set Column property
+    /// # Arguments
+    /// - `cell_ref` (`&str`) - Provide column reference name.
+    /// - `column_properties` (`Option<ColumnProperties>`) - Set the current column property.
     pub fn set_column_ref_properties_mut(
         &mut self,
         cell_ref: &str,
@@ -1491,6 +1534,9 @@ impl WorkSheet {
     }
 
     /// Set Column property
+    /// # Arguments
+    /// - `col_index` (`&u16`) - Provide column index. Starts From 1.
+    /// - `column_properties` (`Option<ColumnProperties>`) - Set the current column property.
     pub fn set_column_index_properties_mut(
         &mut self,
         col_index: &u16,
@@ -1535,7 +1581,11 @@ impl WorkSheet {
         Ok(())
     }
 
-    /// Set/Reset Row property
+    /// Set/Reset Row property.
+    /// # Arguments
+    /// - `row_index` (`&u32`) - Provide row index. Starts From 1
+    /// - `row_properties` (`RowProperties`) - Pass Default value or Setting for row
+    /// Warning: 0 value will be ignored
     pub fn set_row_index_properties_mut(
         &mut self,
         row_index: &u32,
@@ -1543,12 +1593,12 @@ impl WorkSheet {
     ) -> AnyResult<(), AnyError> {
         if let Some(sheet_data) = self.sheet_data.as_mut() {
             if let Some(row) = sheet_data.get_mut(row_index) {
-                row.row_record = row_properties;
+                row.row_property = row_properties;
             } else {
                 sheet_data.insert(
                     *row_index,
-                    RowData {
-                        row_record: row_properties,
+                    RowRecords {
+                        row_property: row_properties,
                         cell_records: None,
                     },
                 );
@@ -1557,8 +1607,8 @@ impl WorkSheet {
             let mut map = BTreeMap::new();
             map.insert(
                 *row_index,
-                RowData {
-                    row_record: row_properties,
+                RowRecords {
+                    row_property: row_properties,
                     cell_records: None,
                 },
             );
@@ -1568,6 +1618,9 @@ impl WorkSheet {
     }
 
     /// Set data for same row multiple columns along with row property
+    /// # Arguments
+    /// - `cell_ref` (`&str`) -  Provide column reference name.
+    /// - `column_cell` (`Vec<CellProperties>`) - Set the list of column values auto increment from start ref.
     pub fn set_row_value_ref_mut(
         &mut self,
         cell_ref: &str,
@@ -1579,6 +1632,10 @@ impl WorkSheet {
     }
 
     /// Set data for same row multiple columns along with row property
+    /// # Arguments
+    /// - `row_index` (`u32`) - Provide row index. Starts From 1
+    /// - `mut col_index` (`u16`) - Provide column index. Starts From 1
+    /// - `mut column_cell` (`Vec<CellProperties>`) - Describe this parameter.
     pub fn set_row_value_index_mut(
         &mut self,
         row_index: u32,
@@ -1654,8 +1711,8 @@ impl WorkSheet {
                 }));
                 sheet_data.insert(
                     row_index,
-                    RowData {
-                        row_record: RowProperties::default(),
+                    RowRecords {
+                        row_property: RowProperties::default(),
                         cell_records: Some(cell_records),
                     },
                 );
@@ -1672,8 +1729,8 @@ impl WorkSheet {
             }));
             sheet_data.insert(
                 row_index,
-                RowData {
-                    row_record: RowProperties::default(),
+                RowRecords {
+                    row_property: RowProperties::default(),
                     cell_records: Some(cell_records),
                 },
             );
@@ -1683,6 +1740,8 @@ impl WorkSheet {
     }
 
     /// Set Cell Range to merge
+    /// # Arguments
+    /// - `ref_range` (`ReferenceRange`) - Pass the rect. Range to merge cells.
     pub fn set_merge_cell_mut(&mut self, ref_range: ReferenceRange) -> AnyResult<(), AnyError> {
         if let Some(merge_cells) = self.merge_cells.as_mut() {
             if !merge_cells.iter().any(|range| {
@@ -1701,26 +1760,11 @@ impl WorkSheet {
         Ok(())
     }
 
-    /// List all Cell Range merged
-    pub fn list_merge_cell_(&self) -> Option<Vec<ReferenceRange>> {
-        self.merge_cells.clone()
-    }
-
-    /// List All hyperlink in the sheet
-    pub fn list_hyperlinks(&self) -> Option<Vec<(Option<String>, String, ReferenceRange)>> {
-        if let Some(links) = self.hyperlinks.as_ref() {
-            Some(
-                links
-                    .iter()
-                    .map(|item| (item.display.clone(), item.link.clone(), item.range.clone()))
-                    .collect(),
-            )
-        } else {
-            None
-        }
-    }
-
-    /// Remove Link
+    /// Set Hyper Link
+    /// # Arguments
+    /// - `display` (`Option<String>`) - Diplay name if not provided `link` will be used.
+    /// - `link` (`String`) - URL link.
+    /// - `range` (`ReferenceRange`) - Provide rect. range for Hyperlink cell range.
     pub fn set_hyperlink_mut(
         &mut self,
         display: Option<String>,
@@ -1758,7 +1802,9 @@ impl WorkSheet {
         Ok(())
     }
 
-    /// Remove Link
+    /// Remove Hyper Link
+    /// # Arguments
+    /// - `range` (`ReferenceRange`) - Provide rect. range for Hyperlink cell range.
     pub fn remove_hyperlink_mut(&mut self, range: ReferenceRange) -> AnyResult<(), AnyError> {
         if let Some(hyperlinks) = self.hyperlinks.as_mut() {
             hyperlinks.retain(|link| {
@@ -1772,6 +1818,8 @@ impl WorkSheet {
     }
 
     /// Remove merged cell range
+    /// # Arguments
+    /// - `range` (`ReferenceRange`) - Provide rect. range for merge cell range.
     pub fn remove_merge_cell_mut(&mut self, range: ReferenceRange) -> AnyResult<(), AnyError> {
         if let Some(merge_range) = self.merge_cells.as_mut() {
             merge_range.retain(|reference_range| {
@@ -1806,5 +1854,50 @@ impl WorkSheet {
         }
         self.flush().context("Failed to flush the worksheet")?;
         Ok(())
+    }
+}
+
+// ##################################### Non Mut Feature Function ################################
+impl WorkSheet {
+    /// Get the excel cell value properies for provided range
+    /// # Arguments
+    /// - `range` (`ReferenceRange`) - Provide rect. range to get data.
+    /// - 0 value is considered as till the end or start
+    pub fn get_range_cell_properties(
+        &self,
+        range: ReferenceRange,
+    ) -> AnyResult<Vec<CellPackage>, AnyError> {
+        let mut data_range = Vec::new();
+        if let Some(rows) = self.sheet_data.as_ref() {
+            if range.row_end == 0 {
+                for (row_index, row_records) in rows.range(range.row_start..) {
+                    WorkSheet::extract_cell_records(&range, &mut data_range, row_index, row_records)?;
+                }
+            } else {
+                for (row_index, row_records) in rows.range(range.row_start..=range.row_end) {
+                    WorkSheet::extract_cell_records(&range, &mut data_range, row_index, row_records)?;
+                }
+            };
+        }
+        Ok(data_range)
+    }
+
+    /// List all Cell Range merged
+    pub fn list_merge_cell_(&self) -> Option<Vec<ReferenceRange>> {
+        self.merge_cells.clone()
+    }
+
+    /// List All hyperlink in the sheet
+    pub fn list_hyperlinks(&self) -> Option<Vec<(Option<String>, String, ReferenceRange)>> {
+        if let Some(links) = self.hyperlinks.as_ref() {
+            Some(
+                links
+                    .iter()
+                    .map(|item| (item.display.clone(), item.link.clone(), item.range.clone()))
+                    .collect(),
+            )
+        } else {
+            None
+        }
     }
 }

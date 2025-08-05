@@ -34,7 +34,10 @@ impl ConverterUtil {
         Ok(column_name)
     }
 
-    /// Return
+    /// Convert Row & Column Index in to Cell Ref
+    /// # Arguments
+    /// - `row_index` (`u32`) - Row Index Starting from 1
+    /// - `column_index` (`u16`) - Column Index Starting from 1.
     pub fn get_cell_ref(row_index: u32, column_index: u16) -> AnyResult<String, AnyError> {
         Ok(format!(
             "{}{}",
@@ -44,7 +47,9 @@ impl ConverterUtil {
         ))
     }
 
-    /// Return
+    /// Conver Cell Ref to Row & Column Index
+    /// # Arguments
+    /// - `cell_ref` (`&str`) - Cell Ref "A1" to convert.
     pub fn get_cell_index(cell_ref: &str) -> AnyResult<(u32, u16), AnyError> {
         Ok((
             Self::extract_digits(cell_ref).context("Failed to extract int key")?,

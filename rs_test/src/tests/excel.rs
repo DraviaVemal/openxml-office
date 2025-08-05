@@ -1,9 +1,10 @@
-use crate::{
-    global_2007::traits::XmlDocumentPartCommon,
+use chrono::Utc;
+use draviavemal_openxml_office::{
     log_elapsed,
     spreadsheet_2007::models::{ReferenceRange, StyleSetting},
+    traits::XmlDocumentPartCommon,
 };
-use chrono::Utc;
+
 use std::fs::{create_dir, exists};
 
 fn get_save_file(dynamic_path: Option<&str>) -> String {
@@ -21,11 +22,11 @@ fn get_save_file(dynamic_path: Option<&str>) -> String {
 
 #[test]
 fn blank_excel() {
-    let file = crate::spreadsheet_2007::Excel::new(
+    let file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         None,
-        crate::spreadsheet_2007::ExcelPropertiesModel {
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
             is_editable: true,
-            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
+            ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Create New File Failed");
@@ -36,9 +37,9 @@ fn blank_excel() {
 
 #[test]
 fn excel_handling() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         None,
-        crate::spreadsheet_2007::ExcelPropertiesModel::default(),
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default(),
     )
     .expect("Create New File Failed");
     file.add_sheet_mut(Some("Test".to_string()))
@@ -62,9 +63,9 @@ fn excel_handling() {
 
 #[test]
 fn sheet_handling() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         None,
-        crate::spreadsheet_2007::ExcelPropertiesModel::default(),
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default(),
     )
     .expect("Create New File Failed");
     file.add_sheet_mut(Some("Test".to_string()))
@@ -98,45 +99,45 @@ fn sheet_handling() {
 
 #[test]
 fn excel_workbook_view() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         None,
-        crate::spreadsheet_2007::ExcelPropertiesModel::default(),
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default(),
     )
     .expect("Create New File Failed");
     file.minimize_workbook_mut(true)
         .expect("Failed to minimize workbook");
     file.save_as(&format!("{}", &get_save_file(Some("min"))))
         .expect("File Save Failed");
-    file = crate::spreadsheet_2007::Excel::new(
+    file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         None,
-        crate::spreadsheet_2007::ExcelPropertiesModel::default(),
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default(),
     )
     .expect("Create New File Failed");
     file.set_visibility_mut(false)
         .expect("Failed to add static Sheet");
     file.save_as(&format!("{}", &get_save_file(Some("hide"))))
         .expect("File Save Failed");
-    file = crate::spreadsheet_2007::Excel::new(
+    file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         None,
-        crate::spreadsheet_2007::ExcelPropertiesModel::default(),
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default(),
     )
     .expect("Create New File Failed");
     file.hide_horizontal_scroll_mut(true)
         .expect("Failed to add static Sheet");
     file.save_as(&format!("{}", &get_save_file(Some("show_hor_scroll"))))
         .expect("File Save Failed");
-    file = crate::spreadsheet_2007::Excel::new(
+    file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         None,
-        crate::spreadsheet_2007::ExcelPropertiesModel::default(),
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default(),
     )
     .expect("Create New File Failed");
     file.hide_vertical_scroll_mut(true)
         .expect("Failed to add static Sheet");
     file.save_as(&format!("{}", &get_save_file(Some("show_ver_scroll"))))
         .expect("File Save Failed");
-    file = crate::spreadsheet_2007::Excel::new(
+    file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         None,
-        crate::spreadsheet_2007::ExcelPropertiesModel::default(),
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default(),
     )
     .expect("Create New File Failed");
     file.hide_sheet_tabs_mut(true)
@@ -148,11 +149,11 @@ fn excel_workbook_view() {
 
 #[test]
 fn set_row_property() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
-        crate::spreadsheet_2007::ExcelPropertiesModel {
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
             is_editable: true,
-            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
+            ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
@@ -162,39 +163,32 @@ fn set_row_property() {
     row_prop
         .set_row_index_properties_mut(
             &1,
-            crate::spreadsheet_2007::models::RowProperties {
-                height: Some(100 as f32),
-                ..crate::spreadsheet_2007::models::RowProperties::default()
-            },
+            draviavemal_openxml_office::spreadsheet_2007::models::RowProperties::default()
+                .set_height(Some(100 as f32)),
         )
         .expect("Failed to set row height");
     row_prop
         .set_row_index_properties_mut(
             &3,
-            crate::spreadsheet_2007::models::RowProperties {
-                hidden: Some(true),
-                ..crate::spreadsheet_2007::models::RowProperties::default()
-            },
+            draviavemal_openxml_office::spreadsheet_2007::models::RowProperties::default()
+                .set_hidden(Some(true)),
         )
         .expect("Failed to set row height");
     row_prop
         .set_row_index_properties_mut(
             &5,
-            crate::spreadsheet_2007::models::RowProperties {
-                thick_bottom: Some(true),
-                ..crate::spreadsheet_2007::models::RowProperties::default()
-            },
+            draviavemal_openxml_office::spreadsheet_2007::models::RowProperties::default()
+                .set_thick_top(Some(true)),
         )
-        .expect("Failed to set row height");
+        .expect("Failed to set thick top");
     row_prop
         .set_row_index_properties_mut(
             &7,
-            crate::spreadsheet_2007::models::RowProperties {
-                thick_top: Some(true),
-                ..crate::spreadsheet_2007::models::RowProperties::default()
-            },
+            draviavemal_openxml_office::spreadsheet_2007::models::RowProperties::default()
+                .set_thick_bottom(Some(true)),
         )
-        .expect("Failed to set row height");
+        .expect("Failed to set thick bottom");
+
     row_prop.flush().expect("Failed to write Data");
     file.save_as(&get_save_file(None))
         .expect("Save File Failed");
@@ -203,16 +197,16 @@ fn set_row_property() {
 
 #[test]
 fn merge_cell_property() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/merge_links.xlsx".to_string()),
-        crate::spreadsheet_2007::ExcelPropertiesModel {
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
             is_editable: true,
-            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
+            ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
     {
-        let mut worksheet = file
+        let worksheet = file
             .get_worksheet_mut("Sheet1".to_string())
             .expect("Failed to open the sheet");
         let result = worksheet.list_merge_cell_();
@@ -229,12 +223,14 @@ fn merge_cell_property() {
                 .expect("Failed to Remove Merge Range");
         }
         edit_worksheet
-            .set_merge_cell_mut(crate::spreadsheet_2007::models::ReferenceRange {
-                column_start: 1,
-                column_end: 1,
-                row_start: 1,
-                row_end: 10,
-            })
+            .set_merge_cell_mut(
+                draviavemal_openxml_office::spreadsheet_2007::models::ReferenceRange {
+                    column_start: 1,
+                    column_end: 1,
+                    row_start: 1,
+                    row_end: 10,
+                },
+            )
             .expect("Failed to Insert Merge Range");
     }
     file.save_as(&get_save_file(None))
@@ -244,11 +240,11 @@ fn merge_cell_property() {
 
 #[test]
 fn hyperlink_cell_property() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/merge_links.xlsx".to_string()),
-        crate::spreadsheet_2007::ExcelPropertiesModel {
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
             is_editable: true,
-            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
+            ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
@@ -293,12 +289,38 @@ fn hyperlink_cell_property() {
 }
 
 #[test]
-fn set_column_property() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+fn get_range_data() {
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
-        crate::spreadsheet_2007::ExcelPropertiesModel {
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
             is_editable: true,
-            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
+            ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
+        },
+    )
+    .expect("Open Existing File Failed");
+    let worksheet = file
+        .get_worksheet_mut("formula".to_string())
+        .expect("Failed to get worksheet");
+    let data = worksheet
+        .get_range_cell_properties(ReferenceRange {
+            column_start: 1,
+            column_end: 0,
+            row_start: 3,
+            row_end: 10,
+        })
+        .expect("Failed to get range data");
+    file.save_as(&get_save_file(None))
+        .expect("Save File Failed");
+    assert!(true);
+}
+
+#[test]
+fn set_column_property() {
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
+        Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
+            is_editable: true,
+            ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
@@ -308,30 +330,30 @@ fn set_column_property() {
     col_prop
         .set_column_index_properties_mut(
             &1,
-            Some(crate::spreadsheet_2007::models::ColumnProperties {
-                width: Some(200 as f32),
-                ..crate::spreadsheet_2007::models::ColumnProperties::default()
-            }),
+            Some(
+                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                    .set_width(Some(200 as f32)),
+            ),
         )
-        .expect("Failed to Set Column prop");
+        .expect("Failed to Set width Column prop");
     col_prop
         .set_column_index_properties_mut(
             &3,
-            Some(crate::spreadsheet_2007::models::ColumnProperties {
-                hidden: Some(true),
-                ..crate::spreadsheet_2007::models::ColumnProperties::default()
-            }),
+            Some(
+                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                    .set_hidden(Some(true)),
+            ),
         )
-        .expect("Failed to Set Column prop");
+        .expect("Failed to Set hidden prop");
     col_prop
         .set_column_index_properties_mut(
             &5,
-            Some(crate::spreadsheet_2007::models::ColumnProperties {
-                best_fit: Some(true),
-                ..crate::spreadsheet_2007::models::ColumnProperties::default()
-            }),
+            Some(
+                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                    .set_best_fit(Some(true)),
+            ),
         )
-        .expect("Failed to Set Column prop");
+        .expect("Failed to Set best fit Column prop");
     col_prop.flush().expect("Failed to write Data");
     file.save_as(&get_save_file(None))
         .expect("Save File Failed");
@@ -340,18 +362,18 @@ fn set_column_property() {
 
 #[test]
 fn set_cell_style() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
-        crate::spreadsheet_2007::ExcelPropertiesModel {
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
             is_editable: true,
-            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
+            ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
     let style_id = file
-        .get_style_id_mut(crate::spreadsheet_2007::models::StyleSetting {
-            ..crate::spreadsheet_2007::models::StyleSetting::default()
-        })
+        .get_style_id_mut(
+            draviavemal_openxml_office::spreadsheet_2007::models::StyleSetting::default(),
+        )
         .expect("Failed to get Style Id");
     {
         let mut formula = file
@@ -361,22 +383,13 @@ fn set_cell_style() {
             .set_row_value_ref_mut(
                 "V3",
                 vec![
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Dravia".to_string()),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Vemal".to_string()),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("style".to_string()),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        style_id: Some(style_id),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Dravia".to_string())),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Vemal".to_string())),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Vemal".to_string()))
+                        .set_style_id(Some(style_id)),
                 ],
             )
             .expect("Failed To Set Row Value");
@@ -392,40 +405,25 @@ fn set_cell_style() {
 
 #[test]
 fn blank_style_excel() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         None,
-        crate::spreadsheet_2007::ExcelPropertiesModel::default(),
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default(),
     )
     .expect("Open Existing File Failed");
     let bold_id = file
-        .get_style_id_mut(StyleSetting {
-            is_bold: true,
-            ..StyleSetting::default()
-        })
+        .get_style_id_mut(StyleSetting::default().set_is_bold(true))
         .expect("Failed bold ID");
     let italic_id = file
-        .get_style_id_mut(StyleSetting {
-            is_italic: true,
-            ..StyleSetting::default()
-        })
+        .get_style_id_mut(StyleSetting::default().set_is_italic(true))
         .expect("Failed italic ID");
     let underline_id = file
-        .get_style_id_mut(StyleSetting {
-            is_underline: true,
-            ..StyleSetting::default()
-        })
+        .get_style_id_mut(StyleSetting::default().set_is_underline(true))
         .expect("Failed underline ID");
     let double_id = file
-        .get_style_id_mut(StyleSetting {
-            is_double_underline: true,
-            ..StyleSetting::default()
-        })
+        .get_style_id_mut(StyleSetting::default().set_is_double_underline(true))
         .expect("Failed double underline ID");
     let wrap_text_id = file
-        .get_style_id_mut(StyleSetting {
-            is_wrap_text: true,
-            ..StyleSetting::default()
-        })
+        .get_style_id_mut(StyleSetting::default().set_is_wrap_text(true))
         .expect("Failed wrape ID");
     {
         let mut formula = file
@@ -435,42 +433,28 @@ fn blank_style_excel() {
             .set_row_value_ref_mut(
                 "V3",
                 vec![
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Dravia".to_string()),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Vemal".to_string()),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Bold".to_string()),
-                        style_id: Some(bold_id),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Italic".to_string()),
-                        style_id: Some(italic_id),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("underline".to_string()),
-                        style_id: Some(underline_id),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("double underline".to_string()),
-                        style_id: Some(double_id),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some(
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Dravia".to_string())),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Vemal".to_string())),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Bold".to_string()))
+                        .set_style_id(Some(bold_id)),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Italic".to_string()))
+                        .set_style_id(Some(italic_id)),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("underline".to_string()))
+                        .set_style_id(Some(underline_id)),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("double underline".to_string()))
+                        .set_style_id(Some(double_id)),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some(
                             "This is a very long line to wrap the column. Test the wrap string"
                                 .to_string(),
-                        ),
-                        style_id: Some(wrap_text_id),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
+                        ))
+                        .set_style_id(Some(wrap_text_id)),
                 ],
             )
             .expect("Failed To Set Row Value");
@@ -481,43 +465,28 @@ fn blank_style_excel() {
 
 #[test]
 fn edit_excel() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
-        crate::spreadsheet_2007::ExcelPropertiesModel {
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
             is_editable: true,
-            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
+            ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
     let bold_id = file
-        .get_style_id_mut(StyleSetting {
-            is_bold: true,
-            ..StyleSetting::default()
-        })
+        .get_style_id_mut(StyleSetting::default().set_is_bold(true))
         .expect("Failed bold ID");
     let italic_id = file
-        .get_style_id_mut(StyleSetting {
-            is_italic: true,
-            ..StyleSetting::default()
-        })
+        .get_style_id_mut(StyleSetting::default().set_is_italic(true))
         .expect("Failed italic ID");
     let underline_id = file
-        .get_style_id_mut(StyleSetting {
-            is_underline: true,
-            ..StyleSetting::default()
-        })
+        .get_style_id_mut(StyleSetting::default().set_is_underline(true))
         .expect("Failed underline ID");
     let double_id = file
-        .get_style_id_mut(StyleSetting {
-            is_double_underline: true,
-            ..StyleSetting::default()
-        })
+        .get_style_id_mut(StyleSetting::default().set_is_double_underline(true))
         .expect("Failed double underline ID");
     let wrap_text_id = file
-        .get_style_id_mut(StyleSetting {
-            is_wrap_text: true,
-            ..StyleSetting::default()
-        })
+        .get_style_id_mut(StyleSetting::default().set_is_wrap_text(true))
         .expect("Failed wrape ID");
     {
         let mut formula = file
@@ -527,49 +496,28 @@ fn edit_excel() {
             .set_row_value_ref_mut(
                 "V3",
                 vec![
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Dravia".to_string()),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Vemal".to_string()),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Bold".to_string()),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        style_id: Some(bold_id),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Italic".to_string()),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        style_id: Some(italic_id),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("underline".to_string()),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        style_id: Some(underline_id),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("double underline".to_string()),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        style_id: Some(double_id),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some(
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Dravia".to_string())),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Vemal".to_string())),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Bold".to_string()))
+                        .set_style_id(Some(bold_id)),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Italic".to_string()))
+                        .set_style_id(Some(italic_id)),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("underline".to_string()))
+                        .set_style_id(Some(underline_id)),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("double underline".to_string()))
+                        .set_style_id(Some(double_id)),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some(
                             "This is a very long line to wrap the column. Test the wrap string"
                                 .to_string(),
-                        ),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        style_id: Some(wrap_text_id),
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
+                        ))
+                        .set_style_id(Some(wrap_text_id)),
                 ],
             )
             .expect("Failed To Set Row Value");
@@ -586,11 +534,11 @@ fn edit_excel() {
 #[test]
 #[ignore]
 fn edit_large_excel() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         Some("src/tests/TestFiles/large_file.xlsx".to_string()),
-        crate::spreadsheet_2007::ExcelPropertiesModel {
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
             is_editable: true,
-            ..crate::spreadsheet_2007::ExcelPropertiesModel::default()
+            ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
         },
     )
     .expect("Open Existing File Failed");
@@ -602,16 +550,10 @@ fn edit_large_excel() {
             .set_row_value_ref_mut(
                 "V3",
                 vec![
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Dravia".to_string()),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
-                    crate::spreadsheet_2007::models::CellProperties {
-                        value: Some("Vemal".to_string()),
-                        data_type: crate::spreadsheet_2007::models::CellDataType::Auto,
-                        ..crate::spreadsheet_2007::models::CellProperties::default()
-                    },
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Dravia".to_string())),
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                        .set_value(Some("Vemal".to_string())),
                 ],
             )
             .expect("Failed To Set Row Value");
@@ -624,9 +566,9 @@ fn edit_large_excel() {
 #[test]
 #[ignore]
 fn large_excel() {
-    let mut file = crate::spreadsheet_2007::Excel::new(
+    let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
         None,
-        crate::spreadsheet_2007::ExcelPropertiesModel::default(),
+        draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default(),
     )
     .expect("Open Existing File Failed");
     {
@@ -641,10 +583,7 @@ fn large_excel() {
                             row,
                             1,
                             (1..10)
-                                .map(|_| crate::spreadsheet_2007::models::CellProperties {
-                                    value: Some("Test".to_string()),
-                                    ..crate::spreadsheet_2007::models::CellProperties::default()
-                                })
+                                .map(|_| draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default().set_value(Some("Test".to_string())))
                                 .collect(),
                         )
                         .expect("Failed to Set Row Value");

@@ -1,3 +1,21 @@
 [workspace]
 resolver = "2"
-members = ["rs", "rs_ffi", "rs_api"]
+members = ["rs", "rs_ffi", "rs_api", "rs_test"]
+
+[workspace.dependencies]
+uuid = { version = "1.11.0", features = [
+    "v4",
+    "fast-rng",
+    "macro-diagnostics",
+] }
+anyhow = "1.0.90"
+chrono = "0.4.38"
+flate2 = "1.0.34"
+quick-xml = { version = "0.37.0" }
+tempfile = "3.13.0"
+zip = "2.3.0"
+serde = { version = "1.0.215", features = ["derive"] }
+phf = { version = "0.11.2", features = ["macros"] }
+tokio = "1.43.1"
+rand = "0.8.5"
+dashmap = "6.1.0"
