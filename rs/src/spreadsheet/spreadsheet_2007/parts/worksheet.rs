@@ -1871,11 +1871,21 @@ impl WorkSheet {
         if let Some(rows) = self.sheet_data.as_ref() {
             if range.row_end == 0 {
                 for (row_index, row_records) in rows.range(range.row_start..) {
-                    WorkSheet::extract_cell_records(&range, &mut data_range, row_index, row_records)?;
+                    WorkSheet::extract_cell_records(
+                        &range,
+                        &mut data_range,
+                        row_index,
+                        row_records,
+                    )?;
                 }
             } else {
                 for (row_index, row_records) in rows.range(range.row_start..=range.row_end) {
-                    WorkSheet::extract_cell_records(&range, &mut data_range, row_index, row_records)?;
+                    WorkSheet::extract_cell_records(
+                        &range,
+                        &mut data_range,
+                        row_index,
+                        row_records,
+                    )?;
                 }
             };
         }
