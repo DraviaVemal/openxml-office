@@ -502,6 +502,94 @@ pub struct StyleSetting {
     pub(crate) protect: Option<()>,
 }
 
+impl StyleSetting {
+    pub fn set_number_format(mut self, number_format: NumberFormatValues) -> StyleSetting {
+        self.number_format = number_format;
+        self
+    }
+    pub fn set_custom_number_format(
+        mut self,
+        custom_number_format: Option<String>,
+    ) -> StyleSetting {
+        self.custom_number_format = custom_number_format;
+        self
+    }
+    pub fn set_border_left(mut self, border_left: BorderSetting) -> StyleSetting {
+        self.border_left = border_left;
+        self
+    }
+    pub fn set_border_top(mut self, border_top: BorderSetting) -> StyleSetting {
+        self.border_top = border_top;
+        self
+    }
+    pub fn set_border_right(mut self, border_right: BorderSetting) -> StyleSetting {
+        self.border_right = border_right;
+        self
+    }
+    pub fn set_border_bottom(mut self, border_bottom: BorderSetting) -> StyleSetting {
+        self.border_bottom = border_bottom;
+        self
+    }
+    pub fn set_border_diagonal(mut self, border_diagonal: BorderSetting) -> StyleSetting {
+        self.border_diagonal = border_diagonal;
+        self
+    }
+    pub fn set_font_family(mut self, font_family: String) -> StyleSetting {
+        self.font_family = font_family;
+        self
+    }
+    pub fn set_font_size(mut self, font_size: u8) -> StyleSetting {
+        self.font_size = font_size;
+        self
+    }
+    pub fn set_text_color(mut self, text_color: ColorSetting) -> StyleSetting {
+        self.text_color = text_color;
+        self
+    }
+    pub fn set_is_bold(mut self, is_bold: bool) -> StyleSetting {
+        self.is_bold = is_bold;
+        self
+    }
+    pub fn set_is_italic(mut self, is_italic: bool) -> StyleSetting {
+        self.is_italic = is_italic;
+        self
+    }
+    pub fn set_is_underline(mut self, is_underline: bool) -> StyleSetting {
+        self.is_underline = is_underline;
+        self
+    }
+    pub fn set_is_double_underline(mut self, is_double_underline: bool) -> StyleSetting {
+        self.is_double_underline = is_double_underline;
+        self
+    }
+    pub fn set_is_wrap_text(mut self, is_wrap_text: bool) -> StyleSetting {
+        self.is_wrap_text = is_wrap_text;
+        self
+    }
+    pub fn set_background_color(mut self, background_color: Option<String>) -> StyleSetting {
+        self.background_color = background_color;
+        self
+    }
+    pub fn set_foreground_color(mut self, foreground_color: Option<String>) -> StyleSetting {
+        self.foreground_color = foreground_color;
+        self
+    }
+    pub fn set_horizontal_alignment(
+        mut self,
+        horizontal_alignment: HorizontalAlignmentValues,
+    ) -> StyleSetting {
+        self.horizontal_alignment = horizontal_alignment;
+        self
+    }
+    pub fn set_vertical_alignment(
+        mut self,
+        vertical_alignment: VerticalAlignmentValues,
+    ) -> StyleSetting {
+        self.vertical_alignment = vertical_alignment;
+        self
+    }
+}
+
 impl Default for StyleSetting {
     fn default() -> Self {
         Self {
@@ -539,7 +627,7 @@ impl Default for StyleSetting {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct StyleId {
     pub(crate) id: u32,
 }

@@ -41,6 +41,7 @@ __pycache__/
 dist/
 build/
 *.venv/
+.eggs
 
 # Go
 *.test

@@ -1,5 +1,5 @@
-pub(crate) mod enums;
-pub(crate) mod xml_parts;
+pub mod enums;
+pub mod xml_parts;
 
 pub use enums::*;
-pub(crate) use xml_parts::*;
+pub use xml_parts::*;

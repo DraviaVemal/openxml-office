@@ -3,7 +3,7 @@ use crate::global_2007::parts::RelationsPart;
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use std::{cell::RefCell, rc::Weak};
 
-pub(crate) trait XmlDocumentPartCommon {
+pub trait XmlDocumentPartCommon {
     /// Save the current file state
     fn flush(mut self) -> AnyResult<(), AnyError>
     where
