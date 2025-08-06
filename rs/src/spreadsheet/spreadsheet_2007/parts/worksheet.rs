@@ -1474,6 +1474,7 @@ impl WorkSheet {
     }
 
     fn extract_cell_records(
+        &self,
         range: &ReferenceRange,
         data_range: &mut Vec<CellPackage>,
         row_index: &u32,
@@ -1490,7 +1491,7 @@ impl WorkSheet {
                         .context("Failed to parse Cell Ref")?,
                         row_index: row_index.clone(),
                         column_index: column_index.clone(),
-                        cell_property: cell_property.clone(),
+                        cell_property: self.normalize_cell_property(cell_property)?,
                     });
                 }
             } else {
@@ -1505,12 +1506,29 @@ impl WorkSheet {
                         .context("Failed to parse Cell Ref")?,
                         row_index: row_index.clone(),
                         column_index: column_index.clone(),
-                        cell_property: cell_property.clone(),
+                        cell_property: self.normalize_cell_property(cell_property)?,
                     });
                 }
             }
         }
         Ok(())
+    }
+
+    fn normalize_cell_property(
+        &self,
+        cell_prop: &CellProperties,
+    ) -> Result<CellProperties, AnyError> {
+        let mut parsed_property = cell_prop.clone();
+        if parsed_property.data_type == CellDataType::ShareString {
+            if let Some(cmn_service) = self.common_service.upgrade() {
+                let actual_value = cmn_service
+                    .borrow()
+                    .get_string_id_value(parsed_property.value.unwrap())
+                    .context("Failed to normalize share string")?;
+                parsed_property.value = Some(actual_value);
+            }
+        }
+        Ok(parsed_property)
     }
 }
 
@@ -1871,21 +1889,11 @@ impl WorkSheet {
         if let Some(rows) = self.sheet_data.as_ref() {
             if range.row_end == 0 {
                 for (row_index, row_records) in rows.range(range.row_start..) {
-                    WorkSheet::extract_cell_records(
-                        &range,
-                        &mut data_range,
-                        row_index,
-                        row_records,
-                    )?;
+                    self.extract_cell_records(&range, &mut data_range, row_index, row_records)?;
                 }
             } else {
                 for (row_index, row_records) in rows.range(range.row_start..=range.row_end) {
-                    WorkSheet::extract_cell_records(
-                        &range,
-                        &mut data_range,
-                        row_index,
-                        row_records,
-                    )?;
+                    self.extract_cell_records(&range, &mut data_range, row_index, row_records)?;
                 }
             };
         }
