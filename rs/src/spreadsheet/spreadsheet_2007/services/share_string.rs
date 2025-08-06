@@ -203,4 +203,15 @@ impl ShareStringPart {
             },
         )
     }
+    
+    pub(crate) fn get_string_id_value(&self, id: String) -> AnyResult<String, AnyError> {
+        let actual_string = self
+            .share_string_collection
+            .get(
+                id.parse::<usize>()
+                    .context("Failed to parse Share String Id")?,
+            )
+            .context("Failed to find the value in the Vec")?;
+        Ok(actual_string.to_string())
+    }
 }
