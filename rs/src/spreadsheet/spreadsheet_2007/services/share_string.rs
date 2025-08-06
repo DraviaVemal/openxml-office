@@ -203,7 +203,7 @@ impl ShareStringPart {
             },
         )
     }
-    
+
     pub(crate) fn get_string_id_value(&self, id: String) -> AnyResult<String, AnyError> {
         let actual_string = self
             .share_string_collection
