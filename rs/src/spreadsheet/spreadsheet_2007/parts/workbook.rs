@@ -518,19 +518,28 @@ impl WorkbookPart {
     }
 
     pub(crate) fn get_worksheet_mut(&mut self, sheet_name: &str) -> AnyResult<WorkSheet, AnyError> {
-        log_elapsed!(
-            || {
-                WorkSheet::new(
-                    self.office_document.clone(),
-                    Rc::downgrade(&self.sheet_collection),
-                    Rc::downgrade(&self.workbook_relationship_part),
-                    Rc::downgrade(&self.common_service),
-                    Some(sheet_name.to_string()),
-                )
-                .context("Worksheet Creation Failed")
-            },
-            "Get Exiting Workbook"
-        )
+        if self
+            .sheet_collection
+            .borrow()
+            .iter()
+            .any(|(ref_sheet_name, _, _, _)| ref_sheet_name == sheet_name)
+        {
+            log_elapsed!(
+                || {
+                    WorkSheet::new(
+                        self.office_document.clone(),
+                        Rc::downgrade(&self.sheet_collection),
+                        Rc::downgrade(&self.workbook_relationship_part),
+                        Rc::downgrade(&self.common_service),
+                        Some(sheet_name.to_string()),
+                    )
+                    .context("Worksheet Creation Failed")
+                },
+                "Get Exiting Workbook"
+            )
+        } else {
+            Err(anyhow!("Sheet Not Found!"))
+        }
     }
 
     /// Set Active sheet on opening the excel
