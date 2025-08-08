@@ -1,8 +1,8 @@
-use std::fs;
 use std::process::Command;
+use std::{env, fs};
 
 fn main() {
-    if std::env::var("DEVOPS_BUILD").unwrap_or_default() == "1" {
+    if env::var("DEVOPS_BUILD").unwrap_or_default() == "1" {
         Command::new("git")
             .args(["fetch", "--tags", "--force"])
             .output()

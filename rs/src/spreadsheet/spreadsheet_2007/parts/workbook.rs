@@ -1,10 +1,12 @@
+// TODO
+// Move Sheet Is pending - Note : Should hadle calculation chain ref when adding
 use crate::{
     converters::ConverterUtil,
     element_dictionary::EXCEL_TYPE_COLLECTION,
     files::{OfficeDocument, XmlDeSerializer, XmlDocument},
     global_2007::{
         parts::{RelationsPart, ThemePart},
-        traits::{XmlDocumentClose, XmlDocumentPart, XmlDocumentPartCommon},
+        traits::{XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartInitializing},
     },
     log_elapsed,
     order_dictionary::EXCEL_ORDER_COLLECTION,
@@ -69,7 +71,7 @@ impl Drop for WorkbookPart {
     }
 }
 
-impl XmlDocumentClose for WorkbookPart {
+impl XmlDocumentPartClose for WorkbookPart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>
     where
         Self: Sized,
@@ -212,7 +214,7 @@ impl XmlDocumentClose for WorkbookPart {
     }
 }
 
-impl XmlDocumentPartCommon for WorkbookPart {
+impl XmlDocumentPartInitializing for WorkbookPart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
@@ -515,16 +517,17 @@ impl WorkbookPart {
             Rc::downgrade(&self.workbook_relationship_part),
             Rc::downgrade(&self.common_service),
             sheet_name,
+            self.sheet_collection.borrow().len() as u32,
         )
         .context("Worksheet Creation Failed")?)
     }
 
     pub(crate) fn get_worksheet_mut(&mut self, sheet_name: &str) -> AnyResult<WorkSheet, AnyError> {
-        if self
+        if let Some(sheet_id) = self
             .sheet_collection
             .borrow()
             .iter()
-            .any(|(ref_sheet_name, _, _, _)| ref_sheet_name == sheet_name)
+            .position(|(ref_sheet_name, _, _, _)| ref_sheet_name == sheet_name)
         {
             log_elapsed!(
                 || {
@@ -534,6 +537,7 @@ impl WorkbookPart {
                         Rc::downgrade(&self.workbook_relationship_part),
                         Rc::downgrade(&self.common_service),
                         Some(sheet_name.to_string()),
+                        sheet_id as u32,
                     )
                     .context("Worksheet Creation Failed")
                 },

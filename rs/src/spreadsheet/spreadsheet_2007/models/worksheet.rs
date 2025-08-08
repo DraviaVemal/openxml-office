@@ -138,7 +138,15 @@ impl Default for ColumnProperties {
         }
     }
 }
-
+/// Describe this struct.
+/// # Fields
+/// - `formula` (`Option<String>`) - Describe this field.
+/// - `value` (`Option<String>`) - Describe this field.
+/// - `data_type` (`CellDataType`) - Describe this field.
+/// - `style_id` (`Option<StyleId>`) - Describe this field.
+/// - `metadata` (`Option<String>`) - Describe this field.
+/// - `comment_id` (`Option<usize>`) - Describe this field.
+/// - `place_holder` (`Option<bool>`) - Describe this field.
 #[derive(Debug, Clone)]
 pub struct CellProperties {
     pub formula: Option<String>,
@@ -152,18 +160,30 @@ pub struct CellProperties {
 }
 
 impl CellProperties {
+    /// Cell Formula of the cell. Use set_value to update resolved intital value.
+    /// # Arguments
+    /// - `formula` (`Option<String>`) - Set Formula for the cell.
     pub fn set_formula(mut self, formula: Option<String>) -> CellProperties {
         self.formula = formula;
         self
     }
+    /// Set the value of the current cell
+    /// # Arguments
+    /// - `value` (`Option<String>`) - Set Formula for the cell.
     pub fn set_value(mut self, value: Option<String>) -> CellProperties {
         self.value = value;
         self
     }
+    /// Set data type of the value cell. Use "set_formula" is you are trying to insert formula
+    /// # Arguments
+    /// - `data_type` (`CellDataType`) - Describe this parameter.
     pub fn set_data_type(mut self, data_type: CellDataType) -> CellProperties {
         self.data_type = data_type;
         self
     }
+    /// Update the style id from result of excel book
+    /// # Arguments
+    /// - `style_id` (`Option<StyleId>`) - Set style value for the current cell.
     pub fn set_style_id(mut self, style_id: Option<StyleId>) -> CellProperties {
         self.style_id = style_id;
         self

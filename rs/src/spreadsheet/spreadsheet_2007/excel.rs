@@ -2,7 +2,7 @@ use crate::{
     files::OfficeDocument,
     global_2007::{
         parts::{CorePropertiesPart, RelationsPart},
-        traits::{XmlDocumentClose, XmlDocumentPart},
+        traits::{XmlDocumentPartClose, XmlDocumentPart},
     },
     log_elapsed,
     spreadsheet_2007::{

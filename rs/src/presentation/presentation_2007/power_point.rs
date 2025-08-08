@@ -2,7 +2,7 @@ use crate::{
     files::OfficeDocument,
     global_2007::{
         parts::{CorePropertiesPart, RelationsPart},
-        traits::{XmlDocumentClose, XmlDocumentPart},
+        traits::{XmlDocumentPartClose, XmlDocumentPart},
     },
 };
 use anyhow::{Context, Error as AnyError, Result as AnyResult};

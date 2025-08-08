@@ -1,10 +1,10 @@
 use crate::element_dictionary::COMMON_TYPE_COLLECTION;
-use crate::global_2007::traits::XmlDocumentClose;
+use crate::global_2007::traits::XmlDocumentPartClose;
 use crate::{
     files::{OfficeDocument, XmlDeSerializer, XmlDocument},
     global_2007::{
         parts::RelationsPart,
-        traits::{XmlDocumentPart, XmlDocumentPartCommon},
+        traits::{XmlDocumentPart, XmlDocumentPartInitializing},
     },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
@@ -23,7 +23,7 @@ impl Drop for ThemePart {
     }
 }
 
-impl XmlDocumentClose for ThemePart {
+impl XmlDocumentPartClose for ThemePart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>
     where
         Self: Sized,
@@ -38,7 +38,7 @@ impl XmlDocumentClose for ThemePart {
     }
 }
 
-impl XmlDocumentPartCommon for ThemePart {
+impl XmlDocumentPartInitializing for ThemePart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {

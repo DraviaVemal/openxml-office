@@ -3,7 +3,7 @@ use crate::global_2007::parts::RelationsPart;
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use std::{cell::RefCell, rc::Weak};
 
-pub trait XmlDocumentClose {
+pub trait XmlDocumentPartClose {
     /// Save the current file state
     fn flush(mut self) -> AnyResult<(), AnyError>
     where
@@ -17,7 +17,7 @@ pub trait XmlDocumentClose {
         Self: Sized;
 }
 
-pub(crate) trait XmlDocumentPartCommon: XmlDocumentClose {
+pub(crate) trait XmlDocumentPartInitializing: XmlDocumentPartClose {
     /// Get content of the current xml
     fn get_xml_document(
         office_document: &Weak<RefCell<OfficeDocument>>,
@@ -57,7 +57,9 @@ pub(crate) trait XmlDocumentPartCommon: XmlDocumentClose {
 }
 
 #[warn(drop_bounds)]
-pub(crate) trait XmlDocumentPart: XmlDocumentPartCommon {
+pub(crate) trait XmlDocumentPart:
+    XmlDocumentPartInitializing + XmlDocumentPartClose
+{
     /// Create new object with file connector handle
     fn new(
         office_document: Weak<RefCell<OfficeDocument>>,
