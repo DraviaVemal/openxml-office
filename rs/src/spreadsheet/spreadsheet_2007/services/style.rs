@@ -112,7 +112,8 @@ impl XmlDocumentPart for StylePart {
             border_collection,
             cell_style_collection,
             cell_collection,
-        ) = Self::deserialize_content(&mut xml_document).context("Load Share String To Object Failed")?;
+        ) = Self::deserialize_content(&mut xml_document)
+            .context("Load Share String To Object Failed")?;
         Ok(Self {
             office_document,
             xml_document,
