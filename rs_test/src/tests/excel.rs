@@ -1,8 +1,8 @@
 use chrono::Utc;
 use draviavemal_openxml_office::{
+    global_2007::traits::XmlDocumentClose,
     log_elapsed,
     spreadsheet_2007::models::{ReferenceRange, StyleSetting},
-    traits::XmlDocumentPartCommon,
 };
 
 use std::fs::{create_dir, exists};

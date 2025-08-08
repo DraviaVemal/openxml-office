@@ -1,10 +1,10 @@
 use crate::{
     converters::ConverterUtil,
     element_dictionary::EXCEL_TYPE_COLLECTION,
-    files::{OfficeDocument, XmlDocument, XmlElement, XmlSerializer},
+    files::{OfficeDocument, XmlDeSerializer, XmlDocument, XmlElement},
     global_2007::{
         parts::RelationsPart,
-        traits::{Enum, XmlDocumentPart, XmlDocumentPartCommon},
+        traits::{Enum, XmlDocumentClose, XmlDocumentPart, XmlDocumentPartCommon},
     },
     log_elapsed,
     spreadsheet_2007::models::{
@@ -44,7 +44,7 @@ impl Drop for StylePart {
     }
 }
 
-impl XmlDocumentPartCommon for StylePart {
+impl XmlDocumentClose for StylePart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>
     where
         Self: Sized,
@@ -76,12 +76,15 @@ impl XmlDocumentPartCommon for StylePart {
             "Close Style Service"
         )
     }
+}
+
+impl XmlDocumentPartCommon for StylePart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
         let content = EXCEL_TYPE_COLLECTION.get("style").unwrap();
         Ok((
-            XmlSerializer::vec_to_xml_doc_tree(
+            XmlDeSerializer::vec_to_xml_doc_tree(
                 include_str!("style.xml").as_bytes().to_vec(),
                 "Default Style",
             )

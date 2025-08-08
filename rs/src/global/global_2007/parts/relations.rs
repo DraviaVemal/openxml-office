@@ -1,7 +1,7 @@
 use crate::{
     element_dictionary::{Content, COMMON_TYPE_COLLECTION},
     files::{OfficeDocument, XmlDocument},
-    global_2007::traits::XmlDocumentPartCommon,
+    global_2007::traits::{XmlDocumentClose, XmlDocumentPartCommon},
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use std::{cell::RefCell, collections::HashMap, rc::Weak};
@@ -21,7 +21,7 @@ impl Drop for RelationsPart {
     }
 }
 
-impl XmlDocumentPartCommon for RelationsPart {
+impl XmlDocumentClose for RelationsPart {
     /// Close the Current Relation Document
     fn close_document(&mut self) -> AnyResult<(), AnyError>
     where
@@ -46,6 +46,9 @@ impl XmlDocumentPartCommon for RelationsPart {
         }
         Ok(())
     }
+}
+
+impl XmlDocumentPartCommon for RelationsPart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {

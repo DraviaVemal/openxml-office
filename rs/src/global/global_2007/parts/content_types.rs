@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     element_dictionary::COMMON_TYPE_COLLECTION,
-    files::{XmlDeSerializer, XmlDocument, XmlSerializer},
+    files::{XmlSerializer, XmlDocument, XmlDeSerializer},
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 
@@ -14,7 +14,7 @@ pub(crate) struct ContentTypesPart {
 impl ContentTypesPart {
     pub(crate) fn new(xml_file_content: Vec<u8>) -> AnyResult<Self, AnyError> {
         let xml_document =
-            XmlSerializer::vec_to_xml_doc_tree(xml_file_content, "Default Content Type")
+            XmlDeSerializer::vec_to_xml_doc_tree(xml_file_content, "Default Content Type")
                 .context("Decoding Content Type Failed")?;
         Ok(Self { xml_document })
     }
@@ -112,6 +112,6 @@ impl ContentTypesPart {
                     .context("Adding attributes to Default element Failed")?;
             }
         }
-        XmlDeSerializer::xml_tree_to_vec(&mut document, "Create Content Type")
+        XmlSerializer::xml_tree_to_vec(&mut document, "Create Content Type")
     }
 }

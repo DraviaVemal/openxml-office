@@ -1,6 +1,6 @@
 use crate::{
     file_handling::{compress_content, decompress_content},
-    files::{XmlDeSerializer, XmlDocument, XmlSerializer},
+    files::{XmlSerializer, XmlDocument, XmlDeSerializer},
     global_2007::parts::ContentTypesPart,
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
@@ -97,7 +97,7 @@ impl OfficeDocument {
             let decompressed_data =
                 decompress_content(&content).context("Raw Content Decompression Failed")?;
             let xml_tree: XmlDocument =
-                XmlSerializer::vec_to_xml_doc_tree(decompressed_data, file_path)
+                XmlDeSerializer::vec_to_xml_doc_tree(decompressed_data, file_path)
                     .context("Xml Serializer Failed")?;
             Ok(Some((
                 xml_tree,
@@ -118,7 +118,7 @@ impl OfficeDocument {
             let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
                 .context("Failed to get document handle")?;
-            let uncompressed_data = XmlDeSerializer::xml_tree_to_vec(&mut xml_doc_mut, file_path)
+            let uncompressed_data = XmlSerializer::xml_tree_to_vec(&mut xml_doc_mut, file_path)
                 .context(format!(
                 "Failed Xml Tree to String content, File : {}",
                 file_path

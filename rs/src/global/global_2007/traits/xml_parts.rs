@@ -3,7 +3,7 @@ use crate::global_2007::parts::RelationsPart;
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use std::{cell::RefCell, rc::Weak};
 
-pub trait XmlDocumentPartCommon {
+pub trait XmlDocumentClose {
     /// Save the current file state
     fn flush(mut self) -> AnyResult<(), AnyError>
     where
@@ -15,6 +15,9 @@ pub trait XmlDocumentPartCommon {
     fn close_document(&mut self) -> AnyResult<(), AnyError>
     where
         Self: Sized;
+}
+
+pub(crate) trait XmlDocumentPartCommon: XmlDocumentClose {
     /// Get content of the current xml
     fn get_xml_document(
         office_document: &Weak<RefCell<OfficeDocument>>,

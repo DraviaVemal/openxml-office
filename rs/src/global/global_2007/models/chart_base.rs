@@ -1,4 +1,4 @@
-use crate::models::TextOptions;
+use crate::global_2007::models::TextOptions;
 
 pub(crate) enum ChartTextDirectionValues {
     HORIZONTAL,
