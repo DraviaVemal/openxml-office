@@ -13,7 +13,7 @@ mod presentation_test {
             "{}/test-{}{}.pptx",
             result_path,
             dynamic_path.unwrap_or(""),
-            Utc::now().format("%Y-%m-%d-%H-%M-%S").to_string()
+            Utc::now().format("%Y-%m-%d-%H-%M-%S-%3f").to_string()
         )
     }
 
