@@ -1668,34 +1668,7 @@ impl WorkSheet {
         mut column_cell: Vec<CellProperties>,
     ) -> AnyResult<(), AnyError> {
         // Map Start Normalization
-        col_index -= 1;
         for cell_data in column_cell.iter_mut() {
-            if cell_data.formula.is_some() {
-                // Check and add Calculation entry
-                if let Some(common_service) = self.common_service.upgrade() {
-                    if let Some(sheet_collection) = self.sheet_collection.upgrade() {
-                        common_service
-                            .borrow_mut()
-                            .add_replace_calculation_chain(CalculationChain {
-                                cell_ref: ConverterUtil::get_cell_ref(row_index, col_index)
-                                    .context("Failed to convert Cell Ref")?,
-                                sheet_id: sheet_collection
-                                    .borrow()
-                                    .iter()
-                                    .position(|(sheet_name, _, _, _)| {
-                                        *sheet_name == self.sheet_name
-                                    })
-                                    .context("Sheet Not Found To ID")?
-                                    as u32,
-                                level_calcualtion: None,
-                                formula_type: None,
-                                share_formula: None,
-                                array_formula: None,
-                            })
-                            .context("Failed to insert Calculation Chain Order")?;
-                    }
-                }
-            }
             if let Some(cell_value) = cell_data.value.as_ref() {
                 match cell_data.data_type {
                     CellDataType::Auto => {
@@ -1728,6 +1701,43 @@ impl WorkSheet {
                 cell_data.data_type = CellDataType::Number;
             }
         }
+        col_index -= 1; // Reduce 1 to normalize the loop increment
+        let column_cells = column_cell
+            .iter_mut()
+            .map(|item| {
+                col_index += 1;
+                if item.formula.is_some() {
+                    // Check and add Calculation entry
+                    if let Some(common_service) = self.common_service.upgrade() {
+                        if let Some(sheet_collection) = self.sheet_collection.upgrade() {
+                            common_service
+                                .borrow_mut()
+                                .add_replace_calculation_chain(CalculationChain {
+                                    cell_ref: ConverterUtil::get_cell_ref(row_index, col_index)
+                                        .context("Failed to convert Cell Ref")?,
+                                    sheet_id: (sheet_collection
+                                        .borrow()
+                                        .iter()
+                                        .position(|(sheet_name, _, _, _)| {
+                                            *sheet_name == self.sheet_name
+                                        })
+                                        .context("Sheet Not Found To ID")?
+                                        + 1) as u32,
+                                    level_calcualtion: None,
+                                    formula_type: None,
+                                    share_formula: None,
+                                    array_formula: None,
+                                })
+                                .context("Failed to insert Calculation Chain Order")?;
+                        }
+                    }
+                }
+                self.dimension.start_col = min(self.dimension.start_col, col_index);
+                self.dimension.end_col = max(self.dimension.end_col, col_index);
+                Ok((col_index, item.clone()))
+            })
+            .collect::<Result<Vec<(u16, CellProperties)>, AnyError>>()
+            .context("Failed to Generate column cells")?;
         // Load If Sheet Data Exist
         if let Some(sheet_data) = self.sheet_data.as_mut() {
             // Load If Row Exits
@@ -1735,32 +1745,17 @@ impl WorkSheet {
                 // Check if the row already has cell data
                 if let Some(cell_records) = row.cell_records.as_mut() {
                     // TODO : If Existing Cell Getting Replaced Confirm clean up of Calculation Chain
-                    cell_records.extend(column_cell.iter_mut().map(|item| {
-                        col_index += 1;
-                        self.dimension.start_col = min(self.dimension.start_col, col_index);
-                        self.dimension.end_col = max(self.dimension.end_col, col_index);
-                        (col_index, item.clone())
-                    }));
+                    cell_records.extend(column_cells);
                 } else {
                     //Create cells If new
                     let mut cell_records = BTreeMap::new();
-                    cell_records.extend(column_cell.iter_mut().map(|item| {
-                        col_index += 1;
-                        self.dimension.start_col = min(self.dimension.start_col, col_index);
-                        self.dimension.end_col = max(self.dimension.end_col, col_index);
-                        (col_index, item.clone())
-                    }));
+                    cell_records.extend(column_cells);
                     row.cell_records = Some(cell_records);
                 }
             } else {
                 // Create If new Row
                 let mut cell_records = BTreeMap::new();
-                cell_records.extend(column_cell.iter_mut().map(|item| {
-                    col_index += 1;
-                    self.dimension.start_col = min(self.dimension.start_col, col_index);
-                    self.dimension.end_col = max(self.dimension.end_col, col_index);
-                    (col_index, item.clone())
-                }));
+                cell_records.extend(column_cells);
                 sheet_data.insert(
                     row_index,
                     RowRecords {
@@ -1773,12 +1768,7 @@ impl WorkSheet {
             // Create Sheet Data
             let mut sheet_data = BTreeMap::new();
             let mut cell_records = BTreeMap::new();
-            cell_records.extend(column_cell.iter_mut().map(|item| {
-                col_index += 1;
-                self.dimension.start_col = min(self.dimension.start_col, col_index);
-                self.dimension.end_col = max(self.dimension.end_col, col_index);
-                (col_index, item.clone())
-            }));
+            cell_records.extend(column_cells);
             sheet_data.insert(
                 row_index,
                 RowRecords {
