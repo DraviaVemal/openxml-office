@@ -6,7 +6,6 @@ pub(crate) mod document;
 pub(crate) mod global;
 pub(crate) mod presentation;
 pub(crate) mod spreadsheet;
-pub(crate) mod tests;
 pub(crate) mod utils;
 
 pub use document::*;

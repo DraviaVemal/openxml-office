@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["rs", "rs_ffi", "rs_api", "rs_test"]
+members = ["rs", "rs_test", "rs_ffi", "rs_api"]
 
 [workspace.dependencies]
 uuid = { version = "1.11.0", features = [
