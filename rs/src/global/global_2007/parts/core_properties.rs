@@ -3,7 +3,7 @@ use crate::{
     files::{OfficeDocument, XmlDeSerializer, XmlDocument},
     global_2007::{
         parts::RelationsPart,
-        traits::{XmlDocumentClose, XmlDocumentPart, XmlDocumentPartCommon},
+        traits::{XmlDocumentPartClose, XmlDocumentPart, XmlDocumentPartInitializing},
     },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
@@ -23,7 +23,7 @@ impl Drop for CorePropertiesPart {
     }
 }
 
-impl XmlDocumentClose for CorePropertiesPart {
+impl XmlDocumentPartClose for CorePropertiesPart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>
     where
         Self: Sized,
@@ -71,7 +71,7 @@ impl XmlDocumentClose for CorePropertiesPart {
     }
 }
 
-impl XmlDocumentPartCommon for CorePropertiesPart {
+impl XmlDocumentPartInitializing for CorePropertiesPart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {

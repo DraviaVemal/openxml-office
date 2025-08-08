@@ -1,6 +1,8 @@
-use crate::global_2007::traits::XmlDocumentClose;
+use crate::global_2007::traits::XmlDocumentPartClose;
 use crate::spreadsheet_2007::models::{StyleId, StyleSetting};
-use crate::spreadsheet_2007::services::{CalculationChainPart, ShareStringPart, StylePart};
+use crate::spreadsheet_2007::services::{
+    CalculationChain, CalculationChainPart, ShareStringPart, StylePart,
+};
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
 
 #[derive(Debug)]
@@ -53,5 +55,16 @@ impl CommonServices {
         style_setting: StyleSetting,
     ) -> AnyResult<StyleId, AnyError> {
         self.style.get_style_id_mut(style_setting)
+    }
+}
+
+// ########################### Calculation Chain ########################
+impl CommonServices {
+    pub(crate) fn add_replace_calculation_chain(
+        &mut self,
+        chain_item: CalculationChain,
+    ) -> AnyResult<(), AnyError> {
+        self.calculation_chain
+            .add_replace_calculation_chain(chain_item)
     }
 }

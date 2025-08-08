@@ -12,7 +12,7 @@ use crate::{
     files::{OfficeDocument, XmlDeSerializer, XmlDocument},
     global_2007::{
         parts::RelationsPart,
-        traits::{Enum, XmlDocumentClose, XmlDocumentPartCommon},
+        traits::{Enum, XmlDocumentPartClose, XmlDocumentPartInitializing},
     },
     log_elapsed,
     order_dictionary::EXCEL_ORDER_COLLECTION,
@@ -21,7 +21,7 @@ use crate::{
             CellDataType, CellPackage, CellProperties, ColumnProperties, HyperLinks,
             ReferenceRange, RowProperties, StyleId,
         },
-        services::CommonServices,
+        services::{CalculationChain, CommonServices},
     },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
@@ -143,6 +143,7 @@ pub struct WorkSheet {
     hyperlinks: Option<Vec<HyperLinks>>,
     file_path: String,
     sheet_name: String,
+    sheet_id: u32,
 }
 
 impl Drop for WorkSheet {
@@ -151,7 +152,7 @@ impl Drop for WorkSheet {
     }
 }
 
-impl XmlDocumentClose for WorkSheet {
+impl XmlDocumentPartClose for WorkSheet {
     /// Close and save this part
     fn close_document(&mut self) -> AnyResult<(), AnyError>
     where
@@ -218,7 +219,7 @@ impl XmlDocumentClose for WorkSheet {
     }
 }
 
-impl XmlDocumentPartCommon for WorkSheet {
+impl XmlDocumentPartInitializing for WorkSheet {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
@@ -250,6 +251,7 @@ impl WorkSheet {
         workbook_relationship_part: Weak<RefCell<RelationsPart>>,
         common_service: Weak<RefCell<CommonServices>>,
         sheet_name: Option<String>,
+        sheet_id: u32,
     ) -> AnyResult<Self, AnyError> {
         let (file_path, sheet_name) = Self::get_sheet_file_name(
             sheet_name,
@@ -292,6 +294,7 @@ impl WorkSheet {
             hyperlinks,
             file_path: file_path.to_string(),
             sheet_name,
+            sheet_id,
         })
     }
 
@@ -1562,6 +1565,9 @@ impl WorkSheet {
         col_index: &u16,
         column_properties: Option<ColumnProperties>,
     ) -> AnyResult<(), AnyError> {
+        if self.column_collection.is_none() {
+            self.column_collection = Some(VecDeque::new());
+        }
         if let Some(column_collection) = self.column_collection.as_mut() {
             let mut new_ranges = VecDeque::new();
             // Delete Old Record
@@ -1651,7 +1657,9 @@ impl WorkSheet {
         self.set_row_value_index_mut(row_index, col_index, column_cell)
     }
 
-    /// Set data for same row multiple columns along with row property
+    /// Set data for same row multiple columns along with row property.
+    /// - Calculation Execution order follow the order of insert.
+    /// - Inserting multi column formula will add execution order starting vec 0 of inserted columns
     /// # Arguments
     /// - `row_index` (`u32`) - Provide row index. Starts From 1
     /// - `mut col_index` (`u16`) - Provide column index. Starts From 1
@@ -1665,6 +1673,23 @@ impl WorkSheet {
         // Map Start Normalization
         col_index -= 1;
         for cell_data in column_cell.iter_mut() {
+            if cell_data.formula.is_some() {
+                // Check and add Calculation entry
+                if let Some(common_service) = self.common_service.upgrade() {
+                    common_service
+                        .borrow_mut()
+                        .add_replace_calculation_chain(CalculationChain {
+                            cell_ref: ConverterUtil::get_cell_ref(row_index, col_index)
+                                .context("Failed to convert Cell Ref")?,
+                            sheet_id: self.sheet_id,
+                            level_calcualtion: None,
+                            formula_type: None,
+                            share_formula: None,
+                            array_formula: None,
+                        })
+                        .context("Failed to insert Calculation Chain Order")?;
+                }
+            }
             if let Some(cell_value) = cell_data.value.as_ref() {
                 match cell_data.data_type {
                     CellDataType::Auto => {
@@ -1703,6 +1728,7 @@ impl WorkSheet {
             if let Some(row) = sheet_data.get_mut(&row_index) {
                 // Check if the row already has cell data
                 if let Some(cell_records) = row.cell_records.as_mut() {
+                    // TODO : If Existing Cell Getting Replaced Confirm clean up of Calculation Chain
                     cell_records.extend(column_cell.iter_mut().map(|item| {
                         col_index += 1;
                         self.dimension.start_col = min(self.dimension.start_col, col_index);

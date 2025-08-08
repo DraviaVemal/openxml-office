@@ -4,7 +4,7 @@ use crate::{
     files::{OfficeDocument, XmlDeSerializer, XmlDocument, XmlElement},
     global_2007::{
         parts::RelationsPart,
-        traits::{Enum, XmlDocumentClose, XmlDocumentPart, XmlDocumentPartCommon},
+        traits::{Enum, XmlDocumentPartClose, XmlDocumentPart, XmlDocumentPartInitializing},
     },
     log_elapsed,
     spreadsheet_2007::models::{
@@ -44,7 +44,7 @@ impl Drop for StylePart {
     }
 }
 
-impl XmlDocumentClose for StylePart {
+impl XmlDocumentPartClose for StylePart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>
     where
         Self: Sized,
@@ -78,7 +78,7 @@ impl XmlDocumentClose for StylePart {
     }
 }
 
-impl XmlDocumentPartCommon for StylePart {
+impl XmlDocumentPartInitializing for StylePart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {

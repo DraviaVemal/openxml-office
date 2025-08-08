@@ -2,9 +2,9 @@
 mod spreadsheet_test {
     use chrono::Utc;
     use draviavemal_openxml_office::{
-        global_2007::traits::XmlDocumentClose,
+        global_2007::traits::XmlDocumentPartClose,
         log_elapsed,
-        spreadsheet_2007::models::{ReferenceRange, StyleSetting},
+        spreadsheet_2007::models::{CellProperties, ReferenceRange, StyleSetting},
     };
     use std::fs::{create_dir, exists};
 
@@ -151,7 +151,7 @@ mod spreadsheet_test {
     #[test]
     fn set_row_property() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
+            Some("src/TestFiles/basic_test.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -199,7 +199,7 @@ mod spreadsheet_test {
     #[test]
     fn merge_cell_property() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/tests/TestFiles/merge_links.xlsx".to_string()),
+            Some("src/TestFiles/merge_links.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -242,7 +242,7 @@ mod spreadsheet_test {
     #[test]
     fn hyperlink_cell_property() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/tests/TestFiles/merge_links.xlsx".to_string()),
+            Some("src/TestFiles/merge_links.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -292,7 +292,7 @@ mod spreadsheet_test {
     #[test]
     fn get_range_data() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
+            Some("src/TestFiles/basic_test.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -316,9 +316,70 @@ mod spreadsheet_test {
     }
 
     #[test]
-    fn set_column_property() {
+    fn set_column_property_new() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
+            None,
+            draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
+                is_editable: true,
+                ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
+            },
+        )
+        .expect("Open Existing File Failed");
+        let mut col_prop = file
+            .add_sheet_mut(Some("col_property".to_string()))
+            .expect("failed to add Sheet");
+        col_prop
+        .set_column_index_properties_mut(
+            &1,
+            Some(
+                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                    .set_width(Some(200 as f32)),
+            ),
+        )
+        .expect("Failed to Set width Column prop");
+        col_prop
+        .set_column_index_properties_mut(
+            &3,
+            Some(
+                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                    .set_hidden(Some(true)),
+            ),
+        )
+        .expect("Failed to Set hidden prop");
+        col_prop
+        .set_column_index_properties_mut(
+            &5,
+            Some(
+                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                    .set_best_fit(Some(true)),
+            ),
+        )
+        .expect("Failed to Set best fit Column prop");
+        col_prop
+            .set_row_value_index_mut(
+                2,
+                1,
+                vec![
+                    CellProperties::default().set_value(Some("Cell Value 1".to_string())),
+                    CellProperties::default().set_value(Some("Cell Value 2".to_string())),
+                    CellProperties::default().set_value(Some("Cell Value 3".to_string())),
+                    CellProperties::default().set_value(Some("Cell Value 4".to_string())),
+                    CellProperties::default().set_value(Some("Cell Value 5".to_string())),
+                    CellProperties::default().set_value(Some("Cell Value 6".to_string())),
+                    CellProperties::default().set_value(Some("Cell Value 7".to_string())),
+                ],
+            )
+            .expect("Failed to set Column Value");
+        col_prop.flush().expect("Failed to write Data");
+        file.save_as(&get_save_file(None))
+            .expect("Save File Failed");
+        assert_eq!(true, true);
+    }
+
+    #[test]
+    fn set_column_property_edit() {
+        let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
+            Some("src/TestFiles/basic_test.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -364,7 +425,7 @@ mod spreadsheet_test {
     #[test]
     fn set_cell_style() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
+            Some("src/TestFiles/basic_test.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -467,7 +528,7 @@ mod spreadsheet_test {
     #[test]
     fn edit_excel() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/tests/TestFiles/basic_test.xlsx".to_string()),
+            Some("src/TestFiles/basic_test.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -536,7 +597,7 @@ mod spreadsheet_test {
     #[ignore]
     fn edit_large_excel() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/tests/TestFiles/large_file.xlsx".to_string()),
+            Some("src/TestFiles/large_file.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
