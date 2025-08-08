@@ -370,6 +370,17 @@ mod spreadsheet_test {
                 ],
             )
             .expect("Failed to set Column Value");
+        col_prop
+            .set_row_value_index_mut(
+                4,
+                1,
+                vec![
+                    CellProperties::default().set_value(Some("1".to_string())),
+                    CellProperties::default().set_value(Some("2".to_string())),
+                    CellProperties::default().set_formula(Some("=SUM(A4:B4)".to_string())),
+                ],
+            )
+            .expect("Failed to set Column Value");
         col_prop.flush().expect("Failed to write Data");
         file.save_as(&get_save_file(None))
             .expect("Save File Failed");
