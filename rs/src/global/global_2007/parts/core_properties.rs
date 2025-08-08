@@ -3,7 +3,7 @@ use crate::{
     files::{OfficeDocument, XmlDeSerializer, XmlDocument},
     global_2007::{
         parts::RelationsPart,
-        traits::{XmlDocumentPartClose, XmlDocumentPart, XmlDocumentPartInitializing},
+        traits::{XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartInitializing},
     },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
