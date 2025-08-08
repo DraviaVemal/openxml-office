@@ -112,7 +112,7 @@ impl XmlDocumentPart for StylePart {
             border_collection,
             cell_style_collection,
             cell_collection,
-        ) = Self::load_content(&mut xml_document).context("Load Share String To DB Failed")?;
+        ) = Self::deserialize_content(&mut xml_document).context("Load Share String To Object Failed")?;
         Ok(Self {
             office_document,
             xml_document,
@@ -152,8 +152,8 @@ impl StylePart {
         }
     }
 
-    /// Load existing file style to database
-    fn load_content(
+    /// Load existing file style to object  
+    fn deserialize_content(
         xml_document: &mut Weak<RefCell<XmlDocument>>,
     ) -> AnyResult<
         (
@@ -549,7 +549,7 @@ impl StylePart {
         ))
     }
 
-    /// Save Database record back to XML File
+    /// Save Object record back to XML File
     fn save_content_to_tree_mut(&mut self) -> AnyResult<(), AnyError> {
         if let Some(xml_document) = self.xml_document.upgrade() {
             let mut xml_doc_mut = xml_document
