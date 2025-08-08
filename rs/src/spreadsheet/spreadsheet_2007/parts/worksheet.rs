@@ -143,7 +143,6 @@ pub struct WorkSheet {
     hyperlinks: Option<Vec<HyperLinks>>,
     file_path: String,
     sheet_name: String,
-    sheet_id: u32,
 }
 
 impl Drop for WorkSheet {
@@ -251,7 +250,6 @@ impl WorkSheet {
         workbook_relationship_part: Weak<RefCell<RelationsPart>>,
         common_service: Weak<RefCell<CommonServices>>,
         sheet_name: Option<String>,
-        sheet_id: u32,
     ) -> AnyResult<Self, AnyError> {
         let (file_path, sheet_name) = Self::get_sheet_file_name(
             sheet_name,
@@ -259,7 +257,7 @@ impl WorkSheet {
             &sheet_collection,
             &workbook_relationship_part,
         )
-        .context("Failed to pull calc chain file name")?;
+        .context("Failed to pull worksheet file name")?;
         let xml_document = Self::get_xml_document(&office_document, &file_path)?;
         let sheet_relationship_part = Rc::new(RefCell::new(
             RelationsPart::new(
@@ -294,7 +292,6 @@ impl WorkSheet {
             hyperlinks,
             file_path: file_path.to_string(),
             sheet_name,
-            sheet_id,
         })
     }
 
@@ -1676,18 +1673,25 @@ impl WorkSheet {
             if cell_data.formula.is_some() {
                 // Check and add Calculation entry
                 if let Some(common_service) = self.common_service.upgrade() {
-                    common_service
-                        .borrow_mut()
-                        .add_replace_calculation_chain(CalculationChain {
-                            cell_ref: ConverterUtil::get_cell_ref(row_index, col_index)
-                                .context("Failed to convert Cell Ref")?,
-                            sheet_id: self.sheet_id,
-                            level_calcualtion: None,
-                            formula_type: None,
-                            share_formula: None,
-                            array_formula: None,
-                        })
-                        .context("Failed to insert Calculation Chain Order")?;
+                    if let Some(sheet_collection) = self.sheet_collection.upgrade() {
+                        common_service
+                            .borrow_mut()
+                            .add_replace_calculation_chain(CalculationChain {
+                                cell_ref: ConverterUtil::get_cell_ref(row_index, col_index)
+                                    .context("Failed to convert Cell Ref")?,
+                                sheet_id: sheet_collection
+                                    .borrow()
+                                    .iter()
+                                    .position(|(sheet_name, _, _, _)| *sheet_name == self.sheet_name)
+                                    .context("Sheet Not Found To ID")?
+                                    as u32,
+                                level_calcualtion: None,
+                                formula_type: None,
+                                share_formula: None,
+                                array_formula: None,
+                            })
+                            .context("Failed to insert Calculation Chain Order")?;
+                    }
                 }
             }
             if let Some(cell_value) = cell_data.value.as_ref() {
