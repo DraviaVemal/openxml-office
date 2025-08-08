@@ -517,17 +517,16 @@ impl WorkbookPart {
             Rc::downgrade(&self.workbook_relationship_part),
             Rc::downgrade(&self.common_service),
             sheet_name,
-            self.sheet_collection.borrow().len() as u32,
         )
         .context("Worksheet Creation Failed")?)
     }
 
     pub(crate) fn get_worksheet_mut(&mut self, sheet_name: &str) -> AnyResult<WorkSheet, AnyError> {
-        if let Some(sheet_id) = self
+        if self
             .sheet_collection
             .borrow()
             .iter()
-            .position(|(ref_sheet_name, _, _, _)| ref_sheet_name == sheet_name)
+            .any(|(ref_sheet_name, _, _, _)| ref_sheet_name == sheet_name)
         {
             log_elapsed!(
                 || {
@@ -537,7 +536,6 @@ impl WorkbookPart {
                         Rc::downgrade(&self.workbook_relationship_part),
                         Rc::downgrade(&self.common_service),
                         Some(sheet_name.to_string()),
-                        sheet_id as u32,
                     )
                     .context("Worksheet Creation Failed")
                 },
