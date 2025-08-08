@@ -9,4 +9,4 @@ engine = "Llvm"
 run-types = ["AllTargets"]
 out = ["Xml"]
 exclude = ["draviavemal-openxml_office_ffi"]
-exclude-files = ["*/flatbuffers/**", "**/consolidated_generated.rs","*/ts/**"]
+exclude-files = ["flatbuffers/**", "**/consolidated_generated.rs","ts/**"]
