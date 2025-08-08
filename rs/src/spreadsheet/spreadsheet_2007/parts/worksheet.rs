@@ -1682,7 +1682,9 @@ impl WorkSheet {
                                 sheet_id: sheet_collection
                                     .borrow()
                                     .iter()
-                                    .position(|(sheet_name, _, _, _)| *sheet_name == self.sheet_name)
+                                    .position(|(sheet_name, _, _, _)| {
+                                        *sheet_name == self.sheet_name
+                                    })
                                     .context("Sheet Not Found To ID")?
                                     as u32,
                                 level_calcualtion: None,
