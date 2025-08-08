@@ -5,9 +5,9 @@ use crate::{
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use quick_xml::escape::escape;
 
-pub struct XmlDeSerializer {}
+pub struct XmlSerializer {}
 
-impl XmlDeSerializer {
+impl XmlSerializer {
     pub(crate) fn xml_tree_to_vec(
         xml_document: &mut XmlDocument,
         file_name: &str,

@@ -1,6 +1,6 @@
 use crate::element_dictionary::EXCEL_TYPE_COLLECTION;
 use crate::global_2007::parts::RelationsPart;
-use crate::global_2007::traits::XmlDocumentPartCommon;
+use crate::global_2007::traits::{XmlDocumentClose, XmlDocumentPartCommon};
 use crate::log_elapsed;
 use crate::{
     files::{OfficeDocument, XmlDocument},
@@ -24,7 +24,7 @@ impl Drop for CalculationChainPart {
     }
 }
 
-impl XmlDocumentPartCommon for CalculationChainPart {
+impl XmlDocumentClose for CalculationChainPart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>
     where
         Self: Sized,
@@ -69,6 +69,9 @@ impl XmlDocumentPartCommon for CalculationChainPart {
             "Close Calculation Chain"
         )
     }
+}
+
+impl XmlDocumentPartCommon for CalculationChainPart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {

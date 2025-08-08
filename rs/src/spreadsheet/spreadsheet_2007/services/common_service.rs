@@ -1,4 +1,4 @@
-use crate::global_2007::traits::XmlDocumentPartCommon;
+use crate::global_2007::traits::XmlDocumentClose;
 use crate::spreadsheet_2007::models::{StyleId, StyleSetting};
 use crate::spreadsheet_2007::services::{CalculationChainPart, ShareStringPart, StylePart};
 use anyhow::{Context, Error as AnyError, Result as AnyResult};

@@ -11,9 +11,9 @@ use quick_xml::{
 };
 use std::{collections::HashMap, io::Cursor};
 
-pub struct XmlSerializer {}
+pub struct XmlDeSerializer {}
 
-impl XmlSerializer {
+impl XmlDeSerializer {
     pub(crate) fn vec_to_xml_doc_tree(
         xml_str: Vec<u8>,
         file_name: &str,

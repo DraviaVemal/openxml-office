@@ -9,10 +9,10 @@
 use crate::{
     converters::ConverterUtil,
     element_dictionary::{COMMON_TYPE_COLLECTION, EXCEL_TYPE_COLLECTION},
-    files::{OfficeDocument, XmlDocument, XmlSerializer},
+    files::{OfficeDocument, XmlDeSerializer, XmlDocument},
     global_2007::{
         parts::RelationsPart,
-        traits::{Enum, XmlDocumentPartCommon},
+        traits::{Enum, XmlDocumentClose, XmlDocumentPartCommon},
     },
     log_elapsed,
     order_dictionary::EXCEL_ORDER_COLLECTION,
@@ -151,28 +151,7 @@ impl Drop for WorkSheet {
     }
 }
 
-impl XmlDocumentPartCommon for WorkSheet {
-    /// Initialize xml content for this part from base template
-    fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
-    {
-        let content = EXCEL_TYPE_COLLECTION.get("worksheet").unwrap();
-        let template_core_properties = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
-    xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-    <sheetData />
-</worksheet>"#;
-        Ok((
-            XmlSerializer::vec_to_xml_doc_tree(
-                template_core_properties.as_bytes().to_vec(),
-                "Default Worksheet",
-            )
-            .context("Initializing Worksheet Failed")?,
-            Some(content.content_type.to_string()),
-            content.extension.to_string(),
-            content.extension_type.to_string(),
-        ))
-    }
-
+impl XmlDocumentClose for WorkSheet {
     /// Close and save this part
     fn close_document(&mut self) -> AnyResult<(), AnyError>
     where
@@ -236,6 +215,29 @@ impl XmlDocumentPartCommon for WorkSheet {
             },
             "Close Worksheet"
         )
+    }
+}
+
+impl XmlDocumentPartCommon for WorkSheet {
+    /// Initialize xml content for this part from base template
+    fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
+    {
+        let content = EXCEL_TYPE_COLLECTION.get("worksheet").unwrap();
+        let template_core_properties = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+    xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+    <sheetData />
+</worksheet>"#;
+        Ok((
+            XmlDeSerializer::vec_to_xml_doc_tree(
+                template_core_properties.as_bytes().to_vec(),
+                "Default Worksheet",
+            )
+            .context("Initializing Worksheet Failed")?,
+            Some(content.content_type.to_string()),
+            content.extension.to_string(),
+            content.extension_type.to_string(),
+        ))
     }
 }
 

@@ -1,7 +1,7 @@
-pub(crate) mod xml_deserialize;
-pub(crate) mod xml_serialize;
+pub(crate) mod xml_serializer;
+pub(crate) mod xml_deserializer;
 pub(crate) mod xml_tree;
 
-pub(crate) use xml_deserialize::*;
-pub(crate) use xml_serialize::*;
+pub(crate) use xml_serializer::*;
+pub(crate) use xml_deserializer::*;
 pub(crate) use xml_tree::*;

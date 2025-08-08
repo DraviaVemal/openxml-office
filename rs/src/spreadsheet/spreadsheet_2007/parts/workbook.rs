@@ -1,10 +1,10 @@
 use crate::{
     converters::ConverterUtil,
     element_dictionary::EXCEL_TYPE_COLLECTION,
-    files::{OfficeDocument, XmlDocument, XmlSerializer},
+    files::{OfficeDocument, XmlDeSerializer, XmlDocument},
     global_2007::{
         parts::{RelationsPart, ThemePart},
-        traits::{XmlDocumentPart, XmlDocumentPartCommon},
+        traits::{XmlDocumentClose, XmlDocumentPart, XmlDocumentPartCommon},
     },
     log_elapsed,
     order_dictionary::EXCEL_ORDER_COLLECTION,
@@ -69,28 +69,7 @@ impl Drop for WorkbookPart {
     }
 }
 
-impl XmlDocumentPartCommon for WorkbookPart {
-    /// Initialize xml content for this part from base template
-    fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
-    {
-        let content = EXCEL_TYPE_COLLECTION.get("workbook").unwrap();
-        let template_core_properties = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
-    xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-    <fileVersion appName="openxml-office" lastEdited="7" lowestEdited="7" />
-</workbook>"#;
-        Ok((
-            XmlSerializer::vec_to_xml_doc_tree(
-                template_core_properties.as_bytes().to_vec(),
-                "Default workbook",
-            )
-            .context("Initializing Workbook Failed")?,
-            Some(content.content_type.to_string()),
-            content.extension.to_string(),
-            content.extension_type.to_string(),
-        ))
-    }
-
+impl XmlDocumentClose for WorkbookPart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>
     where
         Self: Sized,
@@ -230,6 +209,29 @@ impl XmlDocumentPartCommon for WorkbookPart {
             },
             "Workbook Closed"
         )
+    }
+}
+
+impl XmlDocumentPartCommon for WorkbookPart {
+    /// Initialize xml content for this part from base template
+    fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
+    {
+        let content = EXCEL_TYPE_COLLECTION.get("workbook").unwrap();
+        let template_core_properties = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+    xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+    <fileVersion appName="openxml-office" lastEdited="7" lowestEdited="7" />
+</workbook>"#;
+        Ok((
+            XmlDeSerializer::vec_to_xml_doc_tree(
+                template_core_properties.as_bytes().to_vec(),
+                "Default workbook",
+            )
+            .context("Initializing Workbook Failed")?,
+            Some(content.content_type.to_string()),
+            content.extension.to_string(),
+            content.extension_type.to_string(),
+        ))
     }
 }
 
