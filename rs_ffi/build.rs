@@ -47,6 +47,32 @@ fn main() {
         println!("Updated Cargo.toml version to {}", version);
     }
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+
+    let status = Command::new("flatc")
+        .args(&[
+            "-r",
+            "--gen-all",
+            "-o",
+            &env::current_dir()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("rs_ffi/src")
+                .to_string_lossy(),
+            &env::current_dir()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("fbs/consolidated.fbs")
+                .to_string_lossy(),
+        ])
+        .status()
+        .expect("Failed to run flatc");
+
+    if !status.success() {
+        panic!("flatc failed with status: {:?}", status);
+    }
+
     let methods = cbindgen::Builder::new()
         .with_crate(crate_dir.clone())
         .with_config(Config {

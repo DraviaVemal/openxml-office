@@ -19,7 +19,6 @@ done
 
 # Define the source and target directories
 SOURCE_DIR="fbs"
-RUST_FFI_DIR="rs_ffi/src"
 C_SHARP_DIR="cs/openxml_office"
 JAVA_DIR="java/draviavemal_openxml_office/src/main/java"
 PYTHON_DIR="python"
@@ -52,7 +51,6 @@ done
 # Rust code get complied as one source to maintain the modular hierarchy
 flatc -g --gen-all -o "$GO_DIR" "fbs/consolidated.fbs"
 flatc -p --gen-all -o "$PYTHON_DIR" "fbs/consolidated.fbs"
-flatc -r --gen-all -o "$RUST_FFI_DIR" "fbs/consolidated.fbs"
 
 # Build Rust Core Libraries
 

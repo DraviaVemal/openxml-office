@@ -8,3 +8,4 @@ output-dir = "./coverage"
 engine = "Llvm"
 run-types = ["AllTargets"]
 out = ["Xml"]
+exclude = ["draviavemal-openxml_office_ffi"]
