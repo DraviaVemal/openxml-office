@@ -1,0 +1,10 @@
+[test_config]
+name = "OpenXML-Office"
+workspace = true
+force-clean = true
+count = true
+output-dir = "./coverage"
+# fail-under = 60
+engine = "Llvm"
+run-types = ["AllTargets"]
+out = ["Xml"]
