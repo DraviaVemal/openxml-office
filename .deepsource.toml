@@ -54,3 +54,7 @@ name = "google-java-format"
 
 [[transformers]]
 name = "autopep8"
+
+[[analyzers]]
+name = "test-coverage"
+enabled = true
