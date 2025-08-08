@@ -332,7 +332,7 @@ impl WorkSheet {
                 },
                 "Column deserialize"
             )?;
-            // unwrap sheet data into database
+            // unwrap sheet data into object
             let (sheet_data, dimension) = log_elapsed!(
                 || {
                     WorkSheet::deserialize_sheet_data(&mut xml_doc_mut)

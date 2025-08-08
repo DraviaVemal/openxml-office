@@ -71,7 +71,6 @@ Desktop.ini
 
 # Logs and databases
 *.log
-*.sqlite3
 *.env
 *.bak
 *.db

@@ -39,8 +39,8 @@ impl OfficeDocument {
         let mut archive_collection = HashMap::new();
         if let Some(file_path) = file_path {
             // Load existing file to our system
-            archive_collection = Self::load_archive_into_database(&file_path)
-                .context("Load OpenXML Archive Into Database Failed")?;
+            archive_collection = Self::deserialise_office_document(&file_path)
+                .context("Load OpenXML Archive Into deserializing Failed")?;
         }
         Ok(Self {
             xml_document_collection: HashMap::new(),
@@ -110,7 +110,7 @@ impl OfficeDocument {
         }
     }
 
-    /// Update the XML tree data to database and close the refCell
+    /// Update the XML tree data to serialized xml and close the refCell
     pub(crate) fn close_xml_document(&mut self, file_path: &str) -> AnyResult<(), AnyError> {
         if let Some((xml_document, content_type, file_extension, extension_type)) =
             self.xml_document_collection.remove(file_path)
@@ -152,7 +152,7 @@ impl OfficeDocument {
 
     /// Save Current Document to final result
     pub(crate) fn save_as(&mut self, file_path: &str) -> AnyResult<(), AnyError> {
-        // Save the live content update object to database
+        // Save the live content update object to xml
         let keys = self
             .xml_document_collection
             .keys()
@@ -163,8 +163,8 @@ impl OfficeDocument {
                 .context(" Saving open object content failed")?;
         }
         let file_content: Vec<u8> = self
-            .save_database_into_archive()
-            .context("Save Archive Data into Database")?;
+            .save_object_into_archive()
+            .context("Save Object Data into xml")?;
         if metadata(file_path).is_ok() {
             remove_file(file_path).map_err(|e| anyhow!("Remove Save File Target Failed. {}", e))?;
         }
@@ -173,8 +173,8 @@ impl OfficeDocument {
             .context("Save File Write Failed")
     }
 
-    /// Save the database content into file archive
-    fn save_database_into_archive(&self) -> AnyResult<Vec<u8>, AnyError> {
+    /// Save the object content into file archive
+    fn save_object_into_archive(&self) -> AnyResult<Vec<u8>, AnyError> {
         let mut extensions: Vec<(String, String)> = Vec::new();
         let mut overrides: Vec<(String, String)> = Vec::new();
         let mut buffer = Cursor::new(Vec::new());
@@ -231,8 +231,8 @@ impl OfficeDocument {
         Ok(buffer.into_inner())
     }
 
-    /// Read Zip file and load it into database after compression
-    fn load_archive_into_database(
+    /// Read Zip file and load it into object after compression
+    fn deserialise_office_document(
         file_path: &str,
     ) -> AnyResult<
         HashMap<

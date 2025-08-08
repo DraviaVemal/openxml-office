@@ -6,12 +6,12 @@ mod spreadsheet_test {
         log_elapsed,
         spreadsheet_2007::models::{CellProperties, ReferenceRange, StyleSetting},
     };
-    use std::fs::{create_dir, exists};
+    use std::fs::{create_dir_all, exists};
 
     fn get_save_file(dynamic_path: Option<&str>) -> String {
         let result_path = "test_results";
         if !exists(result_path).expect("Dir Check Failed") {
-            create_dir(result_path).expect("Failed to Create")
+            create_dir_all(result_path).expect("Failed to Create")
         }
         format!(
             "{}/test-{}{}.xlsx",

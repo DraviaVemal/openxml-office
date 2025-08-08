@@ -135,7 +135,7 @@ impl XmlDocumentPart for ShareStringPart {
             .context("Failed to pull share string file name")?
             .to_string();
         let mut xml_document = Self::get_xml_document(&office_document, &file_name)?;
-        let share_string_collection = Self::load_content_to_database(&mut xml_document)
+        let share_string_collection = Self::deserialize_share_string(&mut xml_document)
             .context("Load Share String To DB Failed")?;
         Ok(Self {
             office_document,
@@ -168,7 +168,7 @@ impl ShareStringPart {
         }
     }
 
-    fn load_content_to_database(
+    fn deserialize_share_string(
         xml_document: &mut Weak<RefCell<XmlDocument>>,
     ) -> AnyResult<Vec<String>, AnyError> {
         let mut share_string_collection = Vec::new();
