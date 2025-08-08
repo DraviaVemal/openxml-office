@@ -1,6 +1,6 @@
 use crate::{
     file_handling::{compress_content, decompress_content},
-    files::{XmlSerializer, XmlDocument, XmlDeSerializer},
+    files::{XmlDeSerializer, XmlDocument, XmlSerializer},
     global_2007::parts::ContentTypesPart,
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
@@ -120,9 +120,9 @@ impl OfficeDocument {
                 .context("Failed to get document handle")?;
             let uncompressed_data = XmlSerializer::xml_tree_to_vec(&mut xml_doc_mut, file_path)
                 .context(format!(
-                "Failed Xml Tree to String content, File : {}",
-                file_path
-            ))?;
+                    "Failed Xml Tree to String content, File : {}",
+                    file_path
+                ))?;
             let compression_level = 4;
             let compressed = compress_content(&uncompressed_data, compression_level)
                 .context("Recompressing in GZip Failed")?;

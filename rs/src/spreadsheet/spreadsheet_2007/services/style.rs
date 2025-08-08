@@ -4,7 +4,7 @@ use crate::{
     files::{OfficeDocument, XmlDeSerializer, XmlDocument, XmlElement},
     global_2007::{
         parts::RelationsPart,
-        traits::{Enum, XmlDocumentPartClose, XmlDocumentPart, XmlDocumentPartInitializing},
+        traits::{Enum, XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartInitializing},
     },
     log_elapsed,
     spreadsheet_2007::models::{
