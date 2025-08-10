@@ -1,23 +1,29 @@
+#![allow(private_bounds)]
+
 use crate::files::{OfficeDocument, XmlDocument};
 use crate::global_2007::parts::RelationsPart;
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use std::{cell::RefCell, rc::Weak};
 
-pub trait XmlDocumentPartClose {
-    /// Save the current file state
+pub(crate) trait XmlDocumentPartClose {
+    fn close_document(&mut self) -> AnyResult<(), AnyError>
+    where
+        Self: Sized;
+}
+
+pub trait XmlDocumentPartFlush: XmlDocumentPartClose {
+    /// Save the current object state and flush to file from memory
     fn flush(mut self) -> AnyResult<(), AnyError>
     where
         Self: Sized,
     {
         self.close_document()
     }
-
-    fn close_document(&mut self) -> AnyResult<(), AnyError>
-    where
-        Self: Sized;
 }
 
-pub(crate) trait XmlDocumentPartInitializing: XmlDocumentPartClose {
+pub(crate) trait XmlDocumentPartInitializing:
+    XmlDocumentPartClose + XmlDocumentPartFlush
+{
     /// Get content of the current xml
     fn get_xml_document(
         office_document: &Weak<RefCell<OfficeDocument>>,

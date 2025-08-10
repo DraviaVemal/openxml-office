@@ -2,7 +2,7 @@
 mod spreadsheet_test {
     use chrono::Utc;
     use draviavemal_openxml_office::{
-        global_2007::traits::XmlDocumentPartClose,
+        global_2007::traits::XmlDocumentPartFlush,
         log_elapsed,
         spreadsheet_2007::models::{CellProperties, ReferenceRange, StyleSetting},
     };

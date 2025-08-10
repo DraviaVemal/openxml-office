@@ -6,7 +6,10 @@ use crate::{
     files::{OfficeDocument, XmlDeSerializer, XmlDocument},
     global_2007::{
         parts::{RelationsPart, ThemePart},
-        traits::{XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartInitializing},
+        traits::{
+            XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartFlush,
+            XmlDocumentPartInitializing,
+        },
     },
     log_elapsed,
     order_dictionary::EXCEL_ORDER_COLLECTION,
@@ -70,6 +73,8 @@ impl Drop for WorkbookPart {
         let _ = self.close_document();
     }
 }
+
+impl XmlDocumentPartFlush for WorkbookPart {}
 
 impl XmlDocumentPartClose for WorkbookPart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>

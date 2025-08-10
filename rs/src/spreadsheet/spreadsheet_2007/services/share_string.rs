@@ -1,6 +1,8 @@
 use crate::element_dictionary::EXCEL_TYPE_COLLECTION;
 use crate::global_2007::parts::RelationsPart;
-use crate::global_2007::traits::{XmlDocumentPartClose, XmlDocumentPartInitializing};
+use crate::global_2007::traits::{
+    XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
+};
 use crate::log_elapsed;
 use crate::{
     files::{OfficeDocument, XmlDocument},
@@ -27,6 +29,8 @@ impl Drop for ShareStringPart {
         let _ = self.close_document();
     }
 }
+
+impl XmlDocumentPartFlush for ShareStringPart {}
 
 impl XmlDocumentPartClose for ShareStringPart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>

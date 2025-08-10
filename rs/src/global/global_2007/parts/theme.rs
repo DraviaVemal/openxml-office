@@ -1,5 +1,5 @@
 use crate::element_dictionary::COMMON_TYPE_COLLECTION;
-use crate::global_2007::traits::XmlDocumentPartClose;
+use crate::global_2007::traits::{XmlDocumentPartClose, XmlDocumentPartFlush};
 use crate::{
     files::{OfficeDocument, XmlDeSerializer, XmlDocument},
     global_2007::{
@@ -22,6 +22,8 @@ impl Drop for ThemePart {
         let _ = self.close_document();
     }
 }
+
+impl XmlDocumentPartFlush for ThemePart {}
 
 impl XmlDocumentPartClose for ThemePart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>

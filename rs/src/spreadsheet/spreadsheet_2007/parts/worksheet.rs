@@ -12,7 +12,7 @@ use crate::{
     files::{OfficeDocument, XmlDeSerializer, XmlDocument},
     global_2007::{
         parts::RelationsPart,
-        traits::{Enum, XmlDocumentPartClose, XmlDocumentPartInitializing},
+        traits::{Enum, XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing},
     },
     log_elapsed,
     order_dictionary::EXCEL_ORDER_COLLECTION,
@@ -150,6 +150,8 @@ impl Drop for WorkSheet {
         let _ = self.close_document();
     }
 }
+
+impl XmlDocumentPartFlush for WorkSheet {}
 
 impl XmlDocumentPartClose for WorkSheet {
     /// Close and save this part
@@ -1537,7 +1539,7 @@ impl WorkSheet {
 // ##################################### Mut Feature Function ################################
 impl WorkSheet {
     /// Set Active cell of the current sheet
-    pub(crate) fn set_active_cell_mut(&mut self, selected_range: Vec<&str>) {}
+    pub(crate) fn set_active_cell_mut(&mut self, _selected_range: Vec<&str>) {}
 
     /// Set Column property
     /// # Arguments

@@ -1,7 +1,9 @@
 use crate::{
     element_dictionary::{Content, COMMON_TYPE_COLLECTION},
     files::{OfficeDocument, XmlDocument},
-    global_2007::traits::{XmlDocumentPartClose, XmlDocumentPartInitializing},
+    global_2007::traits::{
+        XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
+    },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use std::{cell::RefCell, collections::HashMap, rc::Weak};
@@ -20,6 +22,8 @@ impl Drop for RelationsPart {
         let _ = self.close_document();
     }
 }
+
+impl XmlDocumentPartFlush for RelationsPart {}
 
 impl XmlDocumentPartClose for RelationsPart {
     /// Close the Current Relation Document

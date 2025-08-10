@@ -1,7 +1,9 @@
 use crate::converters::ConverterUtil;
 use crate::element_dictionary::EXCEL_TYPE_COLLECTION;
 use crate::global_2007::parts::RelationsPart;
-use crate::global_2007::traits::{XmlDocumentPartClose, XmlDocumentPartInitializing};
+use crate::global_2007::traits::{
+    XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
+};
 use crate::log_elapsed;
 use crate::{
     files::{OfficeDocument, XmlDocument},
@@ -34,6 +36,8 @@ impl Drop for CalculationChainPart {
         let _ = self.close_document();
     }
 }
+
+impl XmlDocumentPartFlush for CalculationChainPart {}
 
 impl XmlDocumentPartClose for CalculationChainPart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>

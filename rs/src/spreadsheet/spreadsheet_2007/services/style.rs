@@ -4,7 +4,10 @@ use crate::{
     files::{OfficeDocument, XmlDeSerializer, XmlDocument, XmlElement},
     global_2007::{
         parts::RelationsPart,
-        traits::{Enum, XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartInitializing},
+        traits::{
+            Enum, XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartFlush,
+            XmlDocumentPartInitializing,
+        },
     },
     log_elapsed,
     spreadsheet_2007::models::{
@@ -43,6 +46,8 @@ impl Drop for StylePart {
         let _ = self.close_document();
     }
 }
+
+impl XmlDocumentPartFlush for StylePart {}
 
 impl XmlDocumentPartClose for StylePart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>
