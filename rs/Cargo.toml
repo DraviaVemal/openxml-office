@@ -9,7 +9,7 @@ homepage = "https://openxml-office.draviavemal.com/"
 readme = "./README.md"
 keywords = ["office", "openxml", "xlsx", "pptx", "docx"]
 categories = ["filesystem", "development-tools"]
-version = "4.0.0-alpha.6"
+version = "4.0.0-alpha.18"
 edition = "2021"
 
 [dependencies]
@@ -22,13 +22,18 @@ anyhow.workspace = true
 chrono.workspace = true
 flate2.workspace = true
 quick-xml.workspace = true
-tempfile.workspace = true
 zip.workspace = true
 serde = { version = "1.0.215", features = ["derive"] }
 phf = { version = "0.11.2", features = ["macros"] }
 tokio.workspace = true
-rand.workspace = true
 dashmap.workspace = true
 
 [dev-dependencies]
 criterion = "0.5"
+
+[features]
+document = []
+spreadsheet = []
+presentation = ["spreadsheet"]
+all = ["document", "spreadsheet", "presentation"]
+default = ["all"]

@@ -142,7 +142,7 @@ impl Excel {
     }
 
     /// Save/Replace the current file into target destination
-    pub fn save_as(mut self, file_name: &str) -> AnyResult<(), AnyError> {
+    pub fn save_as(mut self, file_name: &str) -> AnyResult<String, AnyError> {
         if self
             .list_sheet_names()
             .context("Failed to get Sheet Name List")?
@@ -164,8 +164,7 @@ impl Excel {
                     .try_borrow_mut()
                     .context("Save Office Document handle Failed")?
                     .save_as(file_name)
-                    .context("File Save Failed for the target path.")?;
-                Ok(())
+                    .context("File Save Failed for the target path.")
             },
             "File Save"
         )

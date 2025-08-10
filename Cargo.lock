@@ -791,7 +791,7 @@ dependencies = [
 
 [[package]]
 name = "draviavemal-openxml_office"
-version = "4.0.0-alpha.6"
+version = "4.0.0-alpha.18"
 dependencies = [
  "anyhow",
  "chrono",
@@ -800,9 +800,7 @@ dependencies = [
  "flate2",
  "phf",
  "quick-xml",
- "rand",
  "serde",
- "tempfile",
  "tokio",
  "uuid",
  "zip",
@@ -810,7 +808,7 @@ dependencies = [
 
 [[package]]
 name = "draviavemal-openxml_office_ffi"
-version = "4.0.0-alpha.4"
+version = "4.0.0-alpha.18"
 dependencies = [
  "anyhow",
  "cbindgen",

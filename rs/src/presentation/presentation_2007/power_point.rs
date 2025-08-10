@@ -53,7 +53,7 @@ impl PowerPoint {
     }
 
     /// Save/Replace the current file into target destination
-    pub fn save_as(self, file_name: &str) -> AnyResult<(), AnyError> {
+    pub fn save_as(self, file_name: &str) -> AnyResult<String, AnyError> {
         self.core_properties.flush()?;
         self.root_relations
             .try_borrow_mut()

@@ -79,7 +79,7 @@ pub extern "C" fn word_save_as(
     let word_ptr = word_ptr as *mut Word;
     let word = unsafe { Box::from_raw(word_ptr) };
     match word.save_as(&file_name) {
-        Result::Ok(()) => StatusCode::Success as i8,
+        Result::Ok(_full_path) => StatusCode::Success as i8,
         Err(e) => match CString::new(format!("Flat Buffer Parse Error. {}", e)) {
             Result::Ok(str) => {
                 unsafe { *out_error = str.into_raw() };

@@ -1,49 +1,61 @@
+// TODO
+// Update tokio task based read write in background without blocking user main program
 use crate::{
     file_handling::{compress_content, decompress_content},
     files::{XmlDeSerializer, XmlDocument, XmlSerializer},
     global_2007::parts::ContentTypesPart,
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
+use dashmap::DashMap;
 use std::{
     cell::RefCell,
-    collections::{HashMap, HashSet},
+    collections::HashSet,
+    env,
     fs::{metadata, remove_file, File},
     io::{Cursor, Read, Write},
+    path::Path,
     rc::{Rc, Weak},
 };
 use zip::{write::SimpleFileOptions, ZipArchive, ZipWriter};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub(crate) struct ExtractedDocument {
+    document_handle: Rc<RefCell<XmlDocument>>,
+    content_type: Option<String>,
+    file_extension: String,
+    extension_type: String,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct ArchivedDocument {
+    file_extension: String,
+    extension_type: String,
+    content_type: Option<String>,
+    compressed_size: usize,
+    uncompressed_size: usize,
+    compression_level: usize,
+    file_content: Option<Vec<u8>>,
+}
+
+#[derive(Debug, Clone)]
 pub(crate) struct OfficeDocument {
-    /// Key : File_Name -> Value : (File Handle, Content Type, File Extension, Extension Type)
-    xml_document_collection:
-        HashMap<String, (Rc<RefCell<XmlDocument>>, Option<String>, String, String)>,
-    /// Key : File_name -> Value : (File_Extension,Extension_Type,Content_type,Compressed_Size,Uncompressed_Size,Compression_Level,File_Content)
-    archive_collection: HashMap<
-        String,
-        (
-            String,
-            String,
-            Option<String>,
-            usize,
-            usize,
-            usize,
-            Option<Vec<u8>>,
-        ),
-    >,
+    /// Key : File_Name -> Value : Extracted content
+    xml_document_collection: DashMap<String, ExtractedDocument>,
+    /// Key : File_name -> Value : Prepared zip content
+    archive_collection: DashMap<String, ArchivedDocument>,
 }
 
 impl OfficeDocument {
     /// Create or Clone existing document to start with
     pub(crate) fn new(file_path: Option<String>) -> AnyResult<Self, AnyError> {
-        let mut archive_collection = HashMap::new();
+        let mut archive_collection = DashMap::new();
         if let Some(file_path) = file_path {
             // Load existing file to our system
             archive_collection = Self::deserialise_office_document(&file_path)
                 .context("Load OpenXML Archive Into deserializing Failed")?;
         }
         Ok(Self {
-            xml_document_collection: HashMap::new(),
+            xml_document_collection: DashMap::new(),
             archive_collection,
         })
     }
@@ -69,12 +81,12 @@ impl OfficeDocument {
         let weak_xml_document = Rc::downgrade(&ref_xml_document);
         self.xml_document_collection.insert(
             file_name.to_string(),
-            (
-                ref_xml_document.clone(),
-                content_type.clone(),
-                file_extension.clone(),
-                extension_type.clone(),
-            ),
+            ExtractedDocument {
+                document_handle: ref_xml_document.clone(),
+                content_type: content_type.clone(),
+                file_extension: file_extension.clone(),
+                extension_type: extension_type.clone(),
+            },
         );
         Ok(weak_xml_document)
     }
@@ -90,20 +102,19 @@ impl OfficeDocument {
                 "Please close the Existing object before creating new handle"
             ));
         }
-        if let Some((file_extension, extension_type, content_type, _, _, _, file_content)) =
-            self.archive_collection.remove(file_path)
-        {
-            let content = file_content.ok_or(anyhow!("Failed To Get content vec"))?;
+        if let Some((_, archive_document)) = self.archive_collection.remove(file_path) {
+            let content = archive_document
+                .file_content
+                .ok_or(anyhow!("Failed To Get content vec"))?;
             let decompressed_data =
                 decompress_content(&content).context("Raw Content Decompression Failed")?;
-            let xml_tree: XmlDocument =
-                XmlDeSerializer::vec_to_xml_doc_tree(decompressed_data, file_path)
-                    .context("Xml Serializer Failed")?;
+            let xml_tree = XmlDeSerializer::vec_to_xml_doc_tree(decompressed_data, file_path)
+                .context("Xml Serializer Failed")?;
             Ok(Some((
                 xml_tree,
-                content_type.clone(),
-                file_extension.clone(),
-                extension_type.clone(),
+                archive_document.content_type.clone(),
+                archive_document.file_extension.clone(),
+                archive_document.extension_type.clone(),
             )))
         } else {
             Ok(None)
@@ -112,10 +123,9 @@ impl OfficeDocument {
 
     /// Update the XML tree data to serialized xml and close the refCell
     pub(crate) fn close_xml_document(&mut self, file_path: &str) -> AnyResult<(), AnyError> {
-        if let Some((xml_document, content_type, file_extension, extension_type)) =
-            self.xml_document_collection.remove(file_path)
-        {
-            let mut xml_doc_mut = xml_document
+        if let Some((_, extracted_document)) = self.xml_document_collection.remove(file_path) {
+            let mut xml_doc_mut = extracted_document
+                .document_handle
                 .try_borrow_mut()
                 .context("Failed to get document handle")?;
             let uncompressed_data = XmlSerializer::xml_tree_to_vec(&mut xml_doc_mut, file_path)
@@ -129,34 +139,34 @@ impl OfficeDocument {
             self.archive_collection
                 .entry(file_path.to_string())
                 .and_modify(|value| {
-                    value.0 = file_extension.clone();
-                    value.1 = extension_type.clone();
-                    value.2 = content_type.clone();
-                    value.3 = compressed.len();
-                    value.4 = uncompressed_data.len();
-                    value.5 = compression_level;
-                    value.6 = Some(compressed.clone());
+                    value.file_extension = extracted_document.file_extension.clone();
+                    value.extension_type = extracted_document.extension_type.clone();
+                    value.content_type = extracted_document.content_type.clone();
+                    value.compressed_size = compressed.len();
+                    value.uncompressed_size = uncompressed_data.len();
+                    value.compression_level = compression_level;
+                    value.file_content = Some(compressed.clone());
                 })
-                .or_insert((
-                    file_extension,
-                    extension_type,
-                    content_type,
-                    compressed.len(),
-                    uncompressed_data.len(),
+                .or_insert(ArchivedDocument {
+                    file_extension: extracted_document.file_extension,
+                    extension_type: extracted_document.extension_type,
+                    content_type: extracted_document.content_type,
+                    compressed_size: compressed.len(),
+                    uncompressed_size: uncompressed_data.len(),
                     compression_level,
-                    Some(compressed),
-                ));
+                    file_content: Some(compressed),
+                });
         }
         Ok(())
     }
 
     /// Save Current Document to final result
-    pub(crate) fn save_as(&mut self, file_path: &str) -> AnyResult<(), AnyError> {
+    pub(crate) fn save_as(&mut self, file_path: &str) -> AnyResult<String, AnyError> {
         // Save the live content update object to xml
         let keys = self
             .xml_document_collection
-            .keys()
-            .cloned()
+            .iter()
+            .map(|item| item.key().clone())
             .collect::<Vec<String>>();
         for key_file_path in keys {
             self.close_xml_document(&key_file_path)
@@ -168,9 +178,17 @@ impl OfficeDocument {
         if metadata(file_path).is_ok() {
             remove_file(file_path).map_err(|e| anyhow!("Remove Save File Target Failed. {}", e))?;
         }
-        let mut file = File::create(file_path).context("Create Save File Failed")?;
+        let mut result_path = Path::new(file_path).to_path_buf();
+        let mut file: File;
+        if result_path.is_absolute() {
+            file = File::create(&result_path).context("Create Save File Failed")?;
+        } else {
+            result_path = env::current_dir()?.join(result_path);
+            file = File::create(&result_path).context("Create Save File Failed")?;
+        }
         file.write_all(&file_content)
-            .context("Save File Write Failed")
+            .context("Save File Write Failed")?;
+        Ok(result_path.to_string_lossy().to_string())
     }
 
     /// Save the object content into file archive
@@ -182,27 +200,19 @@ impl OfficeDocument {
         let zip_option = SimpleFileOptions::default().compression_level(Some(4));
         // Load Files into Archive and add Override for content types
         {
-            for (
-                file_name,
-                (
-                    file_extension,
-                    extension_type,
-                    content_type,
-                    _compress_size,
-                    _uncompress_size,
-                    _compression_level,
-                    file_content,
-                ),
-            ) in self.archive_collection.to_owned()
-            {
-                extensions.push((file_extension, extension_type));
-                if let Some(content_type) = content_type {
-                    overrides.push((format!("/{}", file_name), content_type));
+            for archive_document in self.archive_collection.iter() {
+                extensions.push((
+                    archive_document.value().file_extension.clone(),
+                    archive_document.value().extension_type.clone(),
+                ));
+                if let Some(content_type) = archive_document.value().content_type.clone() {
+                    overrides.push((format!("/{}", archive_document.key()), content_type));
                 }
                 zip_writer
-                    .start_file(file_name, zip_option)
+                    .start_file(archive_document.key(), zip_option)
                     .context("Zip File Write Start Fail")?;
-                if let Some(xml_content_compressed) = file_content {
+                if let Some(xml_content_compressed) = archive_document.value().file_content.clone()
+                {
                     let uncompressed =
                         decompress_content(&xml_content_compressed).context("Decompress Error")?;
                     zip_writer
@@ -234,23 +244,9 @@ impl OfficeDocument {
     /// Read Zip file and load it into object after compression
     fn deserialise_office_document(
         file_path: &str,
-    ) -> AnyResult<
-        HashMap<
-            String,
-            (
-                String,
-                String,
-                Option<String>,
-                usize,
-                usize,
-                usize,
-                Option<Vec<u8>>,
-            ),
-        >,
-        AnyError,
-    > {
+    ) -> AnyResult<DashMap<String, ArchivedDocument>, AnyError> {
         let file: File = File::open(file_path).context("Open Existing archive File")?;
-        let mut archive_collection = HashMap::new();
+        let archive_collection = DashMap::new();
         let mut zip_read: ZipArchive<File> =
             ZipArchive::new(file).context("Archive read Failed")?;
         let mut uncompressed_file = Vec::new();
@@ -297,15 +293,15 @@ impl OfficeDocument {
                 .context("Recompressing in GZip Failed")?;
             archive_collection.insert(
                 file_name,
-                (
+                ArchivedDocument {
                     file_extension,
                     extension_type,
                     content_type,
-                    compressed.len(),
-                    uncompressed_data.len(),
+                    compressed_size: compressed.len(),
+                    uncompressed_size: uncompressed_data.len(),
                     compression_level,
-                    Some(compressed),
-                ),
+                    file_content: Some(compressed),
+                },
             );
         }
         Ok(archive_collection)

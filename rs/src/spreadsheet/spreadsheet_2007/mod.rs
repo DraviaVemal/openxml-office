@@ -1,3 +1,4 @@
+#[cfg(feature = "spreadsheet")]
 pub mod excel;
 pub mod models;
 pub mod parts;

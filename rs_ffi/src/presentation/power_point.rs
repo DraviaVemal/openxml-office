@@ -86,7 +86,7 @@ pub extern "C" fn power_point_save_as(
     let power_point_ptr = power_point_ptr as *mut PowerPoint;
     let power_point = unsafe { Box::from_raw(power_point_ptr) };
     match power_point.save_as(&file_name) {
-        Result::Ok(()) => StatusCode::Success as i8,
+        Result::Ok(_full_path) => StatusCode::Success as i8,
         Err(e) => match CString::new(format!("Flat Buffer Parse Error. {}", e)) {
             Result::Ok(str) => {
                 unsafe { *out_error = str.into_raw() };

@@ -336,7 +336,7 @@ pub extern "C" fn excel_save_as(
     let excel_ptr = excel_ptr as *mut Excel;
     let excel = unsafe { Box::from_raw(excel_ptr) };
     match excel.save_as(&file_name) {
-        Result::Ok(()) => StatusCode::Success as i8,
+        Result::Ok(_full_path) => StatusCode::Success as i8,
         Err(err) => match CString::new(format!("Flat Buffer Parse Error. {}", err)) {
             Result::Ok(str) => {
                 unsafe { *out_error = str.into_raw() };

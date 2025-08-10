@@ -302,7 +302,7 @@ mod spreadsheet_test {
         let worksheet = file
             .get_worksheet_mut("formula".to_string())
             .expect("Failed to get worksheet");
-        let data = worksheet
+        let _data = worksheet
             .get_range_cell_properties(ReferenceRange {
                 column_start: 1,
                 column_end: 0,
@@ -310,9 +310,11 @@ mod spreadsheet_test {
                 row_end: 10,
             })
             .expect("Failed to get range data");
-        file.save_as(&get_save_file(None))
+        worksheet.flush().expect("Failed to write sheet data");
+        let result_path = file
+            .save_as(&get_save_file(None))
             .expect("Save File Failed");
-        assert!(true);
+        assert!(!result_path.is_empty());
     }
 
     #[test]
