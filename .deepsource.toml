@@ -1,0 +1,60 @@
+version = 1
+
+[[analyzers]]
+name = "csharp"
+directory = "cs"
+
+[[analyzers]]
+name = "rust"
+directory = "rs"
+
+[[analyzers]]
+name = "rust"
+directory = "rs_api"
+
+[[analyzers]]
+name = "rust"
+directory = "rs_ffi"
+
+[analyzers.meta]
+msrv = "stable"
+
+[[analyzers]]
+name = "python"
+directory = "python"
+
+[analyzers.meta]
+runtime_version = "3.x.x"
+
+[[analyzers]]
+name = "go"
+directory = "go"
+
+[analyzers.meta]
+import_root = "github.com/DraviaVemal/openxml-office"
+
+[[analyzers]]
+name = "java"
+directory = "java"
+
+[analyzers.meta]
+runtime_version = "11"
+
+[[transformers]]
+name = "gofmt"
+
+[[transformers]]
+name = "rustfmt"
+
+[[transformers]]
+name = "dotnet-format"
+
+[[transformers]]
+name = "google-java-format"
+
+[[transformers]]
+name = "autopep8"
+
+[[analyzers]]
+name = "test-coverage"
+enabled = true

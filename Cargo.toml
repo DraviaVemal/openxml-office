@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = ["rs", "rs_test", "rs_ffi", "rs_api"]
+package.authors = ["Dravia Vemal <contact@draviavemal.com>"]
+
+[workspace.dependencies]
+uuid = { version = "1.11.0", features = [
+    "v4",
+    "fast-rng",
+    "macro-diagnostics",
+] }
+anyhow = "1.0.90"
+chrono = "0.4.38"
+flate2 = "1.0.34"
+quick-xml = "0.37.0"
+tempfile = "3.13.0"
+zip = "2.3.0"
+serde = { version = "1.0.215", features = ["derive"] }
+phf = { version = "0.11.2", features = ["macros"] }
+tokio = "1.43.1"
+rand = "0.8.5"
+dashmap = "6.1.0"
+criterion = "0.7.0"
+draviavemal-xml_rs = "0.1.0-alpha.1"
+draviavemal-openxml_office = { path = "rs" }

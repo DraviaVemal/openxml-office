@@ -1,0 +1,24 @@
+[package]
+name = "draviavemal-openxml_office_ffi"
+authors = ["Dravia Vemal"]
+description = "FFI Interface crate for multi language support expansion"
+license = "MIT"
+repository = "https://github.com/DraviaVemal/openxml-office"
+documentation = "https://openxml-office.draviavemal.com/"
+version = "4.0.0-alpha.18"
+edition = "2021"
+include = ["src/**", "Cargo.toml", "Cargo.lock", "README.md"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+draviavemal-openxml_office = { path = "../rs" }
+flatbuffers = "24.3.25"
+anyhow = "1.0.90"
+
+[profile.dev]
+debug = true
+
+[build-dependencies]
+cbindgen = "0.27.0"

@@ -1,0 +1,3 @@
+**/*.dll
+*/*.so
+**/openxml_office/

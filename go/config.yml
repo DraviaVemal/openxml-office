@@ -1,0 +1,10 @@
+GENERATOR:
+  PackageName: draviavemal_openxml_office_ffi
+  PackageDescription: "FFI Core for rust openxml-office"
+  PackageLicense: "MIT License"
+  FlagGroups:
+  - {name: LDFLAGS, flags: [-L./lib -ldraviavemal_openxml_office_ffi]}
+
+PARSER:
+  IncludePaths: ["./lib"]
+  SourcesPaths: ["headers.h"]

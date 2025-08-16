@@ -1,0 +1,12 @@
+[test_config]
+name = "openxml-office"
+workspace = true
+force-clean = true
+count = true
+output-dir = "./coverage"
+# fail-under = 60
+engine = "Llvm"
+run-types = ["AllTargets"]
+out = ["Xml"]
+exclude = ["draviavemal-openxml_office_ffi"]
+exclude-files = ["flatbuffers/**", "**/consolidated_generated.rs","ts/**"]

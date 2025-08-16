@@ -1,0 +1,1 @@
+# openxml-office python wrapper for rust core

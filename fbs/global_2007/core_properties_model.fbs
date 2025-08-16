@@ -1,0 +1,13 @@
+namespace openxml_office_fbs.global_2007;
+
+table CorePropertiesModel {
+  title: string;
+  subject: string;
+  description: string;
+  tags: string;
+  category: string;
+  creator: string;
+}
+
+// Root type
+root_type CorePropertiesModel;

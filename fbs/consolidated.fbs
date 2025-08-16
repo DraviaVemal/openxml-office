@@ -1,0 +1,4 @@
+include "global_2007/consolidated.fbs";
+include "spreadsheet_2007/consolidated.fbs";
+include "presentation_2007/consolidated.fbs";
+include "document_2007/consolidated.fbs";

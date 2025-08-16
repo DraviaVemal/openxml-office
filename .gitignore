@@ -1,0 +1,109 @@
+# RustRover
+**/.idea
+
+# Rust specific
+/target/
+**/*.rs.bk
+*_generated.rs
+
+# Flatbuffer generated files
+*.pb.cc
+*.pb.h
+*.pb.go
+*.pb.py
+*.pb.cs
+*.pb.ts
+*.pb.dart
+
+# C#, .NET generated files
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.nuget/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+/.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.venv/
+.eggs
+
+# Go
+*.test
+vendor/
+*.exe
+
+# TypeScript
+node_modules/
+dist/
+*.tsbuildinfo
+
+# macOS generated files
+.DS_Store
+.AppleDouble
+.LSOverride
+.dylib
+
+# Windows generated files
+Thumbs.db
+Desktop.ini
+.dll
+
+# Linux generated files
+*.out
+*.dSYM/
+.so
+
+# Logs and databases
+*.log
+*.env
+*.bak
+*.db
+
+# IDE/editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.orig
+*.bak
+
+# Typescript 
+**/*.node
+**/*.d.ts
+
+# Commons
+**/openxml_office_fbs
+**/target
+**/lib
+**/test_results
+
+# Rust
+target
+
+# CS
+!cd/test/test_files/**
+
+# Python
+
+# Java
+
+# Go
+
+# Test Coverage
+coverage

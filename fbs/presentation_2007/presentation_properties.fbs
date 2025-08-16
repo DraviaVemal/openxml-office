@@ -1,0 +1,18 @@
+include "../global_2007/consolidated.fbs";
+
+namespace openxml_office_fbs.presentation_2007;
+
+// Define the PresentationProperties table with three fields
+table PresentationProperties {
+  settings: PresentationSettings;
+  theme: global_2007.ThemePalletModel;
+  core_properties: global_2007.CorePropertiesModel;
+}
+
+// Define the PresentationSettings table
+table PresentationSettings {
+  // Add fields here as needed
+}
+
+// Root type
+root_type PresentationProperties;

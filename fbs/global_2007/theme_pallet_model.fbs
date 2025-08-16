@@ -1,0 +1,19 @@
+namespace openxml_office_fbs.global_2007;
+
+table ThemePalletModel {
+  accent1: string;
+  accent2: string;
+  accent3: string;
+  accent4: string;
+  accent5: string;
+  accent6: string;
+  dark1: string;
+  dark2: string;
+  light1: string;
+  light2: string;
+  hyperlink: string;
+  followed_hyperlink: string;
+}
+
+// Root type
+root_type ThemePalletModel;

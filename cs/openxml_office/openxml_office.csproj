@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <None Update="lib\draviavemal_openxml_office_ffi.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+    </None>
+    <None Update="lib\draviavemal_openxml_office_ffi.so">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Models/" />
+  </ItemGroup>
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <PackageId>draviavemal.openxml-office</PackageId>
+    <WeaverCosturaOutputInProjectFolder>true</WeaverCosturaOutputInProjectFolder>
+    <PackageDescription></PackageDescription>
+    <PackageTags>OpenXML;Excel;SpreadSheet;Office;xls;xlsx;Document;Word;doc;docx;Power Point;Presentation;ppt;pptx</PackageTags>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.FlatBuffers" Version="24.12.23" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+</Project>

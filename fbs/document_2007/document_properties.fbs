@@ -1,0 +1,18 @@
+include "../global_2007/consolidated.fbs";
+
+namespace openxml_office_fbs.document_2007;
+
+// Define the DocumentProperties table with three fields
+table DocumentProperties {
+  settings: DocumentSettings;
+  theme: global_2007.ThemePalletModel;
+  core_properties: global_2007.CorePropertiesModel;
+}
+
+// Define the DocumentSettings table
+table DocumentSettings {
+  // Add fields here as needed
+}
+
+// Root type
+root_type DocumentProperties;
