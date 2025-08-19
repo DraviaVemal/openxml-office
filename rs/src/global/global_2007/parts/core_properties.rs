@@ -11,7 +11,7 @@ use crate::{
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use chrono::Utc;
-use draviavemal_xml_rs::{XmlDeSerializer, XmlDocument};
+use draviavemal_xml_rs::{XmlDeserializer, XmlDocument};
 use std::{cell::RefCell, rc::Weak};
 
 #[derive(Debug)]
@@ -39,31 +39,37 @@ impl XmlDocumentPartClose for CorePropertiesPart {
             let mut xml_document = xml_document_ref
                 .try_borrow_mut()
                 .context("Failed to Pull Office document")?;
-            match xml_document
-                .get_first_element_mut(vec!["cp:coreProperties", "dcterms:modified"], None)
+            let root_id = xml_document.get_root_id();
+            if let Some(core_prop_id) = xml_document
+                .find_first_child(root_id, "cp:coreProperties")
+                .context("Failed to get core property element child")?
             {
-                Ok(result) => {
-                    if let Some(element) = result {
-                        element.set_value_mut(
-                            Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                        );
-                    }
+                if let Some(modified_id) = xml_document
+                    .find_first_child(core_prop_id, "dcterms:created")
+                    .context("Failed to get modified element child")?
+                {
+                    let modified_element = xml_document
+                        .get_element_mut(modified_id)
+                        .context("Failed to get modified element")?;
+                    modified_element
+                        .add_text_mut(
+                            &Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                        )
+                        .context("Failed to add created timespamp")?;
                 }
-                Err(_) => (),
-            }
-            match xml_document
-                .get_first_element_mut(vec!["cp:coreProperties", "dcterms:created"], None)
-            {
-                Ok(result) => {
-                    if let Some(element) = result {
-                        if !element.has_value() {
-                            element.set_value_mut(
-                                Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                            );
-                        }
-                    }
+                if let Some(modified_id) = xml_document
+                    .find_first_child(core_prop_id, "dcterms:modified")
+                    .context("Failed to get modified element child")?
+                {
+                    let modified_element = xml_document
+                        .get_element_mut(modified_id)
+                        .context("Failed to get modified element")?;
+                    modified_element
+                        .add_text_mut(
+                            &Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                        )
+                        .context("Failed to add modified timespamp")?;
                 }
-                Err(_) => (),
             }
         }
         // Update the current state to DB before dropping the object
@@ -83,9 +89,8 @@ impl XmlDocumentPartInitializing for CorePropertiesPart {
     {
         let content = COMMON_TYPE_COLLECTION.get("docProps_core").unwrap();
         Ok((
-            XmlDeSerializer::vec_to_xml_doc_tree(
+            XmlDeserializer::vec_to_xml_doc_tree(
                 include_str!("core_properties.xml").as_bytes().to_vec(),
-                "Default Core Prop",
             )
             .context("Initializing Core Property Failed")?,
             Some(content.content_type.to_string()),

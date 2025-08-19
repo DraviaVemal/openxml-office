@@ -7,8 +7,8 @@ use crate::global_2007::traits::{
 use crate::log_elapsed;
 use crate::{files::OfficeDocument, global_2007::traits::XmlDocumentPart};
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::XmlDocument;
-use std::{cell::RefCell, collections::HashMap, rc::Weak};
+use draviavemal_xml_rs::{XmlAttribute, XmlDocument};
+use std::{cell::RefCell, rc::Weak};
 
 #[derive(Debug)]
 pub(crate) struct CalculationChain {
@@ -50,33 +50,44 @@ impl XmlDocumentPartClose for CalculationChainPart {
                             let mut xml_doc_mut = xml_document
                                 .try_borrow_mut()
                                 .context("Failed to pull document handle")?;
+                            let root_id = xml_doc_mut.get_root_id();
                             for calc_chain in self.calculation_collection.iter() {
-                                let mut attributes = HashMap::new();
-                                attributes.insert("r".to_string(), calc_chain.cell_ref.to_string());
-                                attributes.insert("i".to_string(), calc_chain.sheet_id.to_string());
+                                let mut attributes = vec![
+                                    XmlAttribute::new(
+                                        "r".to_string(),
+                                        calc_chain.cell_ref.to_string(),
+                                    ),
+                                    XmlAttribute::new(
+                                        "i".to_string(),
+                                        calc_chain.sheet_id.to_string(),
+                                    ),
+                                ];
                                 if let Some(is_leaf) = calc_chain.level_calcualtion {
-                                    attributes.insert(
+                                    attributes.push(XmlAttribute::new(
                                         "l".to_string(),
                                         ConverterUtil::bool_xml_flag(&is_leaf),
-                                    );
+                                    ));
                                 }
                                 if let Some(formulat_type) = calc_chain.formula_type.as_ref() {
-                                    attributes.insert("t".to_string(), formulat_type.to_string());
+                                    attributes.push(XmlAttribute::new(
+                                        "t".to_string(),
+                                        formulat_type.to_string(),
+                                    ));
                                 }
                                 if let Some(share_formula) = calc_chain.share_formula {
-                                    attributes.insert(
+                                    attributes.push(XmlAttribute::new(
                                         "s".to_string(),
                                         ConverterUtil::bool_xml_flag(&share_formula),
-                                    );
+                                    ));
                                 }
                                 if let Some(array_formula) = calc_chain.array_formula {
-                                    attributes.insert(
+                                    attributes.push(XmlAttribute::new(
                                         "a".to_string(),
                                         ConverterUtil::bool_xml_flag(&array_formula),
-                                    );
+                                    ));
                                 }
                                 xml_doc_mut
-                                    .append_child_mut("c", None, Some(attributes))
+                                    .append_child_element_mut(root_id, "c", Some(attributes))
                                     .context("Failed To Add Child Item")?;
                             }
                         }
@@ -109,18 +120,17 @@ impl XmlDocumentPartInitializing for CalculationChainPart {
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
         let content = EXCEL_TYPE_COLLECTION.get("calc_chain").unwrap();
-        let mut attributes: HashMap<String, String> = HashMap::new();
-        attributes.insert(
+        let attributes = vec![XmlAttribute::new(
             "xmlns".to_string(),
             EXCEL_TYPE_COLLECTION
                 .get("calc_chain")
                 .unwrap()
                 .schemas_namespace
                 .to_string(),
-        );
+        )];
         let mut xml_document = XmlDocument::new();
         xml_document
-            .create_root_mut("calcChain", Some(attributes))
+            .create_root_element_mut("calcChain", Some(attributes))
             .context("Create XML Root Element Failed")?;
         Ok((
             xml_document,
@@ -177,46 +187,58 @@ impl CalculationChainPart {
     ) -> AnyResult<Vec<CalculationChain>, AnyError> {
         let mut calculation_collection = Vec::new();
         if let Some(xml_document) = xml_document.upgrade() {
-            let mut xml_doc_mut = xml_document
-                .try_borrow_mut()
-                .context("xml doc borrow failed")?;
-            if let Some(elements) = xml_doc_mut.pop_elements_by_tag_mut("c", None) {
-                for element in elements {
-                    if let Some(attributes) = element.get_attribute() {
-                        calculation_collection.push(CalculationChain {
-                            cell_ref: attributes["r"].clone(),
-                            sheet_id: attributes
-                                .get("i")
-                                .unwrap_or(&"1".to_string())
-                                .clone()
-                                .parse::<u32>()
-                                .context("Failed to Convert Sheet ID")?, // Set Default Sheet id to 1
-                            level_calcualtion: if let Some(is_leaf) = attributes.get("l").cloned() {
-                                Some(ConverterUtil::normalize_bool_property_bool(&is_leaf))
-                            } else {
-                                None
-                            },
-                            formula_type: attributes.get("t").cloned(),
-                            share_formula: if let Some(is_share_formula) =
-                                attributes.get("s").cloned()
-                            {
-                                Some(ConverterUtil::normalize_bool_property_bool(
-                                    &is_share_formula,
-                                ))
-                            } else {
-                                None
-                            },
-                            array_formula: if let Some(is_array_formula) =
-                                attributes.get("a").cloned()
-                            {
-                                Some(ConverterUtil::normalize_bool_property_bool(
-                                    &is_array_formula,
-                                ))
-                            } else {
-                                None
-                            },
-                        });
-                    }
+            let xml_document = xml_document.try_borrow().context("xml doc borrow failed")?;
+            let root_id = xml_document.get_root_id();
+            if let Some(c_ids) = xml_document
+                .find_all_child(root_id, "c")
+                .context("Failed to get c element group")?
+            {
+                for c_id in c_ids {
+                    let c_element = xml_document
+                        .get_element(c_id)
+                        .context("Failed to get element")?;
+                    calculation_collection.push(CalculationChain {
+                        cell_ref: c_element
+                            .get_attribute("r")
+                            .context("Failed to get mandatory r attribute")?
+                            .get_value()
+                            .to_owned(),
+                        sheet_id: c_element
+                            .get_attribute("i")
+                            .unwrap_or(&XmlAttribute::new("i".to_owned(), "1".to_owned()))
+                            .get_value()
+                            .parse::<u32>()
+                            .context("Failed to Convert Sheet ID")?, // Set Default Sheet id to 1
+                        level_calcualtion: if let Some(is_leaf) = c_element.get_attribute("l") {
+                            Some(ConverterUtil::normalize_bool_property_bool(
+                                is_leaf.get_value(),
+                            ))
+                        } else {
+                            None
+                        },
+                        formula_type: if let Some(t_attr) = c_element.get_attribute("t") {
+                            Some(t_attr.get_value().to_owned())
+                        } else {
+                            None
+                        },
+                        share_formula: if let Some(is_share_formula) = c_element.get_attribute("s")
+                        {
+                            Some(ConverterUtil::normalize_bool_property_bool(
+                                is_share_formula.get_value(),
+                            ))
+                        } else {
+                            None
+                        },
+                        array_formula: if let Some(is_array_formula) =
+                            c_element.get_attribute("a").cloned()
+                        {
+                            Some(ConverterUtil::normalize_bool_property_bool(
+                                is_array_formula.get_value(),
+                            ))
+                        } else {
+                            None
+                        },
+                    });
                 }
             }
         }

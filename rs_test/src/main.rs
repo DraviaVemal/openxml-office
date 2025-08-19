@@ -2,7 +2,6 @@ mod document;
 mod presentation;
 mod spreadsheet;
 
-
 fn main() {
-    println!("Hello, world!");
+    println!("Run `cargo test` for results");
 }

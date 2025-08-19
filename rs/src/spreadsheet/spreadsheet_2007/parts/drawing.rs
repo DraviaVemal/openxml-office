@@ -5,21 +5,17 @@ use std::{
 };
 
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{XmlDeSerializer, XmlDocument};
+use draviavemal_xml_rs::{XmlDeserializer, XmlDocument};
 
 use crate::{
     element_dictionary::EXCEL_TYPE_COLLECTION,
     files::OfficeDocument,
     global_2007::{
-        models::AnchorPosition,
         parts::{DrawingPartGlobal, RelationsPart},
         traits::{XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing},
     },
     log_elapsed,
-    spreadsheet_2007::{
-        models::{AbsoluteAnchor, DrawingAnchor, OneCellAnchor, Picture, TwoCellAnchor},
-        services::CommonServices,
-    },
+    spreadsheet_2007::{models::DrawingAnchor, services::CommonServices},
 };
 
 #[derive(Debug)]
@@ -81,11 +77,8 @@ impl XmlDocumentPartInitializing for DrawingPart {
             <xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
             </xdr:wsDr>"#;
         Ok((
-            XmlDeSerializer::vec_to_xml_doc_tree(
-                template_core_properties.as_bytes().to_vec(),
-                "Default Drawing",
-            )
-            .context("Initializing Drawing part Failed")?,
+            XmlDeserializer::vec_to_xml_doc_tree(template_core_properties.as_bytes().to_vec())
+                .context("Initializing Drawing part Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -156,34 +149,13 @@ impl DrawingPart {
             let xml_doc_mut = xml_document
                 .try_borrow_mut()
                 .context("Failed to get XML doc handle")?;
-            if let Some(root_element) = xml_doc_mut.get_element(&0) {
-                let anchor_collection = VecDeque::new();
-                loop {
-                    if let Some((anchor_element_id, anchor_element_tag)) =
-                        root_element.pop_child_mut()
-                    {
-                        let anchor_element = xml_doc_mut
-                            .get_element(&anchor_element_id)
-                            .context("Failed to locate Child element")?;
-                        match anchor_element_tag.as_str() {
-                            "absoluteAnchor" => {}
-                            "oneCellAnchor" => {}
-                            "twoCellAnchor" => {}
-                            _ => {
-                                return Err(anyhow!(
-                                    "Unhandled Drawing Component Detected. '{}'",
-                                    anchor_element_tag
-                                ));
-                            }
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                Ok(Some(anchor_collection))
-            } else {
-                Ok(None)
-            }
+            let root_id = xml_doc_mut.get_root_id();
+            let root_element = xml_doc_mut
+                .get_element(root_id)
+                .context("Failed to get root element");
+            let anchor_collection = VecDeque::new();
+
+            Ok(Some(anchor_collection))
         } else {
             Ok(None)
         }

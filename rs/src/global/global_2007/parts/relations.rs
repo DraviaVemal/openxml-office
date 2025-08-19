@@ -7,8 +7,8 @@ use crate::{
     utils,
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::XmlDocument;
-use std::{cell::RefCell, collections::HashMap, path::Path, rc::Weak};
+use draviavemal_xml_rs::{XmlAttribute, XmlDocument};
+use std::{cell::RefCell, path::Path, rc::Weak};
 
 #[derive(Debug)]
 pub(crate) struct RelationsPart {
@@ -59,14 +59,15 @@ impl XmlDocumentPartInitializing for RelationsPart {
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
         let relationship_content = COMMON_TYPE_COLLECTION.get("rels").unwrap();
-        let mut attributes = HashMap::new();
-        attributes.insert(
-            "xmlns".to_string(),
-            relationship_content.schemas_namespace.to_string(),
-        );
         let mut xml_document = XmlDocument::new();
         xml_document
-            .create_root_mut("Relationships", Some(attributes))
+            .create_root_element_mut(
+                "Relationships",
+                Some(vec![XmlAttribute::new(
+                    "xmlns".to_string(),
+                    relationship_content.schemas_namespace.to_string(),
+                )]),
+            )
             .context("Create XML Root Element Failed")?;
         Ok((
             xml_document,
@@ -105,27 +106,37 @@ impl RelationsPart {
             let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
                 .context("Failed for get XML Handle")?;
-            if let Some(relationship_elements) =
-                xml_doc_mut.pop_elements_by_tag_mut("Relationship", None)
-            {
+            let root_id = xml_doc_mut.get_root_id();
+            let relationship_ids = xml_doc_mut
+                .find_all_child(root_id, "Relationship")
+                .context("Failed to get relationship list")?;
+            if let Some(relationship_elements) = relationship_ids {
                 for relationship_element in relationship_elements {
-                    let attributes = relationship_element
-                        .get_attribute()
-                        .context("Failed! Relationship attributes missing")?;
+                    let relationship_element = xml_doc_mut
+                        .get_element_mut(relationship_element)
+                        .context("Failed to get relationship element")?;
                     relationships.push((
-                        attributes
-                            .get("Id")
+                        relationship_element
+                            .get_attribute("Id")
                             .context("Failed. Id in relationship Not Fount!")?
+                            .get_value()
                             .to_string(),
-                        attributes
-                            .get("Target")
+                        relationship_element
+                            .get_attribute("Target")
                             .context("Failed. Target in relationship Not Fount!")?
+                            .get_value()
                             .to_string(),
-                        attributes
-                            .get("Type")
+                        relationship_element
+                            .get_attribute("Type")
                             .context("Failed. Type in relationship Not Fount!")?
+                            .get_value()
                             .to_string(),
-                        attributes.get("TargetMode").cloned(),
+                        if let Some(target_mode) = relationship_element.get_attribute("TargetMode")
+                        {
+                            Some(target_mode.get_value().to_string())
+                        } else {
+                            None
+                        },
                     ));
                 }
             }
@@ -246,27 +257,26 @@ impl RelationsPart {
     /// Save the relationship detail to xml document
     pub(crate) fn save_relationship_to_doc(&mut self) -> AnyResult<bool, AnyError> {
         if let Some(xml_tree_ref) = self.xml_document.upgrade() {
-            let mut xml_tree = xml_tree_ref
+            let mut xml_document = xml_tree_ref
                 .try_borrow_mut()
                 .context("Failed to pull XML Handle")?;
-            let child_count = xml_tree
-                .get_root()
+            let root_id = xml_document.get_root_id();
+            let child_count = xml_document
+                .get_element(root_id)
                 .context("No Root Relationship Element Found")?
-                .get_child_count();
+                .get_child_element_count()?;
             for relationship in self.relationships.clone() {
-                let relationship_element = xml_tree
-                    .append_child_mut("Relationship", None, None)
-                    .context("Failed to add relationship element")?;
-                let mut attributes = HashMap::new();
-                attributes.insert("Id".to_string(), relationship.0);
-                attributes.insert("Target".to_string(), relationship.1);
-                attributes.insert("Type".to_string(), relationship.2);
+                let mut attributes = vec![
+                    XmlAttribute::new("Id".to_string(), relationship.0),
+                    XmlAttribute::new("Target".to_string(), relationship.1),
+                    XmlAttribute::new("Type".to_string(), relationship.2),
+                ];
                 if let Some(target_mode) = relationship.3 {
-                    attributes.insert("TargetMode".to_string(), target_mode);
+                    attributes.push(XmlAttribute::new("TargetMode".to_string(), target_mode));
                 }
-                relationship_element
-                    .set_attribute_mut(attributes)
-                    .context("Failed to set Relationship attributes")?;
+                xml_document
+                    .append_child_element_mut(root_id, "Relationship", Some(attributes))
+                    .context("Failed to add relationship element")?;
             }
             Ok(child_count > 0 || self.relationships.len() > 0)
         } else {

@@ -18,7 +18,9 @@ use crate::{
     },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{XmlDeSerializer, XmlDocument, XmlElement};
+use draviavemal_xml_rs::{
+    NodeId, XmlAttribute, XmlDeserializer, XmlDocument, XmlElement, XmlElementContentType,
+};
 use std::{
     cell::RefCell,
     collections::{HashMap, VecDeque},
@@ -90,11 +92,8 @@ impl XmlDocumentPartInitializing for StylePart {
     {
         let content = EXCEL_TYPE_COLLECTION.get("style").unwrap();
         Ok((
-            XmlDeSerializer::vec_to_xml_doc_tree(
-                include_str!("style.xml").as_bytes().to_vec(),
-                "Default Style",
-            )
-            .context("Initializing Theme Failed")?,
+            XmlDeserializer::vec_to_xml_doc_tree(include_str!("style.xml").as_bytes().to_vec())
+                .context("Initializing Theme Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -183,367 +182,399 @@ impl StylePart {
             let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
                 .context("xml doc borrow failed")?;
-            // Load Number Format Region
-            if let Some(mut number_formats_vec) =
-                xml_doc_mut.pop_elements_by_tag_mut("numFmts", None)
+            let root_id = xml_doc_mut.get_root_id();
+            if let Some(number_format_id) = xml_doc_mut
+                .find_first_child(root_id, "numFmts")
+                .context("Failed to get number format element")?
             {
-                if let Some(number_formats) = number_formats_vec.pop() {
-                    // Load Number Format from File if exist
-                    loop {
-                        if let Some((element_id, _)) = number_formats.pop_child_mut() {
-                            let num_fmt = xml_doc_mut
-                                .pop_element_mut(&element_id)
-                                .context("Element not Found Error")?;
-                            if let Some(attributes) = num_fmt.get_attribute() {
-                                let mut number_format = NumberFormat::default();
-                                number_format.format_id = attributes
-                                    .get("numFmtId")
-                                    .context("numFmtId Attribute Not Found!")?
-                                    .parse()
-                                    .context("Number format ID parsing Failed")?;
-                                number_format.format_code = attributes
-                                    .get("formatCode")
-                                    .context("formatCode Attribute Not Found!")?
-                                    .to_string();
-                                let mut hasher = DefaultHasher::new();
-                                number_format.hash(&mut hasher);
-                                num_format_records.push((hasher.finish(), number_format));
-                            }
-                        } else {
-                            break;
-                        }
+                if let Some(num_fmt_ids) = xml_doc_mut
+                    .find_all_child(number_format_id, "numFmt")
+                    .context("Failed to get element group")?
+                {
+                    for num_fmt_id in num_fmt_ids {
+                        let mut number_format = NumberFormat::default();
+                        let num_fmt_element = xml_doc_mut
+                            .get_element(num_fmt_id)
+                            .context("Failed to get number format element")?;
+                        number_format.format_id = num_fmt_element
+                            .get_attribute("numFmtId")
+                            .context("numFmtId Attribute Not Found!")?
+                            .get_value()
+                            .parse()
+                            .context("Number format ID parsing Failed")?;
+                        number_format.format_code = num_fmt_element
+                            .get_attribute("formatCode")
+                            .context("formatCode Attribute Not Found!")?
+                            .get_value()
+                            .to_owned();
+                        let mut hasher = DefaultHasher::new();
+                        number_format.hash(&mut hasher);
+                        num_format_records.push((hasher.finish(), number_format));
                     }
                 }
+                xml_doc_mut
+                    .remove_element_mut(number_format_id)
+                    .context("Failed to clear numFmt element childs")?;
             }
-            if let Some(mut fonts_vec) = xml_doc_mut.pop_elements_by_tag_mut("fonts", None) {
-                if let Some(fonts) = fonts_vec.pop() {
-                    // fonts
-                    loop {
-                        // Loop every font element
-                        if let Some((font_id, _)) = fonts.pop_child_mut() {
-                            // font
-                            let font = xml_doc_mut
-                                .pop_element_mut(&font_id)
-                                .context("Element not Found Error")?;
+            if let Some(fonts_id) = xml_doc_mut
+                .find_first_child(root_id, "fonts")
+                .context("Failed to get fonts element")?
+            {
+                if let Some(font_ids) = xml_doc_mut
+                    .find_all_child(fonts_id, "font")
+                    .context("Failed to get font element group")?
+                {
+                    for font_id in font_ids {
+                        if let Some(font_element_childs) = xml_doc_mut
+                            .get_element(font_id)
+                            .context("Failed to get font element")?
+                            .get_child_contents()
+                        {
                             let mut font_style = FontStyle::default();
-                            loop {
-                                if let Some((item_id, _)) = font.pop_child_mut() {
-                                    let current_element = xml_doc_mut
-                                        .pop_element_mut(&item_id)
-                                        .context("Failed to pull child element")?;
-                                    match current_element.get_tag() {
-                                        "b" => font_style.is_bold = true,
-                                        "u" => {
-                                            if let Some(attributes) =
-                                                current_element.get_attribute()
-                                            {
-                                                if let Some(double) = attributes.get("val") {
-                                                    if double == "double" {
+                            for font_element_child in font_element_childs {
+                                match font_element_child {
+                                    XmlElementContentType::Element((id, _, _)) => {
+                                        let current_element = xml_doc_mut
+                                            .get_element(*id)
+                                            .context("Failed to get child element")?;
+                                        match current_element.get_tag().as_str() {
+                                            "b" => font_style.is_bold = true,
+                                            "u" => {
+                                                if let Some(double) =
+                                                    current_element.get_attribute("val")
+                                                {
+                                                    if double.get_value() == "double" {
                                                         font_style.is_double_underline = true;
                                                     }
                                                 }
+                                                font_style.is_underline = false;
                                             }
-                                            font_style.is_underline = false;
-                                        }
-                                        "i" => font_style.is_italic = false,
-                                        "sz" => {
-                                            if let Some(attributes) =
-                                                current_element.get_attribute()
-                                            {
-                                                if let Some(val) = attributes.get("val") {
+                                            "i" => font_style.is_italic = false,
+                                            "sz" => {
+                                                if let Some(val) =
+                                                    current_element.get_attribute("val")
+                                                {
                                                     font_style.size = val
+                                                        .get_value()
                                                         .parse()
                                                         .context("Font Size Parse Failed")?
                                                 }
                                             }
-                                        }
-                                        "color" => {
-                                            if let Some(attributes) =
-                                                current_element.get_attribute()
-                                            {
-                                                if let Some(theme) = attributes.get("theme") {
+                                            "color" => {
+                                                if let Some(theme) =
+                                                    current_element.get_attribute("theme")
+                                                {
                                                     font_style.color.color_setting_type =
                                                         ColorSettingTypeValues::Theme;
                                                     font_style.color.value = theme
+                                                        .get_value()
                                                         .parse()
                                                         .context("Font color theme parse failed")?
-                                                } else if let Some(rgb) = attributes.get("rgb") {
+                                                } else if let Some(rgb) =
+                                                    current_element.get_attribute("rgb")
+                                                {
                                                     font_style.color.color_setting_type =
                                                         ColorSettingTypeValues::Rgb;
-                                                    let rgb_string = rgb.to_string();
+                                                    let rgb_string = rgb.get_value().to_string();
                                                     font_style.color.value = rgb_string;
                                                 } else if let Some(indexed) =
-                                                    attributes.get("indexed")
+                                                    current_element.get_attribute("indexed")
                                                 {
                                                     font_style.color.color_setting_type =
                                                         ColorSettingTypeValues::Indexed;
-                                                    let indexed_string = indexed.to_string();
+                                                    let indexed_string =
+                                                        indexed.get_value().to_string();
                                                     font_style.color.value = indexed_string;
                                                 }
                                             }
-                                        }
-                                        "name" => {
-                                            if let Some(attributes) =
-                                                current_element.get_attribute()
-                                            {
-                                                if let Some(val) = attributes.get("val") {
-                                                    font_style.name = val.to_string()
+                                            "name" => {
+                                                if let Some(val) =
+                                                    current_element.get_attribute("val")
+                                                {
+                                                    font_style.name = val.get_value().to_string()
                                                 }
                                             }
-                                        }
-                                        "family" => {
-                                            if let Some(attributes) =
-                                                current_element.get_attribute()
-                                            {
-                                                if let Some(val) = attributes.get("val") {
+                                            "family" => {
+                                                if let Some(val) =
+                                                    current_element.get_attribute("val")
+                                                {
                                                     font_style.family = val
+                                                        .get_value()
                                                         .parse()
                                                         .context("Font Size Parse Failed")?
                                                 }
                                             }
-                                        }
-                                        "scheme" => {
-                                            if let Some(attributes) =
-                                                current_element.get_attribute()
-                                            {
-                                                if let Some(val) = attributes.get("val") {
+                                            "scheme" => {
+                                                if let Some(val) =
+                                                    current_element.get_attribute("val")
+                                                {
                                                     font_style.font_scheme =
-                                                        FontSchemeValues::get_enum(val)
+                                                        FontSchemeValues::get_enum(val.get_value())
                                                 }
                                             }
-                                        }
-                                        _ => {
-                                            return Err(anyhow!("Unknown Font Style Found!"));
+                                            _ => {
+                                                return Err(anyhow!("Unknown Font Style Found!"));
+                                            }
                                         }
                                     }
-                                } else {
-                                    break;
+                                    _ => {
+                                        return Err(anyhow!("Unknown Element type"));
+                                    }
                                 }
                             }
                             let mut hasher = DefaultHasher::new();
                             font_style.hash(&mut hasher);
                             font_records.push((hasher.finish(), font_style));
-                        } else {
-                            break;
                         }
                     }
                 }
+                xml_doc_mut
+                    .remove_element_mut(fonts_id)
+                    .context("Failed to clear fonts element childs")?;
             }
-            if let Some(mut fills_vec) = xml_doc_mut.pop_elements_by_tag_mut("fills", None) {
-                if let Some(fills) = fills_vec.pop() {
-                    loop {
-                        if let Some((fill_id, _)) = fills.pop_child_mut() {
-                            let current_element = xml_doc_mut
-                                .pop_element_mut(&fill_id)
-                                .context("Failed to pull child element")?;
-                            let mut fill_style = FillStyle::default();
-                            if let Some((pattern_fill_id, _)) = current_element.pop_child_mut() {
-                                if let Some(pattern_fill) =
-                                    xml_doc_mut.pop_element_mut(&pattern_fill_id)
-                                {
-                                    if let Some(pattern_attributes) = pattern_fill.get_attribute() {
-                                        if let Some(pattern_type) =
-                                            pattern_attributes.get("patternType")
-                                        {
-                                            fill_style.pattern_type =
-                                                PatternTypeValues::get_enum(pattern_type);
-                                            loop {
-                                                if let Some((child_id, _)) =
-                                                    pattern_fill.pop_child_mut()
-                                                {
-                                                    if let Some(pop_child) =
-                                                        xml_doc_mut.pop_element_mut(&child_id)
+
+            if let Some(fills_id) = xml_doc_mut
+                .find_first_child(root_id, "fills")
+                .context("Failed to get fills element")?
+            {
+                if let Some(fill_ids) = xml_doc_mut
+                    .find_all_child(fills_id, "fill")
+                    .context("Failed to get fill group")?
+                {
+                    for fill_id in fill_ids {
+                        let mut fill_style = FillStyle::default();
+                        if let Some(pattern_fill_id) = xml_doc_mut
+                            .find_first_child(fill_id, "patternFill")
+                            .context("Failed to pull pattern fill element")?
+                        {
+                            let pattern_fill_element = xml_doc_mut
+                                .get_element(pattern_fill_id)
+                                .context("Failed to pull Pattern fill element")?;
+                            fill_style.pattern_type = PatternTypeValues::get_enum(
+                                pattern_fill_element
+                                    .get_attribute("patternType")
+                                    .context(
+                                        "Failed to get mandatory patternType from patternFill",
+                                    )?
+                                    .get_value(),
+                            );
+                            if let Some(child_contents) = pattern_fill_element.get_child_contents()
+                            {
+                                for fill_child in child_contents {
+                                    match fill_child {
+                                        XmlElementContentType::Element((id, _, _)) => {
+                                            let current_element = xml_doc_mut
+                                                .get_element(*id)
+                                                .context("Failed to get child element")?;
+                                            match current_element.get_tag().as_str() {
+                                                "fgColor" => {
+                                                    if let Some(theme) =
+                                                        current_element.get_attribute("theme")
                                                     {
-                                                        if let Some(attributes) =
-                                                            pop_child.get_attribute()
-                                                        {
-                                                            match pop_child.get_tag() {
-                                                                "fgColor" => {
-                                                                    if let Some(theme) =
-                                                                        attributes.get("theme")
-                                                                    {
-                                                                        fill_style
-                                                                        .foreground_color =
-                                                                        Some(ColorSetting {
-                                                                            color_setting_type:ColorSettingTypeValues::Theme,
-                                                                            value:theme
-                                                                            .parse()
-                                                                            .context("color theme parse failed")?
-                                                                        });
-                                                                    } else if let Some(rgb) =
-                                                                        attributes.get("rgb")
-                                                                    {
-                                                                        let rgb_string =
-                                                                            rgb.to_string();
-                                                                        fill_style
-                                                                        .foreground_color =
-                                                                        Some(ColorSetting {
-                                                                            color_setting_type:ColorSettingTypeValues::Rgb,
-                                                                            value:rgb_string
-                                                                        });
-                                                                    } else if let Some(indexed) =
-                                                                        attributes.get("indexed")
-                                                                    {
-                                                                        fill_style
-                                                                        .foreground_color =
+                                                        fill_style.foreground_color =
+                                                            Some(ColorSetting {
+                                                                color_setting_type:
+                                                                    ColorSettingTypeValues::Theme,
+                                                                value: theme
+                                                                    .get_value()
+                                                                    .parse()
+                                                                    .context(
+                                                                        "color theme parse failed",
+                                                                    )?,
+                                                            });
+                                                    } else if let Some(rgb) =
+                                                        current_element.get_attribute("rgb")
+                                                    {
+                                                        let rgb_string =
+                                                            rgb.get_value().to_string();
+                                                        fill_style.foreground_color =
+                                                            Some(ColorSetting {
+                                                                color_setting_type:
+                                                                    ColorSettingTypeValues::Rgb,
+                                                                value: rgb_string,
+                                                            });
+                                                    } else if let Some(indexed) =
+                                                        current_element.get_attribute("indexed")
+                                                    {
+                                                        fill_style.foreground_color =
                                                                         Some(ColorSetting {
                                                                             color_setting_type:ColorSettingTypeValues::Indexed,
                                                                             value:indexed
+                                                                            .get_value()
                                                                             .parse()
                                                                             .context("color color index parse failed")?
                                                                         });
-                                                                    }
-                                                                }
-                                                                "bgColor" => {
-                                                                    if let Some(theme) =
-                                                                        attributes.get("theme")
-                                                                    {
-                                                                        fill_style
-                                                                        .background_color =
-                                                                        Some(ColorSetting {
-                                                                            color_setting_type:ColorSettingTypeValues::Theme,
-                                                                            value:theme
-                                                                            .parse()
-                                                                            .context("color theme parse failed")?
-                                                                        });
-                                                                    } else if let Some(rgb) =
-                                                                        attributes.get("rgb")
-                                                                    {
-                                                                        let rgb_string =
-                                                                            rgb.to_string();
-                                                                        fill_style
-                                                                        .background_color =
-                                                                        Some(ColorSetting {
-                                                                            color_setting_type:ColorSettingTypeValues::Rgb,
-                                                                            value:rgb_string
-                                                                        });
-                                                                    } else if let Some(indexed) =
-                                                                        attributes.get("indexed")
-                                                                    {
-                                                                        fill_style
-                                                                        .background_color =
-                                                                        Some(ColorSetting {
-                                                                            color_setting_type:ColorSettingTypeValues::Indexed,
-                                                                            value:indexed
-                                                                            .parse()
-                                                                            .context("color color index parse failed")?
-                                                                        });
-                                                                    }
-                                                                }
-                                                                _ => {
-                                                                    return Err(anyhow!(
-                                                                    "Unknown Color patter found"
-                                                                ));
-                                                                }
-                                                            }
-                                                        }
                                                     }
-                                                } else {
-                                                    break;
                                                 }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            let mut hasher = DefaultHasher::new();
-                            fill_style.hash(&mut hasher);
-                            fill_records.push((hasher.finish(), fill_style));
-                        } else {
-                            break;
-                        }
-                    }
-                }
-            }
-            if let Some(mut borders_vec) = xml_doc_mut.pop_elements_by_tag_mut("borders", None) {
-                if let Some(borders) = borders_vec.pop() {
-                    // Loop Each Border Style
-                    loop {
-                        if let Some((border_id, _)) = borders.pop_child_mut() {
-                            if let Some(border) = xml_doc_mut.pop_element_mut(&border_id) {
-                                let mut border_style = BorderStyle::default();
-                                // Loop Details of current border
-                                loop {
-                                    if let Some((border_child_id, _)) = border.pop_child_mut() {
-                                        if let Some(current_element) =
-                                            xml_doc_mut.pop_element_mut(&border_child_id)
-                                        {
-                                            match current_element.get_tag() {
-                                                "left" => {
-                                                    StylePart::deserialize_border_setting(
-                                                        &current_element,
-                                                        &mut border_style.left,
-                                                        &mut xml_doc_mut,
-                                                    )
-                                                    .context("Left Border Decode Failed")?;
-                                                }
-                                                "right" => {
-                                                    StylePart::deserialize_border_setting(
-                                                        &current_element,
-                                                        &mut border_style.right,
-                                                        &mut xml_doc_mut,
-                                                    )
-                                                    .context("Left Border Decode Failed")?;
-                                                }
-                                                "top" => {
-                                                    StylePart::deserialize_border_setting(
-                                                        &current_element,
-                                                        &mut border_style.top,
-                                                        &mut xml_doc_mut,
-                                                    )
-                                                    .context("Left Border Decode Failed")?;
-                                                }
-                                                "bottom" => {
-                                                    StylePart::deserialize_border_setting(
-                                                        &current_element,
-                                                        &mut border_style.bottom,
-                                                        &mut xml_doc_mut,
-                                                    )
-                                                    .context("Left Border Decode Failed")?;
-                                                }
-                                                "diagonal" => {
-                                                    StylePart::deserialize_border_setting(
-                                                        &current_element,
-                                                        &mut border_style.diagonal,
-                                                        &mut xml_doc_mut,
-                                                    )
-                                                    .context("Left Border Decode Failed")?;
+                                                "bgColor" => {
+                                                    if let Some(theme) =
+                                                        current_element.get_attribute("theme")
+                                                    {
+                                                        fill_style.background_color =
+                                                            Some(ColorSetting {
+                                                                color_setting_type:
+                                                                    ColorSettingTypeValues::Theme,
+                                                                value: theme
+                                                                    .get_value()
+                                                                    .parse()
+                                                                    .context(
+                                                                        "color theme parse failed",
+                                                                    )?,
+                                                            });
+                                                    } else if let Some(rgb) =
+                                                        current_element.get_attribute("rgb")
+                                                    {
+                                                        let rgb_string =
+                                                            rgb.get_value().to_string();
+                                                        fill_style.background_color =
+                                                            Some(ColorSetting {
+                                                                color_setting_type:
+                                                                    ColorSettingTypeValues::Rgb,
+                                                                value: rgb_string,
+                                                            });
+                                                    } else if let Some(indexed) =
+                                                        current_element.get_attribute("indexed")
+                                                    {
+                                                        fill_style
+                                                                        .background_color =
+                                                                        Some(ColorSetting {
+                                                                            color_setting_type:ColorSettingTypeValues::Indexed,
+                                                                            value:indexed
+                                                                            .get_value()
+                                                                            .parse()
+                                                                            .context("color color index parse failed")?
+                                                                        });
+                                                    }
                                                 }
                                                 _ => {
                                                     return Err(anyhow!(
-                                                        "Unknown border style found"
+                                                        "Unknown Color patter found"
                                                     ));
                                                 }
                                             }
                                         }
-                                    } else {
-                                        break;
+                                        _ => {}
                                     }
                                 }
-                                let mut hasher = DefaultHasher::new();
-                                border_style.hash(&mut hasher);
-                                border_records.push((hasher.finish(), border_style));
                             }
-                        } else {
-                            break;
+                        }
+                        let mut hasher = DefaultHasher::new();
+                        fill_style.hash(&mut hasher);
+                        fill_records.push((hasher.finish(), fill_style));
+                    }
+                }
+                xml_doc_mut
+                    .remove_element_mut(fills_id)
+                    .context("Failed to clear fills element childs")?;
+            }
+
+            if let Some(borders_id) = xml_doc_mut
+                .find_first_child(root_id, "borders")
+                .context("Failed to pull Borders Element")?
+            {
+                if let Some(border_ids) = xml_doc_mut
+                    .find_all_child(borders_id, "border")
+                    .context("Failed to get border group")?
+                {
+                    for border_id in border_ids {
+                        let mut border_style = BorderStyle::default();
+                        let border_element = xml_doc_mut
+                            .get_element(border_id)
+                            .context("Failed to get border element")?;
+                        if let Some(child_content) = border_element.get_child_contents() {
+                            for content_type in child_content {
+                                match content_type {
+                                    XmlElementContentType::Element((id, _, _)) => {
+                                        let current_element = xml_doc_mut
+                                            .get_element(*id)
+                                            .context("Failed to get Child element of border")?;
+                                        match current_element.get_tag().as_str() {
+                                            "left" => {
+                                                StylePart::deserialize_border_setting(
+                                                    &current_element,
+                                                    &mut border_style.left,
+                                                    &xml_doc_mut,
+                                                )
+                                                .context("Left Border Decode Failed")?;
+                                            }
+                                            "right" => {
+                                                StylePart::deserialize_border_setting(
+                                                    &current_element,
+                                                    &mut border_style.right,
+                                                    &xml_doc_mut,
+                                                )
+                                                .context("Left Border Decode Failed")?;
+                                            }
+                                            "top" => {
+                                                StylePart::deserialize_border_setting(
+                                                    &current_element,
+                                                    &mut border_style.top,
+                                                    &xml_doc_mut,
+                                                )
+                                                .context("Left Border Decode Failed")?;
+                                            }
+                                            "bottom" => {
+                                                StylePart::deserialize_border_setting(
+                                                    &current_element,
+                                                    &mut border_style.bottom,
+                                                    &xml_doc_mut,
+                                                )
+                                                .context("Left Border Decode Failed")?;
+                                            }
+                                            "diagonal" => {
+                                                StylePart::deserialize_border_setting(
+                                                    &current_element,
+                                                    &mut border_style.diagonal,
+                                                    &xml_doc_mut,
+                                                )
+                                                .context("Left Border Decode Failed")?;
+                                            }
+                                            _ => {
+                                                return Err(AnyError::msg(
+                                                    "Unknow Content type found in border",
+                                                ));
+                                            }
+                                        }
+                                    }
+                                    _ => {
+                                        return Err(AnyError::msg(
+                                            "Unknow Content type found in border",
+                                        ));
+                                    }
+                                }
+                            }
+                            let mut hasher = DefaultHasher::new();
+                            border_style.hash(&mut hasher);
+                            border_records.push((hasher.finish(), border_style));
                         }
                     }
                 }
+                xml_doc_mut
+                    .remove_element_mut(borders_id)
+                    .context("Failed to clear borders element childs")?;
             }
-            if let Some(mut cell_style_xfs_vec) =
-                xml_doc_mut.pop_elements_by_tag_mut("cellStyleXfs", None)
+
+            if let Some(cell_style_xfs_id) = xml_doc_mut
+                .find_first_child(root_id, "cellStyleXfs")
+                .context("Failed to get <cellStyleXfs>element")?
             {
-                if let Some(cell_style_xfs) = cell_style_xfs_vec.pop() {
-                    style_collection =
-                        StylePart::deserialize_cell_style(cell_style_xfs, &mut xml_doc_mut)
-                            .context("Deserializing Cell Style Xfs Failed")?;
-                }
+                style_collection =
+                    StylePart::deserialize_cell_style(cell_style_xfs_id, &xml_doc_mut)
+                        .context("Deserializing Cell Style Xfs Failed")?;
+                xml_doc_mut
+                    .remove_element_mut(cell_style_xfs_id)
+                    .context("Failed to clear cellStyleXfs element childs")?;
             }
-            if let Some(mut cell_xfs_vec) = xml_doc_mut.pop_elements_by_tag_mut("cellXfs", None) {
-                if let Some(cell_xfs) = cell_xfs_vec.pop() {
-                    xfs_collection = StylePart::deserialize_cell_style(cell_xfs, &mut xml_doc_mut)
-                        .context("Deserializing Cell Xfs Failed")?;
-                }
+
+            if let Some(cell_xfs_id) = xml_doc_mut
+                .find_first_child(root_id, "cellXfs")
+                .context("Failed to get <cellXfs>element")?
+            {
+                xfs_collection = StylePart::deserialize_cell_style(cell_xfs_id, &xml_doc_mut)
+                    .context("Deserializing Cell Xfs Failed")?;
+                xml_doc_mut
+                    .remove_element_mut(cell_xfs_id)
+                    .context("Failed to clear cellXfs element childs")?;
             }
         }
         Ok((
@@ -562,189 +593,208 @@ impl StylePart {
             let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
                 .context("xml doc borrow failed")?;
+            let root_id = xml_doc_mut.get_root_id();
             // Create Number Formats Elements
             {
-                let num_formats = xml_doc_mut
-                    .insert_child_at_mut("numFmts", &0, None, None)
-                    .context("Create Number Formats Parent Failed.")?;
-                let num_formats_id = num_formats.get_id();
-                let mut attributes = HashMap::new();
-                attributes.insert(
-                    "count".to_string(),
-                    self.number_format_collection.len().to_string(),
-                );
-                num_formats
-                    .set_attribute_mut(attributes)
+                let num_formats_id = xml_doc_mut
+                    .append_child_element_mut(root_id, "numFmts", None)
+                    .context("Failed to Create numFmts")?;
+                let num_formats_element = xml_doc_mut
+                    .get_element_mut(num_formats_id)
+                    .context("Failed to get number format element")?;
+                num_formats_element
+                    .add_attribute_mut(XmlAttribute::new(
+                        "count".to_owned(),
+                        self.number_format_collection.len().to_string(),
+                    ))
                     .context("Updating Number Formats Element Attributes Failed")?;
                 for (_, num_format) in self.number_format_collection.as_slice() {
-                    let num_format_element = xml_doc_mut
-                        .append_child_mut("numFmt", Some(&num_formats_id), None)
+                    xml_doc_mut
+                        .append_child_element_mut(
+                            num_formats_id,
+                            "numFmt",
+                            Some(vec![
+                                XmlAttribute::new(
+                                    "numFmtId".to_string(),
+                                    num_format.format_id.to_string(),
+                                ),
+                                XmlAttribute::new(
+                                    "formatCode".to_string(),
+                                    num_format.format_code.clone(),
+                                ),
+                            ]),
+                        )
                         .context("Create Number Format Element Failed")?;
-                    let mut attributes = HashMap::new();
-                    attributes.insert("numFmtId".to_string(), num_format.format_id.to_string());
-                    attributes.insert("formatCode".to_string(), num_format.format_code.clone());
-                    num_format_element
-                        .set_attribute_mut(attributes)
-                        .context("Updating Number Format Element Attributes Failed")?;
                 }
             }
             // Create Fonts Elements
             {
-                let fonts = xml_doc_mut
-                    .insert_children_after_tag_mut("fonts", "numFmts", None, None)
-                    .context("Create Fonts Parent Failed.")?;
-                let fonts_id = fonts.get_id();
-                let mut attributes = HashMap::new();
-                attributes.insert("count".to_string(), self.font_collection.len().to_string());
-                fonts
-                    .set_attribute_mut(attributes)
-                    .context("Set attribute failed for fonts style")?;
+                let fonts_id = xml_doc_mut
+                    .append_child_element_mut(root_id, "fonts", None)
+                    .context("Failed to create fonts element")?;
+                let fonts_element = xml_doc_mut
+                    .get_element_mut(fonts_id)
+                    .context("Failed to get fonts element")?;
+                fonts_element
+                    .add_attribute_mut(XmlAttribute::new(
+                        "count".to_owned(),
+                        self.font_collection.len().to_string(),
+                    ))
+                    .context("Updating font Formats Element Attributes Failed")?;
                 for (_, font_style) in self.font_collection.as_slice() {
                     let font_id = xml_doc_mut
-                        .append_child_mut("font", Some(&fonts_id), None)
-                        .context("Adding Font to Fonts Failed")?
-                        .get_id();
+                        .append_child_element_mut(fonts_id, "font", None)
+                        .context("Adding Font to Fonts Failed")?;
                     if font_style.is_bold {
                         xml_doc_mut
-                            .append_child_mut("b", Some(&font_id), None)
+                            .append_child_element_mut(font_id, "b", None)
                             .context("Create Size Failed")?;
                     }
                     if font_style.is_italic {
                         xml_doc_mut
-                            .append_child_mut("i", Some(&font_id), None)
+                            .append_child_element_mut(font_id, "i", None)
                             .context("Create Size Failed")?;
                     }
                     if font_style.is_underline {
                         xml_doc_mut
-                            .append_child_mut("u", Some(&font_id), None)
+                            .append_child_element_mut(font_id, "u", None)
                             .context("Create Size Failed")?;
                     }
                     if font_style.is_double_underline {
-                        let double_underline = xml_doc_mut
-                            .append_child_mut("u", Some(&font_id), None)
+                        xml_doc_mut
+                            .append_child_element_mut(
+                                font_id,
+                                "u",
+                                Some(vec![XmlAttribute::new(
+                                    "val".to_string(),
+                                    "double".to_string(),
+                                )]),
+                            )
                             .context("Create Size Failed")?;
-                        let mut double_underline_attributes: HashMap<String, String> =
-                            HashMap::new();
-                        double_underline_attributes.insert("val".to_string(), "double".to_string());
-                        double_underline
-                            .set_attribute_mut(double_underline_attributes)
-                            .context("Setting Size Attribute Failing")?;
                     }
-                    let size = xml_doc_mut
-                        .append_child_mut("sz", Some(&font_id), None)
+                    xml_doc_mut
+                        .append_child_element_mut(
+                            font_id,
+                            "sz",
+                            Some(vec![XmlAttribute::new(
+                                "val".to_string(),
+                                font_style.size.to_string(),
+                            )]),
+                        )
                         .context("Create Size Failed")?;
-                    let mut size_attributes: HashMap<String, String> = HashMap::new();
-                    size_attributes.insert("val".to_string(), font_style.size.to_string());
-                    size.set_attribute_mut(size_attributes)
-                        .context("Setting Size Attribute Failing")?;
                     StylePart::add_color_element(
                         Some(font_style.color.clone()),
                         &mut xml_doc_mut,
                         font_id,
                     )?;
-                    let name = xml_doc_mut
-                        .append_child_mut("name", Some(&font_id), None)
+                    xml_doc_mut
+                        .append_child_element_mut(
+                            font_id,
+                            "name",
+                            Some(vec![XmlAttribute::new(
+                                "val".to_string(),
+                                font_style.name.clone(),
+                            )]),
+                        )
                         .context("Create Name Failed")?;
-                    let mut name_attributes: HashMap<String, String> = HashMap::new();
-                    name_attributes.insert("val".to_string(), font_style.name.clone());
-                    name.set_attribute_mut(name_attributes)
-                        .context("Setting name Attribute Failing")?;
-                    let family = xml_doc_mut
-                        .append_child_mut("family", Some(&font_id), None)
-                        .context("Create Name Failed")?;
-                    let mut family_attributes: HashMap<String, String> = HashMap::new();
-                    family_attributes.insert("val".to_string(), font_style.family.to_string());
-                    family
-                        .set_attribute_mut(family_attributes)
-                        .context("Setting family attribute failing")?;
-                    let scheme = xml_doc_mut
-                        .append_child_mut("scheme", Some(&font_id), None)
+                    xml_doc_mut
+                        .append_child_element_mut(
+                            font_id,
+                            "family",
+                            Some(vec![XmlAttribute::new(
+                                "val".to_string(),
+                                font_style.family.to_string(),
+                            )]),
+                        )
+                        .context("Create Family Failed")?;
+                    xml_doc_mut
+                        .append_child_element_mut(
+                            font_id,
+                            "scheme",
+                            Some(vec![XmlAttribute::new(
+                                "val".to_string(),
+                                FontSchemeValues::get_string(font_style.font_scheme.clone()),
+                            )]),
+                        )
                         .context("Create scheme Failed")?;
-                    let mut scheme_attributes: HashMap<String, String> = HashMap::new();
-                    scheme_attributes.insert(
-                        "val".to_string(),
-                        FontSchemeValues::get_string(font_style.font_scheme.clone()),
-                    );
-                    scheme
-                        .set_attribute_mut(scheme_attributes)
-                        .context("Setting scheme attribute failing")?;
                 }
             }
             // Create Fills Elements
             {
-                let fills = xml_doc_mut
-                    .insert_children_after_tag_mut("fills", "fonts", None, None)
-                    .context("Create Fills parents Failed.")?;
-                let fills_id = fills.get_id();
-                let mut attributes = HashMap::new();
-                attributes.insert("count".to_string(), self.fill_collection.len().to_string());
-                fills
-                    .set_attribute_mut(attributes)
-                    .context("Set Fill Attribute Failed")?;
+                let fills_id = xml_doc_mut
+                    .append_child_element_mut(root_id, "fills", None)
+                    .context("Failed to create fills element")?;
+                let fills_element = xml_doc_mut
+                    .get_element_mut(fills_id)
+                    .context("Failed to get fills element")?;
+                fills_element
+                    .add_attribute_mut(XmlAttribute::new(
+                        "count".to_owned(),
+                        self.fill_collection.len().to_string(),
+                    ))
+                    .context("Updating Fills Element Attributes Failed")?;
                 for (_, fill_data) in self.fill_collection.as_slice() {
                     let fill_id = xml_doc_mut
-                        .append_child_mut("fill", Some(&fills_id), None)
-                        .context("Adding Fill Element Failed")?
-                        .get_id();
-                    let pattern_fill_element = xml_doc_mut
-                        .append_child_mut("patternFill", Some(&fill_id), None)
+                        .append_child_element_mut(fills_id, "fill", None)
+                        .context("Adding Fill Element Failed")?;
+                    let pattern_fill_id = xml_doc_mut
+                        .append_child_element_mut(
+                            fill_id,
+                            "patternFill",
+                            Some(vec![XmlAttribute::new(
+                                "patternType".to_string(),
+                                PatternTypeValues::get_string(fill_data.pattern_type.clone()),
+                            )]),
+                        )
                         .context("Pattern Fill Element Failed")?;
-                    let mut pattern_attribute: HashMap<String, String> = HashMap::new();
-                    pattern_attribute.insert(
-                        "patternType".to_string(),
-                        PatternTypeValues::get_string(fill_data.pattern_type.clone()),
-                    );
-                    pattern_fill_element
-                        .set_attribute_mut(pattern_attribute)
-                        .context("Set Pattern Fill Attribute Failed")?;
-                    let pattern_fill_id = pattern_fill_element.get_id();
                     if let Some(fg_setting) = fill_data.foreground_color.clone() {
-                        let fg_element = xml_doc_mut
-                            .append_child_mut("fgColor", Some(&pattern_fill_id), None)
+                        xml_doc_mut
+                            .append_child_element_mut(
+                                pattern_fill_id,
+                                "fgColor",
+                                Some(vec![XmlAttribute::new(
+                                    ColorSettingTypeValues::get_string(
+                                        fg_setting.color_setting_type,
+                                    ),
+                                    fg_setting.value,
+                                )]),
+                            )
                             .context("Pattern Fill Foreground Element Failed")?;
-                        let mut fg_attributes: HashMap<String, String> = HashMap::new();
-                        fg_attributes.insert(
-                            ColorSettingTypeValues::get_string(fg_setting.color_setting_type),
-                            fg_setting.value,
-                        );
-                        fg_element
-                            .set_attribute_mut(fg_attributes)
-                            .context("Set Foreground attribute Failed")?;
                     }
                     if let Some(bg_setting) = fill_data.background_color.clone() {
-                        let bg_element = xml_doc_mut
-                            .append_child_mut("bgColor", Some(&pattern_fill_id), None)
+                        xml_doc_mut
+                            .append_child_element_mut(
+                                pattern_fill_id,
+                                "bgColor",
+                                Some(vec![XmlAttribute::new(
+                                    ColorSettingTypeValues::get_string(
+                                        bg_setting.color_setting_type,
+                                    ),
+                                    bg_setting.value,
+                                )]),
+                            )
                             .context("Pattern Fill Background Element Failed")?;
-                        let mut bg_attributes: HashMap<String, String> = HashMap::new();
-                        bg_attributes.insert(
-                            ColorSettingTypeValues::get_string(bg_setting.color_setting_type),
-                            bg_setting.value,
-                        );
-                        bg_element
-                            .set_attribute_mut(bg_attributes)
-                            .context("Set Background attribute Failed")?;
                     }
                 }
             }
             // Create Border Elements
             {
-                let borders = xml_doc_mut
-                    .insert_children_after_tag_mut("borders", "fills", None, None)
-                    .context("Create borders parents Failed.")?;
-                let borders_id = borders.get_id();
-                let mut attributes = HashMap::new();
-                attributes.insert(
-                    "count".to_string(),
-                    self.border_collection.len().to_string(),
-                );
-                borders
-                    .set_attribute_mut(attributes)
-                    .context("Updating Number Formats Element Attributes Failed")?;
+                let borders_id = xml_doc_mut
+                    .append_child_element_mut(root_id, "borders", None)
+                    .context("Failed to create borders element")?;
+                let borders_element = xml_doc_mut
+                    .get_element_mut(borders_id)
+                    .context("Failed to get border element")?;
+                borders_element
+                    .add_attribute_mut(XmlAttribute::new(
+                        "count".to_owned(),
+                        self.border_collection.len().to_string(),
+                    ))
+                    .context("Updating Fills Element Attributes Failed")?;
                 for (_, border_data) in self.border_collection.as_slice() {
                     let border_id = xml_doc_mut
-                        .append_child_mut("border", Some(&borders_id), None)
-                        .context("Create Border Failed")?
-                        .get_id();
+                        .append_child_element_mut(borders_id, "border", None)
+                        .context("Create Border Failed")?;
                     // Left Border Setting
                     StylePart::add_border_element(
                         "left",
@@ -799,97 +849,135 @@ impl StylePart {
     }
 
     pub(crate) fn deserialize_cell_style(
-        style_xfs: XmlElement,
-        xml_doc_mut: &mut XmlDocument,
+        cell_style_xfs_id: NodeId,
+        xml_document: &XmlDocument,
     ) -> AnyResult<Vec<(u64, CellXfs)>, AnyError> {
         let mut style_records = Vec::new();
-        loop {
-            if let Some((xf_id, _)) = style_xfs.pop_child_mut() {
-                let mut cell_xf = CellXfs::default();
-                if let Some(current_element) = xml_doc_mut.pop_element_mut(&xf_id) {
-                    if let Some(attributes) = current_element.get_attribute() {
-                        if let Some(number_format_id) = attributes.get("numFmtId") {
+        let cell_style_xfs = xml_document
+            .get_element(cell_style_xfs_id)
+            .context("Failed to get cell Style xfs")?;
+        if let Some(child_contents) = cell_style_xfs.get_child_contents() {
+            for child_content in child_contents {
+                match child_content {
+                    XmlElementContentType::Element((cell_xf_id, _, _)) => {
+                        let cell_xf_element = xml_document
+                            .get_element(*cell_xf_id)
+                            .context("Failed to get cellxf element")?;
+                        let mut cell_xf = CellXfs::default();
+                        if let Some(number_format_id) = cell_xf_element.get_attribute("numFmtId") {
                             cell_xf.number_format_id = number_format_id
+                                .get_value()
                                 .parse()
                                 .context("Number Number Format Id Parse Failed")?;
                         }
-                        if let Some(font_id) = attributes.get("fontId") {
-                            cell_xf.font_id =
-                                font_id.parse().context("Number Font Id Parse Failed")?;
+                        if let Some(font_id) = cell_xf_element.get_attribute("fontId") {
+                            cell_xf.font_id = font_id
+                                .get_value()
+                                .parse()
+                                .context("Number Font Id Parse Failed")?;
                         }
-                        if let Some(fill_id) = attributes.get("fillId") {
-                            cell_xf.fill_id =
-                                fill_id.parse().context("Number Fill Id Parse Failed")?;
+                        if let Some(fill_id) = cell_xf_element.get_attribute("fillId") {
+                            cell_xf.fill_id = fill_id
+                                .get_value()
+                                .parse()
+                                .context("Number Fill Id Parse Failed")?;
                         }
-                        if let Some(border_id) = attributes.get("borderId") {
-                            cell_xf.border_id =
-                                border_id.parse().context("Number Border Id Parse Failed")?;
+                        if let Some(border_id) = cell_xf_element.get_attribute("borderId") {
+                            cell_xf.border_id = border_id
+                                .get_value()
+                                .parse()
+                                .context("Number Border Id Parse Failed")?;
                         }
-                        if let Some(format_id) = attributes.get("xfId") {
-                            cell_xf.format_id =
-                                format_id.parse().context("Number Format Id Parse Failed")?;
+                        if let Some(format_id) = cell_xf_element.get_attribute("xfId") {
+                            cell_xf.format_id = format_id
+                                .get_value()
+                                .parse()
+                                .context("Number Format Id Parse Failed")?;
                         }
-                        if let Some(apply_protection) = attributes.get("applyProtection") {
-                            cell_xf.apply_protection =
-                                ConverterUtil::normalize_bool_property_u8(apply_protection);
+                        if let Some(apply_protection) =
+                            cell_xf_element.get_attribute("applyProtection")
+                        {
+                            cell_xf.apply_protection = ConverterUtil::normalize_bool_property_u8(
+                                apply_protection.get_value(),
+                            );
                         }
-                        if let Some(apply_alignment) = attributes.get("applyAlignment") {
-                            cell_xf.apply_alignment =
-                                ConverterUtil::normalize_bool_property_u8(apply_alignment);
+                        if let Some(apply_alignment) =
+                            cell_xf_element.get_attribute("applyAlignment")
+                        {
+                            cell_xf.apply_alignment = ConverterUtil::normalize_bool_property_u8(
+                                apply_alignment.get_value(),
+                            );
                         }
-                        if let Some(apply_border) = attributes.get("applyBorder") {
+                        if let Some(apply_border) = cell_xf_element.get_attribute("applyBorder") {
                             cell_xf.apply_border =
-                                ConverterUtil::normalize_bool_property_u8(apply_border);
+                                ConverterUtil::normalize_bool_property_u8(apply_border.get_value());
                         }
-                        if let Some(apply_fill) = attributes.get("applyFill") {
+                        if let Some(apply_fill) = cell_xf_element.get_attribute("applyFill") {
                             cell_xf.apply_fill =
-                                ConverterUtil::normalize_bool_property_u8(apply_fill);
+                                ConverterUtil::normalize_bool_property_u8(apply_fill.get_value());
                         }
-                        if let Some(apply_font) = attributes.get("applyFont") {
+                        if let Some(apply_font) = cell_xf_element.get_attribute("applyFont") {
                             cell_xf.apply_font =
-                                ConverterUtil::normalize_bool_property_u8(apply_font);
+                                ConverterUtil::normalize_bool_property_u8(apply_font.get_value());
                         }
-                        if let Some(apply_number_format) = attributes.get("applyNumberFormat") {
-                            cell_xf.apply_number_format =
-                                ConverterUtil::normalize_bool_property_u8(apply_number_format);
+                        if let Some(apply_number_format) =
+                            cell_xf_element.get_attribute("applyNumberFormat")
+                        {
+                            cell_xf.apply_number_format = ConverterUtil::normalize_bool_property_u8(
+                                apply_number_format.get_value(),
+                            );
                         }
                         // Load Alignment Values if exist
-                        if let Some((alignment_id, _)) = current_element.pop_child_mut() {
-                            if let Some(alignment_element) =
-                                xml_doc_mut.pop_element_mut(&alignment_id)
-                            {
-                                if let Some(alignment_attributes) =
-                                    alignment_element.get_attribute()
-                                {
-                                    if let Some(is_wrap_text) = alignment_attributes.get("wrapText")
-                                    {
-                                        cell_xf.is_wrap_text =
-                                            ConverterUtil::normalize_bool_property_u8(is_wrap_text);
+                        if let Some(child_contents) = cell_xf_element.get_child_contents() {
+                            for child_content in child_contents {
+                                match child_content {
+                                    XmlElementContentType::Element((alignment_id, _, _)) => {
+                                        let alignment_element = xml_document
+                                            .get_element(*alignment_id)
+                                            .context("Failed to get Alignment Element")?;
+                                        if let Some(is_wrap_text) =
+                                            alignment_element.get_attribute("wrapText")
+                                        {
+                                            cell_xf.is_wrap_text =
+                                                ConverterUtil::normalize_bool_property_u8(
+                                                    is_wrap_text.get_value(),
+                                                );
+                                        }
+                                        if let Some(vertical_alignment) =
+                                            alignment_element.get_attribute("vertical")
+                                        {
+                                            cell_xf.vertical_alignment =
+                                                VerticalAlignmentValues::get_enum(
+                                                    vertical_alignment.get_value(),
+                                                );
+                                        }
+                                        if let Some(horizontal_alignment) =
+                                            alignment_element.get_attribute("horizontal")
+                                        {
+                                            cell_xf.horizontal_alignment =
+                                                HorizontalAlignmentValues::get_enum(
+                                                    horizontal_alignment.get_value(),
+                                                );
+                                        }
                                     }
-                                    if let Some(vertical_alignment) =
-                                        alignment_attributes.get("vertical")
-                                    {
-                                        cell_xf.vertical_alignment =
-                                            VerticalAlignmentValues::get_enum(vertical_alignment);
-                                    }
-                                    if let Some(horizontal_alignment) =
-                                        alignment_attributes.get("horizontal")
-                                    {
-                                        cell_xf.horizontal_alignment =
-                                            HorizontalAlignmentValues::get_enum(
-                                                horizontal_alignment,
-                                            );
+                                    _ => {
+                                        return Err(AnyError::msg(
+                                            "Unknown alignment content type",
+                                        ));
                                     }
                                 }
                             }
                         }
+                        let mut hasher = DefaultHasher::new();
+                        cell_xf.hash(&mut hasher);
+                        style_records.push((hasher.finish(), cell_xf));
                     }
-                    let mut hasher = DefaultHasher::new();
-                    cell_xf.hash(&mut hasher);
-                    style_records.push((hasher.finish(), cell_xf));
+                    _ => {
+                        return Err(AnyError::msg(
+                            "Unknow processed content type found in element tree",
+                        ));
+                    }
                 }
-            } else {
-                break;
             }
         }
         Ok(style_records)
@@ -898,40 +986,54 @@ impl StylePart {
     pub(crate) fn deserialize_border_setting(
         current_element: &XmlElement,
         border: &mut BorderSetting,
-        xml_doc_mut: &mut std::cell::RefMut<'_, XmlDocument>,
+        xml_doc_mut: &XmlDocument,
     ) -> Result<(), AnyError> {
-        Ok(if let Some(attributes) = current_element.get_attribute() {
-            if let Some(style) = attributes.get("style") {
-                border.style = BorderStyleValues::get_enum(&style);
-                if border.style != BorderStyleValues::None {
-                    if let Some((color_id, _)) = current_element.pop_child_mut() {
-                        if let Some(color_element) = xml_doc_mut.pop_element_mut(&color_id) {
-                            if let Some(attributes) = color_element.get_attribute() {
-                                if let Some(theme) = attributes.get("theme") {
+        if let Some(style) = current_element.get_attribute("style") {
+            border.style = BorderStyleValues::get_enum(style.get_value());
+            if border.style != BorderStyleValues::None {
+                if let Some(child_content) = current_element.get_child_contents() {
+                    for content in child_content {
+                        match content {
+                            XmlElementContentType::Element((id, _, _)) => {
+                                let color_element = xml_doc_mut
+                                    .get_element(*id)
+                                    .context("Failed to get Color element")?;
+                                if let Some(theme) = color_element.get_attribute("theme") {
                                     border.border_color = Some(ColorSetting {
                                         color_setting_type: ColorSettingTypeValues::Theme,
-                                        value: theme.parse().context("color theme parse failed")?,
+                                        value: theme
+                                            .get_value()
+                                            .parse()
+                                            .context("color theme parse failed")?,
                                     });
-                                } else if let Some(rgb) = attributes.get("rgb") {
-                                    let rgb_string = rgb.to_string();
+                                } else if let Some(rgb) = color_element.get_attribute("rgb") {
+                                    let rgb_string = rgb.get_value().to_string();
                                     border.border_color = Some(ColorSetting {
                                         color_setting_type: ColorSettingTypeValues::Rgb,
                                         value: rgb_string,
                                     });
-                                } else if let Some(indexed) = attributes.get("indexed") {
+                                } else if let Some(indexed) = color_element.get_attribute("indexed")
+                                {
                                     border.border_color = Some(ColorSetting {
                                         color_setting_type: ColorSettingTypeValues::Indexed,
                                         value: indexed
+                                            .get_value()
                                             .parse()
                                             .context("color color index parse failed")?,
                                     });
                                 }
                             }
+                            _ => {
+                                return Err(AnyError::msg(
+                                    "Unknow child element in <border> direction",
+                                ));
+                            }
                         }
                     }
                 }
             }
-        })
+        }
+        Ok(())
     }
 
     /// Add Color Element Node To XML
@@ -941,17 +1043,16 @@ impl StylePart {
         parent_id: u32,
     ) -> Result<(), AnyError> {
         Ok(if let Some(border_color_setting) = color_setting {
-            let colors = xml_doc_mut
-                .append_child_mut("color", Some(&parent_id), None)
+            xml_doc_mut
+                .append_child_element_mut(
+                    parent_id,
+                    "color",
+                    Some(vec![XmlAttribute::new(
+                        ColorSettingTypeValues::get_string(border_color_setting.color_setting_type),
+                        border_color_setting.value,
+                    )]),
+                )
                 .context("Create Color Element Failed")?;
-            let mut color_attribute: HashMap<String, String> = HashMap::new();
-            color_attribute.insert(
-                ColorSettingTypeValues::get_string(border_color_setting.color_setting_type),
-                border_color_setting.value,
-            );
-            colors
-                .set_attribute_mut(color_attribute)
-                .context("Setting Color Attribute Failed")?;
         })
     }
 
@@ -962,20 +1063,18 @@ impl StylePart {
         border_id: &u32,
         border_data: BorderSetting,
     ) -> Result<(), AnyError> {
-        let border_direction = xml_doc_mut
-            .append_child_mut(border_side, Some(&border_id), None)
+        let id = xml_doc_mut
+            .append_child_element_mut(*border_id, border_side, None)
             .context(format!("{} Border Element Creation Failed", border_side))?;
-        let id = border_direction.get_id();
         if border_data.style != BorderStyleValues::None {
-            let mut left_attribute: HashMap<String, String> = HashMap::new();
-            left_attribute.insert(
-                "style".to_string(),
-                BorderStyleValues::get_string(border_data.style),
-            );
-            border_direction
-                .set_attribute_mut(left_attribute)
-                .context(format!("Set {} Attribute Failed", border_side))?;
             StylePart::add_color_element(border_data.border_color, xml_doc_mut, id)?;
+            xml_doc_mut
+                .get_element_mut(id)
+                .context("Get Border Element Failed")?
+                .add_attribute_mut(XmlAttribute::new(
+                    "style".to_string(),
+                    BorderStyleValues::get_string(border_data.style),
+                ));
         }
         Ok(())
     }
@@ -985,93 +1084,105 @@ impl StylePart {
         xfs_data: &mut Vec<(u64, CellXfs)>,
         enable_format_id: bool,
     ) -> Result<(), AnyError> {
-        let cell_style_xfs = xml_doc_mut
-            .insert_children_after_tag_mut(
+        let root_id = xml_doc_mut.get_root_id();
+        let cell_style_xfs_id = xml_doc_mut
+            .append_child_element_mut(
+                root_id,
                 if enable_format_id {
                     "cellXfs"
                 } else {
                     "cellStyleXfs"
                 },
-                "borders",
-                None,
                 None,
             )
-            .context("Create Cell Style parents Failed.")?;
-        let cell_style_xfs_id = cell_style_xfs.get_id();
-        let mut attributes = HashMap::new();
-        attributes.insert("count".to_string(), xfs_data.len().to_string());
-        cell_style_xfs
-            .set_attribute_mut(attributes)
-            .context("Updating Number Formats Element Attributes Failed")?;
+            .context("Failed to create style element")?;
+        let cell_style_xfs_element = xml_doc_mut
+            .get_element_mut(cell_style_xfs_id)
+            .context("Failed to get border element")?;
+        cell_style_xfs_element
+            .add_attribute_mut(XmlAttribute::new(
+                "count".to_owned(),
+                xfs_data.len().to_string(),
+            ))
+            .context("Updating Fills Element Attributes Failed")?;
         for (_, xfs) in xfs_data {
-            let xf = xml_doc_mut
-                .append_child_mut("xf", Some(&cell_style_xfs_id), None)
-                .context("Create Cell Style Config Failed")?;
-            let xf_id = xf.get_id();
-            let mut attributes: HashMap<String, String> = HashMap::new();
-            attributes.insert("numFmtId".to_string(), xfs.number_format_id.to_string());
-            attributes.insert("fontId".to_string(), xfs.font_id.to_string());
-            attributes.insert("fillId".to_string(), xfs.fill_id.to_string());
-            attributes.insert("borderId".to_string(), xfs.border_id.to_string());
+            let mut attributes = vec![
+                XmlAttribute::new("numFmtId".to_string(), xfs.number_format_id.to_string()),
+                XmlAttribute::new("fontId".to_string(), xfs.font_id.to_string()),
+                XmlAttribute::new("fillId".to_string(), xfs.fill_id.to_string()),
+                XmlAttribute::new("borderId".to_string(), xfs.border_id.to_string()),
+            ];
             if enable_format_id {
-                attributes.insert("xfId".to_string(), xfs.format_id.to_string());
+                attributes.push(XmlAttribute::new(
+                    "xfId".to_string(),
+                    xfs.format_id.to_string(),
+                ));
             }
             if xfs.apply_font > 0 {
-                attributes.insert("applyFont".to_string(), xfs.apply_font.to_string());
+                attributes.push(XmlAttribute::new(
+                    "applyFont".to_string(),
+                    xfs.apply_font.to_string(),
+                ));
             }
             if xfs.apply_alignment > 0 {
-                attributes.insert(
+                attributes.push(XmlAttribute::new(
                     "applyAlignment".to_string(),
                     xfs.apply_alignment.to_string(),
-                );
+                ));
             }
             if xfs.apply_fill > 0 {
-                attributes.insert("applyFill".to_string(), xfs.apply_fill.to_string());
+                attributes.push(XmlAttribute::new(
+                    "applyFill".to_string(),
+                    xfs.apply_fill.to_string(),
+                ));
             }
             if xfs.apply_border > 0 {
-                attributes.insert("applyBorder".to_string(), xfs.apply_border.to_string());
+                attributes.push(XmlAttribute::new(
+                    "applyBorder".to_string(),
+                    xfs.apply_border.to_string(),
+                ));
             }
             if xfs.apply_number_format > 0 {
-                attributes.insert(
+                attributes.push(XmlAttribute::new(
                     "applyNumberFormat".to_string(),
                     xfs.apply_number_format.to_string(),
-                );
+                ));
             }
             if xfs.apply_protection > 0 {
-                attributes.insert(
+                attributes.push(XmlAttribute::new(
                     "applyProtection".to_string(),
                     xfs.apply_protection.to_string(),
-                );
+                ));
             }
-            xf.set_attribute_mut(attributes)
-                .context("Setting Attributes Failed")?;
+            let xf_id = xml_doc_mut
+                .append_child_element_mut(cell_style_xfs_id, "xf", Some(attributes))
+                .context("Create Cell Style Config Failed")?;
             if xfs.is_wrap_text > 0
                 || xfs.vertical_alignment != VerticalAlignmentValues::None
                 || xfs.horizontal_alignment != HorizontalAlignmentValues::None
             {
-                let alignment = xml_doc_mut
-                    .append_child_mut("alignment", Some(&xf_id), None)
-                    .context("Create Cell Alignment Style Config Failed")?;
-                let mut alignment_attributes: HashMap<String, String> = HashMap::new();
+                let mut alignment_attributes = Vec::new();
                 if xfs.is_wrap_text > 0 {
-                    alignment_attributes
-                        .insert("wrapText".to_string(), xfs.is_wrap_text.to_string());
+                    alignment_attributes.push(XmlAttribute::new(
+                        "wrapText".to_string(),
+                        xfs.is_wrap_text.to_string(),
+                    ));
                 }
                 if xfs.vertical_alignment != VerticalAlignmentValues::None {
-                    alignment_attributes.insert(
+                    alignment_attributes.push(XmlAttribute::new(
                         "vertical".to_string(),
                         VerticalAlignmentValues::get_string(xfs.vertical_alignment.clone()),
-                    );
+                    ));
                 }
                 if xfs.horizontal_alignment != HorizontalAlignmentValues::None {
-                    alignment_attributes.insert(
+                    alignment_attributes.push(XmlAttribute::new(
                         "horizontal".to_string(),
                         HorizontalAlignmentValues::get_string(xfs.horizontal_alignment.clone()),
-                    );
+                    ));
                 }
-                alignment
-                    .set_attribute_mut(alignment_attributes)
-                    .context("Setting Alignment Attribute Failed")?;
+                xml_doc_mut
+                    .append_child_element_mut(xf_id, "alignment", Some(alignment_attributes))
+                    .context("Create Cell Alignment Style Config Failed")?;
             }
         }
         Ok(())

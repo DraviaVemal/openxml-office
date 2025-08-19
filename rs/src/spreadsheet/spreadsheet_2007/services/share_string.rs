@@ -6,12 +6,8 @@ use crate::global_2007::traits::{
 use crate::log_elapsed;
 use crate::{files::OfficeDocument, global_2007::traits::XmlDocumentPart};
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::XmlDocument;
-use std::{
-    cell::RefCell,
-    collections::{HashMap, HashSet},
-    rc::Weak,
-};
+use draviavemal_xml_rs::{XmlAttribute, XmlDocument, XmlElementContentType};
+use std::{cell::RefCell, collections::HashSet, rc::Weak};
 
 #[derive(Debug)]
 pub struct ShareStringPart {
@@ -44,32 +40,34 @@ impl XmlDocumentPartClose for ShareStringPart {
                                 .try_borrow_mut()
                                 .context("Failed to Pull Doc Reference")?;
                             // Update count & uniqueCount in root
-                            if let Some(root) = xml_doc_mut.get_root_mut() {
-                                if let Some(attributes) = root.get_attribute_mut() {
-                                    attributes.insert(
-                                        "count".to_string(),
-                                        self.share_string_collection.len().to_string(),
-                                    );
-                                    attributes.insert(
-                                        "uniqueCount".to_string(),
-                                        self.share_string_collection
-                                            .iter()
-                                            .map(|s| s.to_string())
-                                            .collect::<HashSet<String>>()
-                                            .len()
-                                            .to_string(),
-                                    );
-                                }
-                            }
-                            for string in self.share_string_collection.to_owned() {
+                            let root_id = xml_doc_mut.get_root_id();
+                            let root_element = xml_doc_mut
+                                .get_element_mut(root_id)
+                                .context("Failed to get root element")?;
+                            root_element.add_attribute_mut(XmlAttribute::new(
+                                "count".to_string(),
+                                self.share_string_collection.len().to_string(),
+                            ));
+                            root_element.add_attribute_mut(XmlAttribute::new(
+                                "uniqueCount".to_string(),
+                                self.share_string_collection
+                                    .iter()
+                                    .map(|s| s.to_string())
+                                    .collect::<HashSet<String>>()
+                                    .len()
+                                    .to_string(),
+                            ));
+                            for share_string_value in self.share_string_collection.to_owned() {
                                 let parent_id = xml_doc_mut
-                                    .append_child_mut("si", None, None)
-                                    .context("Failed to Add Child")?
-                                    .get_id();
+                                    .append_child_element_mut(root_id, "si", None)
+                                    .context("Failed to Add Child")?;
+                                let t_id = xml_doc_mut
+                                    .append_child_element_mut(parent_id, "t", None)
+                                    .context("Creating Share String Child Failed")?;
                                 xml_doc_mut
-                                    .append_child_mut("t", Some(&parent_id), None)
-                                    .context("Creating Share String Child Failed")?
-                                    .set_value_mut(string);
+                                    .get_element_mut(t_id)
+                                    .context("Failed to get t element")?
+                                    .add_text_mut(&share_string_value);
                             }
                         }
                         office_doc_ref
@@ -104,18 +102,17 @@ impl XmlDocumentPartInitializing for ShareStringPart {
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
         let content = EXCEL_TYPE_COLLECTION.get("share_string").unwrap();
-        let mut attributes: HashMap<String, String> = HashMap::new();
-        attributes.insert(
+        let attributes = vec![XmlAttribute::new(
             "xmlns".to_string(),
             EXCEL_TYPE_COLLECTION
                 .get("share_string")
                 .unwrap()
                 .schemas_namespace
                 .to_string(),
-        );
+        )];
         let mut xml_document = XmlDocument::new();
         xml_document
-            .create_root_mut("sst", Some(attributes))
+            .create_root_element_mut("sst", Some(attributes))
             .context("Create Root Element Failed")?;
         Ok((
             xml_document,
@@ -173,15 +170,44 @@ impl ShareStringPart {
     ) -> AnyResult<Vec<String>, AnyError> {
         let mut share_string_collection = Vec::new();
         if let Some(xml_document) = xml_document.upgrade() {
-            let mut xml_doc_mut = xml_document
-                .try_borrow_mut()
-                .context("xml doc borrow failed")?;
-            if let Some(elements) = xml_doc_mut.pop_elements_by_tag_mut("si", None) {
-                for element in elements {
-                    if let Some((child_id, _)) = element.pop_child_mut() {
-                        if let Some(text_element) = xml_doc_mut.pop_element_mut(&child_id) {
-                            let value = text_element.get_value().clone().unwrap_or("".to_string());
-                            share_string_collection.push(value);
+            let xml_document = xml_document.try_borrow().context("xml doc borrow failed")?;
+            let root_id = xml_document.get_root_id();
+            if let Some(si_ids) = xml_document
+                .find_all_child(root_id, "si")
+                .context("Failed to get si element group")?
+            {
+                for si_id in si_ids {
+                    let si_element = xml_document
+                        .get_element(si_id)
+                        .context("Failed to pull si element")?;
+                    if let Some(contents) = si_element.get_child_contents() {
+                        for element in contents {
+                            match element {
+                                XmlElementContentType::Element((id, _, _)) => {
+                                    let t_element = xml_document
+                                        .get_element(*id)
+                                        .context("Failed to pull t element")?;
+                                    if let Some(child_contents) = t_element.get_child_contents() {
+                                        let value = child_contents
+                                            .iter()
+                                            .filter_map(|item| {
+                                                if let XmlElementContentType::Text(text) = item {
+                                                    Some(text.to_owned())
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                            .collect::<Vec<String>>()
+                                            .join(" ");
+                                        share_string_collection.push(value);
+                                    }
+                                }
+                                _ => {
+                                    return Err(AnyError::msg(
+                                        "Unhandled tag in Share string setup",
+                                    ));
+                                }
+                            }
                         }
                     }
                 }

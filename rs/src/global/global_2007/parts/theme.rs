@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{XmlDeSerializer, XmlDocument};
+use draviavemal_xml_rs::{XmlDeserializer, XmlDocument};
 use std::{cell::RefCell, rc::Weak};
 
 #[derive(Debug)]
@@ -47,11 +47,8 @@ impl XmlDocumentPartInitializing for ThemePart {
     {
         let content = COMMON_TYPE_COLLECTION.get("theme").unwrap();
         Ok((
-            XmlDeSerializer::vec_to_xml_doc_tree(
-                include_str!("theme.xml").as_bytes().to_vec(),
-                "Default Theme",
-            )
-            .context("Initializing Theme Failed")?,
+            XmlDeserializer::vec_to_xml_doc_tree(include_str!("theme.xml").as_bytes().to_vec())
+                .context("Initializing Theme Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),

@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use crate::element_dictionary::COMMON_TYPE_COLLECTION;
-use anyhow::{Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{XmlDeSerializer, XmlDocument, XmlSerializer};
+use anyhow::{Context, Error as AnyError};
+use draviavemal_xml_rs::{XmlAttribute, XmlDeserializer, XmlDocument, XmlSerializer};
 
 #[derive(Debug)]
 pub(crate) struct ContentTypesPart {
@@ -10,26 +8,34 @@ pub(crate) struct ContentTypesPart {
 }
 
 impl ContentTypesPart {
-    pub(crate) fn new(xml_file_content: Vec<u8>) -> AnyResult<Self, AnyError> {
-        let xml_document = XmlDeSerializer::vec_to_xml_doc_tree(xml_file_content)
+    pub(crate) fn new(xml_file_content: Vec<u8>) -> Result<Self, AnyError> {
+        let xml_document = XmlDeserializer::vec_to_xml_doc_tree(xml_file_content)
             .context("Decoding Content Type Failed")?;
         Ok(Self { xml_document })
     }
-    pub(crate) fn get_extensions(&mut self) -> AnyResult<Option<Vec<(String, String)>>, AnyError> {
+    pub(crate) fn get_extensions(&mut self) -> Result<Option<Vec<(String, String)>>, AnyError> {
         let mut elements: Vec<(String, String)> = Vec::new();
-        if let Some(default_elements) = self.xml_document.pop_elements_by_tag_mut("Default", None) {
-            for default_element in default_elements {
-                let attributes = default_element
-                    .get_attribute()
+        let root_id = self.xml_document.get_root_id();
+        let default_element_ids = self
+            .xml_document
+            .find_all_child(root_id, "Default")
+            .context("Failed to get Default element collection")?;
+        if let Some(default_element_ids) = default_element_ids {
+            for default_element_id in default_element_ids {
+                let default_element = self
+                    .xml_document
+                    .get_element(default_element_id)
                     .context("Element Attribute not Found")?;
                 elements.push((
-                    attributes
-                        .get("Extension")
+                    default_element
+                        .get_attribute("Extension")
                         .context("content type default attribute missing")?
+                        .get_value()
                         .to_string(),
-                    attributes
-                        .get("ContentType")
+                    default_element
+                        .get_attribute("ContentType")
                         .context("content type default attribute missing")?
+                        .get_value()
                         .to_string(),
                 ));
             }
@@ -43,72 +49,79 @@ impl ContentTypesPart {
     pub(crate) fn get_override_content_type(
         &mut self,
         file_name: &str,
-    ) -> AnyResult<Option<String>, AnyError> {
-        if let Some(mut find_ids) = self.xml_document.get_element_ids_by_attribute(
-            "PartName",
-            &format!("/{}", file_name),
-            None,
-        ) {
-            if let Some(id) = find_ids.pop() {
-                if let Some(element) = self.xml_document.pop_element_mut(&id) {
-                    if let Some(attributes) = element.get_attribute() {
-                        let res = attributes.get("ContentType").unwrap().to_string();
-                        return Ok(Some(res));
-                    }
-                }
-            }
+    ) -> Result<Option<String>, AnyError> {
+        let root_id = self.xml_document.get_root_id();
+        if let Some(element_id) = self
+            .xml_document
+            .find_first_by_attribute(root_id, "PartName", &format!("/{}", file_name))
+            .context("Failed to find all attribute childs")?
+        {
+            let element = self
+                .xml_document
+                .get_element(element_id)
+                .context("Failed to get override type element")?;
+            Ok(Some(
+                element
+                    .get_attribute("ContentType")
+                    .context("Failed to get ContentType attribute")?
+                    .get_value()
+                    .to_string(),
+            ))
+        } else {
+            Ok(None)
         }
-        Ok(None)
     }
 
     pub(crate) fn create_xml_file(
         extensions: Vec<(String, String)>,
         overrides: Vec<(String, String)>,
-    ) -> AnyResult<Vec<u8>, AnyError> {
+    ) -> Result<Vec<u8>, AnyError> {
         let mut document = XmlDocument::new();
-        let root_element = document
-            .create_root_mut("Types", None)
+        document
+            .create_root_element_mut(
+                "Types",
+                Some(vec![XmlAttribute::new(
+                    "xmlns".to_string(),
+                    COMMON_TYPE_COLLECTION
+                        .get("content_type")
+                        .unwrap()
+                        .schemas_namespace
+                        .to_string(),
+                )]),
+            )
             .context("Failed to Create Root Element")?;
-        let mut attributes = HashMap::new();
-        attributes.insert(
-            "xmlns".to_string(),
-            COMMON_TYPE_COLLECTION
-                .get("content_type")
-                .unwrap()
-                .schemas_namespace
-                .to_string(),
-        );
-        root_element
-            .set_attribute_mut(attributes)
-            .context("Set Attributes on root element failed")?;
         // Load Default Elements
         {
             for (extension, content_type) in extensions {
-                let element = document
-                    .append_child_mut("Default", None, None)
+                let root_id = document.get_root_id();
+                document
+                    .append_child_element_mut(
+                        root_id,
+                        "Default",
+                        Some(vec![
+                            XmlAttribute::new("Extension".to_string(), extension),
+                            XmlAttribute::new("ContentType".to_string(), content_type),
+                        ]),
+                    )
                     .context("Append child to root failed")?;
-                let mut attributes = HashMap::new();
-                attributes.insert("Extension".to_string(), extension);
-                attributes.insert("ContentType".to_string(), content_type);
-                element
-                    .set_attribute_mut(attributes)
-                    .context("Adding attributes to Default element Failed")?;
             }
         }
         // Load Override Elements
         {
             for (part_name, content_type) in overrides {
-                let element = document
-                    .append_child_mut("Override", None, None)
+                let root_id = document.get_root_id();
+                document
+                    .append_child_element_mut(
+                        root_id,
+                        "Override",
+                        Some(vec![
+                            XmlAttribute::new("PartName".to_string(), part_name),
+                            XmlAttribute::new("ContentType".to_string(), content_type),
+                        ]),
+                    )
                     .context("Append child to root failed")?;
-                let mut attributes = HashMap::new();
-                attributes.insert("PartName".to_string(), part_name);
-                attributes.insert("ContentType".to_string(), content_type);
-                element
-                    .set_attribute_mut(attributes)
-                    .context("Adding attributes to Default element Failed")?;
             }
         }
-        XmlSerializer::xml_tree_to_vec(&mut document, "Create Content Type")
+        XmlSerializer::xml_tree_to_vec(&mut document)
     }
 }
