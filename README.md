@@ -5,8 +5,18 @@
 This project aims to provide a streamlined, efficient way to create and manipulate Excel, PowerPoint, and Word documents using the OpenXML format. By leveraging the power of modern programming languages, this library simplifies the process of document creation, enabling developers to focus on functionality rather than the intricacies of the OpenXML standard.
 
 ### 📜 License
-- Open Source: AGPL-3.0 (see LICENSE)
-- Commercial: Available via sponsorship (see LICENSE)
+
+This project is **dual-licensed**:
+
+- **Open Source — AGPL-3.0** (see [LICENSE](LICENSE)). Free to use, including
+  commercially, as long as you comply with AGPL-3.0 copyleft (share source of
+  derivatives and network-served versions).
+- **Commercial License** for closed-source / proprietary use without AGPL
+  obligations — available to sponsors (see [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)).
+
+💜 If this project helps you or your business, please consider
+[sponsoring](https://github.com/sponsors/DraviaVemal) — sponsors get the
+commercial license, private releases, and priority support.
 
 ## V2/Stable Version (C# Only)
 
@@ -108,7 +118,10 @@ Until then, V2 will remain the stable version for use, and any issues related to
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is **dual-licensed** under **AGPL-3.0** and a **commercial license**.
+See the [LICENSE](LICENSE) file for the AGPL-3.0 terms and
+[COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) for the commercial option available
+to [sponsors](https://github.com/sponsors/DraviaVemal).
 
 ## Contributing
 
