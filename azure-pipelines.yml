@@ -1,0 +1,22 @@
+trigger:
+  branches:
+    include:
+      - alpha
+      - stable
+
+pr:
+  branches:
+    include:
+      - alpha
+      - stable
+
+resources:
+  repositories:
+    - repository: pipelines
+      type: github
+      name: DraviaVemal/azure-pipeline
+      endpoint: github.com_DraviaVemal
+      ref: refs/heads/alpha
+
+extends:
+  template: oss/openxml-office/pipeline.yml@pipelines
