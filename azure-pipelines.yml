@@ -1,14 +1,17 @@
 trigger:
   branches:
     include:
-      - alpha
-      - stable
+      - release
+  tags:
+    include:
+      - v*
+    exclude:
+      - v*-*
 
 pr:
   branches:
     include:
-      - alpha
-      - stable
+      - release
 
 resources:
   repositories:
@@ -16,7 +19,7 @@ resources:
       type: github
       name: DraviaVemal/azure-pipeline
       endpoint: github.com_DraviaVemal
-      ref: refs/heads/alpha
+      ref: refs/heads/release
 
 extends:
   template: oss/openxml-office/pipeline.yml@pipelines
