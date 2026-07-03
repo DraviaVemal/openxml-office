@@ -4,5 +4,5 @@ mod spreadsheet;
 
 
 fn main() {
-    println!("Hello, world!");
+    println!("Run Cargo Test to execute the tests for the library");
 }

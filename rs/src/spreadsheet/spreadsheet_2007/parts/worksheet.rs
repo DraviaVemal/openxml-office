@@ -26,7 +26,7 @@ use crate::{
     },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{XmlDeSerializer, XmlDocument};
+use draviavemal_xml_rs::{NodeId, XmlAttribute, XmlDeserializer, XmlDocument, XmlElementContentType};
 use std::{
     cell::RefCell,
     cmp::{max, min},
@@ -187,14 +187,19 @@ impl XmlDocumentPartClose for WorkSheet {
                             &mut xml_doc_mut,
                             Rc::clone(&self.sheet_relationship_part)
                         ))?;
-                        if let Some(root_element) = xml_doc_mut.get_root_mut() {
-                            log_elapsed!(root_element
-                                .order_child_mut(
-                                    EXCEL_ORDER_COLLECTION
-                                        .get("worksheet")
-                                        .context("Failed to get worksheet default order")?,
-                                )
-                                .context("Failed Reorder the element child's"))?;
+                        if let Some(order) = EXCEL_ORDER_COLLECTION.get("worksheet") {
+                            let root_id = xml_doc_mut.get_root_id();
+                            if let Ok(root_element) = xml_doc_mut.get_element_mut(root_id) {
+                                if let Some(contents) = root_element.get_child_contents_mut() {
+                                    contents.sort_by_key(|content| match content {
+                                        XmlElementContentType::Element((_, _, ns_tag)) => order
+                                            .iter()
+                                            .position(|item| *item == ns_tag.as_str())
+                                            .unwrap_or(usize::MAX),
+                                        _ => usize::MAX,
+                                    });
+                                }
+                            }
                         }
                     }
                     log_elapsed!(
@@ -244,9 +249,8 @@ impl XmlDocumentPartInitializing for WorkSheet {
                 <sheetData />
             </worksheet>"#;
         Ok((
-            XmlDeSerializer::vec_to_xml_doc_tree(
+            XmlDeserializer::vec_to_xml_doc_tree(
                 template_core_properties.as_bytes().to_vec(),
-                "Default Worksheet",
             )
             .context("Initializing Worksheet Failed")?,
             Some(content.content_type.to_string()),
@@ -340,7 +344,17 @@ impl WorkSheet {
                 .try_borrow_mut()
                 .context("Failed to get XML doc handle")?;
             // unwrap dimension
-            xml_doc_mut.pop_elements_by_tag_mut("dimension", None);
+            let dimension_root_id = xml_doc_mut.get_root_id();
+            if let Some(dimension_ids) = xml_doc_mut
+                .find_all_child(dimension_root_id, "dimension")
+                .context("Failed to find dimension elements")?
+            {
+                for dimension_id in dimension_ids {
+                    xml_doc_mut
+                        .remove_element_mut(dimension_id)
+                        .context("Failed to remove dimension element")?;
+                }
+            }
             let worksheet_views = log_elapsed!(
                 || {
                     WorkSheet::deserialize_worksheet_views(&mut xml_doc_mut)
@@ -400,17 +414,17 @@ impl WorkSheet {
 
     fn serialize_dimension(&mut self, xml_doc_mut: &mut XmlDocument) -> Result<(), AnyError> {
         fn set_default(xml_doc_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
-            let mut dimension_attribute = HashMap::new();
-            dimension_attribute.insert("ref".to_string(), "A1".to_string());
+            let dimension_attribute =
+                vec![XmlAttribute::new("ref".to_string(), "A1".to_string())];
+            let root_id = xml_doc_mut.get_root_id();
             xml_doc_mut
-                .append_child_mut("dimension", None, Some(dimension_attribute))
+                .append_child_element_mut(root_id, "dimension", Some(dimension_attribute))
                 .context("Failed to Add Dimension node to worksheet")?;
             Ok(())
         }
         if let Some(sheet_data) = self.sheet_data.as_ref() {
             if let Some(first_item) = sheet_data.first_key_value() {
-                let mut dimension_attribute = HashMap::new();
-                dimension_attribute.insert(
+                let dimension_attribute = vec![XmlAttribute::new(
                     "ref".to_string(),
                     format!(
                         "{}{}:{}{}",
@@ -425,9 +439,10 @@ impl WorkSheet {
                             first_item.0
                         }
                     ),
-                );
+                )];
+                let root_id = xml_doc_mut.get_root_id();
                 xml_doc_mut
-                    .append_child_mut("dimension", None, Some(dimension_attribute))
+                    .append_child_element_mut(root_id, "dimension", Some(dimension_attribute))
                     .context("Failed to Add Dimension node to worksheet")?;
             } else {
                 set_default(xml_doc_mut)?;
@@ -441,30 +456,36 @@ impl WorkSheet {
     fn serialize_cols(&mut self, xml_doc_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
         if let Some(mut column_collection) = self.column_collection.take() {
             if column_collection.len() > 0 {
+                let root_id = xml_doc_mut.get_root_id();
                 let cols_id = xml_doc_mut
-                    .insert_children_after_tag_mut("cols", "sheetFormatPr", None, None)
-                    .context("Failed to Insert Cols Element")?
-                    .get_id();
+                    .inser_child_element_after_last_tag_mut(root_id, "cols", "sheetFormatPr", None)
+                    .context("Failed to Insert Cols Element")?;
                 loop {
                     if let Some(item) = column_collection.pop_front() {
-                        let mut attribute = HashMap::new();
-                        attribute.insert("min".to_string(), item.min.to_string());
-                        attribute.insert("max".to_string(), item.max.to_string());
+                        let mut attribute: Vec<XmlAttribute> = Vec::new();
+                        attribute.push(XmlAttribute::new("min".to_string(), item.min.to_string()));
+                        attribute.push(XmlAttribute::new("max".to_string(), item.max.to_string()));
                         if let Some(width) = item.width {
-                            attribute.insert("customWidth".to_string(), "1".to_string());
-                            attribute.insert("width".to_string(), width.to_string());
+                            attribute
+                                .push(XmlAttribute::new("customWidth".to_string(), "1".to_string()));
+                            attribute
+                                .push(XmlAttribute::new("width".to_string(), width.to_string()));
                         }
                         if let Some(style_id) = item.style_id {
-                            attribute.insert("style".to_string(), style_id.id.to_string());
+                            attribute.push(XmlAttribute::new(
+                                "style".to_string(),
+                                style_id.id.to_string(),
+                            ));
                         }
                         if item.hidden.is_some() {
-                            attribute.insert("hidden".to_string(), "1".to_string());
+                            attribute.push(XmlAttribute::new("hidden".to_string(), "1".to_string()));
                         }
                         if item.best_fit.is_some() {
-                            attribute.insert("bestFit".to_string(), "1".to_string());
+                            attribute
+                                .push(XmlAttribute::new("bestFit".to_string(), "1".to_string()));
                         }
                         xml_doc_mut
-                            .append_child_mut("col", Some(&cols_id), Some(attribute))
+                            .append_child_element_mut(cols_id, "col", Some(attribute))
                             .context("Failed to insert col record")?;
                     } else {
                         break;
@@ -476,10 +497,10 @@ impl WorkSheet {
     }
 
     fn serialize_sheet_views(&mut self, xml_doc_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
+        let root_id = xml_doc_mut.get_root_id();
         let sheet_views_id = xml_doc_mut
-            .insert_children_after_tag_mut("sheetViews", "dimension", None, None)
-            .context("Failed to Insert Sheet Views Element")?
-            .get_id();
+            .inser_child_element_after_last_tag_mut(root_id, "sheetViews", "dimension", None)
+            .context("Failed to Insert Sheet Views Element")?;
         loop {
             if let Some(sheet_view) = self.sheet_views.view_collection.pop() {
                 let mut attribute: HashMap<String, String> = HashMap::new();
@@ -575,7 +596,16 @@ impl WorkSheet {
                     );
                 }
                 xml_doc_mut
-                    .append_child_mut("sheetView", Some(&sheet_views_id), Some(attribute))
+                    .append_child_element_mut(
+                        sheet_views_id,
+                        "sheetView",
+                        Some(
+                            attribute
+                                .into_iter()
+                                .map(|(k, v)| XmlAttribute::new(k, v))
+                                .collect(),
+                        ),
+                    )
                     .context("Failed to insert sheetView record")?;
             } else {
                 break;
@@ -586,15 +616,11 @@ impl WorkSheet {
 
     fn serialize_sheet_data(&mut self, xml_doc_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
         if let Some(sheet_data) = self.sheet_data.take() {
+            let root_id = xml_doc_mut.get_root_id();
             let sheet_data_id = xml_doc_mut
-                .insert_children_after_tag_mut("sheetData", "cols", None, None)
-                .context("Failed to Insert Cols Element")?
-                .get_id();
+                .inser_child_element_after_last_tag_mut(root_id, "sheetData", "cols", None)
+                .context("Failed to Insert Cols Element")?;
             for (row_index, db_row) in sheet_data {
-                let row_element = xml_doc_mut
-                    .append_child_mut("row", Some(&sheet_data_id), None)
-                    .context("Failed to insert row element")?;
-                let row_element_id = row_element.get_id();
                 let mut row_attribute = HashMap::new();
                 row_attribute.insert("r".to_string(), row_index.to_string());
                 if let Some(row_span) = db_row.row_property.span {
@@ -626,16 +652,21 @@ impl WorkSheet {
                 if db_row.row_property.place_holder.is_some() {
                     row_attribute.insert("ph".to_string(), "1".to_string());
                 }
-                row_element
-                    .set_attribute_mut(row_attribute)
-                    .context("Failed to set attribute for row")?;
+                let row_element_id = xml_doc_mut
+                    .append_child_element_mut(
+                        sheet_data_id,
+                        "row",
+                        Some(
+                            row_attribute
+                                .into_iter()
+                                .map(|(k, v)| XmlAttribute::new(k, v))
+                                .collect(),
+                        ),
+                    )
+                    .context("Failed to insert row element")?;
                 if let Some(cols) = db_row.cell_records {
                     for (col_index, cell_record) in cols {
                         // Create cell element
-                        let cell_element = xml_doc_mut
-                            .append_child_mut("c", Some(&row_element_id), None)
-                            .context("Failed to insert row element")?;
-                        let cell_id = cell_element.get_id();
                         let mut cell_attribute = HashMap::new();
                         cell_attribute.insert(
                             "r".to_string(),
@@ -664,39 +695,57 @@ impl WorkSheet {
                         if cell_record.place_holder.is_some() {
                             cell_attribute.insert("ph".to_string(), "1".to_string());
                         }
-                        cell_element
-                            .set_attribute_mut(cell_attribute)
-                            .context("Failed to Set Attribute for cell")?;
+                        let cell_id = xml_doc_mut
+                            .append_child_element_mut(
+                                row_element_id,
+                                "c",
+                                Some(
+                                    cell_attribute
+                                        .into_iter()
+                                        .map(|(k, v)| XmlAttribute::new(k, v))
+                                        .collect(),
+                                ),
+                            )
+                            .context("Failed to insert row element")?;
                         // Create cell's child element
                         match cell_record.data_type {
                             CellDataType::InlineString => {
                                 let inline_string_id = xml_doc_mut
-                                    .append_child_mut("is", Some(&cell_id), None)
-                                    .context("Failed to insert Inline string element")?
-                                    .get_id();
-                                let text_element = xml_doc_mut
-                                    .append_child_mut("t", Some(&inline_string_id), None)
+                                    .append_child_element_mut(cell_id, "is", None)
+                                    .context("Failed to insert Inline string element")?;
+                                let text_id = xml_doc_mut
+                                    .append_child_element_mut(inline_string_id, "t", None)
                                     .context("Failed To insert Text Value to inline string")?;
-                                text_element.set_value_mut(
-                                    if let Some(value) = cell_record.value {
+                                xml_doc_mut
+                                    .get_element_mut(text_id)
+                                    .context("Failed to get text element")?
+                                    .add_text_mut(&if let Some(value) = cell_record.value {
                                         value
                                     } else {
                                         "".to_string()
-                                    },
-                                );
+                                    })
+                                    .context("Failed to add text to inline string")?;
                             }
                             _ => {
                                 if let Some(formula) = cell_record.formula {
-                                    let formula_element = xml_doc_mut
-                                        .append_child_mut("f", Some(&cell_id), None)
+                                    let formula_id = xml_doc_mut
+                                        .append_child_element_mut(cell_id, "f", None)
                                         .context("Failed to insert Inline string element")?;
-                                    formula_element.set_value_mut(formula);
+                                    xml_doc_mut
+                                        .get_element_mut(formula_id)
+                                        .context("Failed to get formula element")?
+                                        .add_text_mut(&formula)
+                                        .context("Failed to add formula text")?;
                                 }
                                 if let Some(value) = cell_record.value {
+                                    let value_id = xml_doc_mut
+                                        .append_child_element_mut(cell_id, "v", None)
+                                        .context("Failed to insert Inline string element")?;
                                     xml_doc_mut
-                                        .append_child_mut("v", Some(&cell_id), None)
-                                        .context("Failed to insert Inline string element")?
-                                        .set_value_mut(value);
+                                        .get_element_mut(value_id)
+                                        .context("Failed to get value element")?
+                                        .add_text_mut(&value)
+                                        .context("Failed to add value text")?;
                                 }
                             }
                         }
@@ -709,24 +758,22 @@ impl WorkSheet {
 
     fn serialize_merge_cells(&mut self, xml_doc_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
         if let Some(merge_cells) = self.merge_cells.take() {
+            let root_id = xml_doc_mut.get_root_id();
             let merge_cells_id = xml_doc_mut
-                .insert_children_after_tag_mut("mergeCells", "sheetData", None, None)
-                .context("Failed to Insert Cols Element")?
-                .get_id();
+                .inser_child_element_after_last_tag_mut(root_id, "mergeCells", "sheetData", None)
+                .context("Failed to Insert Cols Element")?;
             {
                 let merge_cells_element = xml_doc_mut
-                    .get_element_mut(&merge_cells_id)
+                    .get_element_mut(merge_cells_id)
                     .context("Failed to get element")?;
-                let mut attributes = HashMap::new();
-                attributes.insert("count".to_string(), merge_cells.len().to_string());
                 merge_cells_element
-                    .set_attribute_mut(attributes)
+                    .add_attribute_mut(XmlAttribute::new(
+                        "count".to_string(),
+                        merge_cells.len().to_string(),
+                    ))
                     .context("Failed to set Merge Cells Attribute")?;
             }
             for merge_cell in merge_cells {
-                let element = xml_doc_mut
-                    .append_child_mut("mergeCell", Some(&merge_cells_id), None)
-                    .context("Failed to add MergeCell Node")?;
                 let mut attribute = HashMap::new();
                 if merge_cell.row_start == merge_cell.row_end
                     && merge_cell.column_start == merge_cell.column_end
@@ -748,9 +795,18 @@ impl WorkSheet {
                         ),
                     );
                 }
-                element
-                    .set_attribute_mut(attribute)
-                    .context("Failed to add Merge Cell Attribute")?;
+                xml_doc_mut
+                    .append_child_element_mut(
+                        merge_cells_id,
+                        "mergeCell",
+                        Some(
+                            attribute
+                                .into_iter()
+                                .map(|(k, v)| XmlAttribute::new(k, v))
+                                .collect(),
+                        ),
+                    )
+                    .context("Failed to add MergeCell Node")?;
             }
         }
         Ok(())
@@ -762,14 +818,11 @@ impl WorkSheet {
         relationship_part: Rc<RefCell<RelationsPart>>,
     ) -> AnyResult<(), AnyError> {
         if let Some(hyperlinks) = self.hyperlinks.take() {
+            let root_id = xml_doc_mut.get_root_id();
             let hyperlinks_id = xml_doc_mut
-                .insert_children_after_tag_mut("hyperlinks", "mergeCells", None, None)
-                .context("Failed to Insert Cols Element")?
-                .get_id();
+                .inser_child_element_after_last_tag_mut(root_id, "hyperlinks", "mergeCells", None)
+                .context("Failed to Insert Cols Element")?;
             for hyperlink in hyperlinks {
-                let hyperlink_element_id = xml_doc_mut
-                    .append_child_mut("hyperlink", Some(&hyperlinks_id), None)
-                    .context("Failed tp Add element")?;
                 let mut attributes = HashMap::new();
                 if hyperlink.range.row_start == hyperlink.range.row_end
                     && hyperlink.range.column_start == hyperlink.range.column_end
@@ -811,9 +864,18 @@ impl WorkSheet {
                 } else {
                     attributes.insert("location".to_string(), hyperlink.link);
                 }
-                hyperlink_element_id
-                    .set_attribute_mut(attributes)
-                    .context("Failed to set hyperlink attribute element")?;
+                xml_doc_mut
+                    .append_child_element_mut(
+                        hyperlinks_id,
+                        "hyperlink",
+                        Some(
+                            attributes
+                                .into_iter()
+                                .map(|(k, v)| XmlAttribute::new(k, v))
+                                .collect(),
+                        ),
+                    )
+                    .context("Failed tp Add element")?;
             }
         }
         Ok(())
@@ -822,65 +884,74 @@ impl WorkSheet {
     fn deserialize_cols(
         xml_doc_mut: &mut XmlDocument,
     ) -> AnyResult<Option<VecDeque<ColumnProperties>>, AnyError> {
-        if let Some(mut cols_element) = xml_doc_mut.pop_elements_by_tag_mut("cols", None) {
-            // Process the columns record if parent node exist
-            if let Some(cols) = cols_element.pop() {
-                let mut column_collection =
-                    VecDeque::with_capacity(cols.get_child_count() as usize);
-                loop {
-                    if let Some((col_elements, _)) = cols.pop_child_mut() {
-                        if let Some(col) = xml_doc_mut.pop_element_mut(&col_elements) {
-                            let mut column_properties = ColumnProperties::default();
-                            let attributes =
-                                col.get_attribute().context("Error Getting col attribute")?;
-                            if let Some(min) = attributes.get("min") {
-                                column_properties.min =
-                                    min.parse().context("Failed to parse min value")?;
-                            }
-                            if let Some(max) = attributes.get("max") {
-                                column_properties.max =
-                                    max.parse().context("Failed to parse min value")?;
-                            }
-                            if let Some(best_fit) = attributes.get("bestFit") {
-                                column_properties.best_fit =
-                                    if best_fit == "1" { Some(true) } else { None }
-                            }
-                            if let Some(hidden) = attributes.get("hidden") {
-                                column_properties.hidden =
-                                    if hidden == "1" { Some(true) } else { None }
-                            }
-                            if let Some(style) = attributes.get("style") {
-                                column_properties.style_id = Some(StyleId::new(
-                                    style.parse().context("Failed to parse style ID")?,
-                                ));
-                            }
-                            if let Some(outline_level) = attributes.get("outlineLevel") {
-                                column_properties.group_level =
-                                    outline_level.parse().context("Failed to parse style ID")?;
-                            }
-                            if let Some(custom_width) = attributes.get("customWidth") {
-                                if custom_width == "1" {
-                                    column_properties.width = Some(
-                                        attributes
-                                            .get("width")
-                                            .context("Failed to get custom width")?
-                                            .parse()
-                                            .context("Failed to parse custom width")?,
-                                    );
-                                }
-                            }
-                            if let Some(collapsed) = attributes.get("collapsed") {
-                                column_properties.collapsed =
-                                    if collapsed == "1" { Some(true) } else { None }
-                            }
-                            column_collection.push_back(column_properties);
-                        }
-                    } else {
-                        break;
+        let root_id = xml_doc_mut.get_root_id();
+        if let Some(cols_id) = xml_doc_mut
+            .find_first_child(root_id, "cols")
+            .context("Failed to find cols element")?
+        {
+            let child_ids: Vec<NodeId> = xml_doc_mut
+                .get_element(cols_id)
+                .context("Failed to get cols element")?
+                .get_child_contents()
+                .as_ref()
+                .map(|contents| {
+                    contents
+                        .iter()
+                        .filter_map(|content| match content {
+                            XmlElementContentType::Element((id, _, _)) => Some(*id),
+                            _ => None,
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            let mut column_collection = VecDeque::with_capacity(child_ids.len());
+            for col_id in child_ids {
+                let col = xml_doc_mut
+                    .get_element(col_id)
+                    .context("Failed to get col element")?;
+                let mut column_properties = ColumnProperties::default();
+                if let Some(min) = col.get_attribute("min").map(|a| a.get_value()) {
+                    column_properties.min = min.parse().context("Failed to parse min value")?;
+                }
+                if let Some(max) = col.get_attribute("max").map(|a| a.get_value()) {
+                    column_properties.max = max.parse().context("Failed to parse min value")?;
+                }
+                if let Some(best_fit) = col.get_attribute("bestFit").map(|a| a.get_value()) {
+                    column_properties.best_fit = if best_fit == "1" { Some(true) } else { None }
+                }
+                if let Some(hidden) = col.get_attribute("hidden").map(|a| a.get_value()) {
+                    column_properties.hidden = if hidden == "1" { Some(true) } else { None }
+                }
+                if let Some(style) = col.get_attribute("style").map(|a| a.get_value()) {
+                    column_properties.style_id = Some(StyleId::new(
+                        style.parse().context("Failed to parse style ID")?,
+                    ));
+                }
+                if let Some(outline_level) = col.get_attribute("outlineLevel").map(|a| a.get_value())
+                {
+                    column_properties.group_level =
+                        outline_level.parse().context("Failed to parse style ID")?;
+                }
+                if let Some(custom_width) = col.get_attribute("customWidth").map(|a| a.get_value()) {
+                    if custom_width == "1" {
+                        column_properties.width = Some(
+                            col.get_attribute("width")
+                                .map(|a| a.get_value())
+                                .context("Failed to get custom width")?
+                                .parse()
+                                .context("Failed to parse custom width")?,
+                        );
                     }
                 }
-                return Ok(Some(column_collection));
+                if let Some(collapsed) = col.get_attribute("collapsed").map(|a| a.get_value()) {
+                    column_properties.collapsed = if collapsed == "1" { Some(true) } else { None }
+                }
+                column_collection.push_back(column_properties);
             }
+            xml_doc_mut
+                .remove_element_mut(cols_id)
+                .context("Failed to remove cols element")?;
+            return Ok(Some(column_collection));
         }
         Ok(None)
     }
@@ -890,149 +961,193 @@ impl WorkSheet {
         xml_doc_mut: &mut XmlDocument,
     ) -> AnyResult<WorkSheetViews, AnyError> {
         let mut worksheet_views = WorkSheetViews::default();
-        if let Some(mut sheet_views_elements) =
-            xml_doc_mut.pop_elements_by_tag_mut("sheetViews", None)
+        let root_id = xml_doc_mut.get_root_id();
+        if let Some(sheet_views_id) = xml_doc_mut
+            .find_first_child(root_id, "sheetViews")
+            .context("Failed to find sheetViews element")?
         {
-            if let Some(sheet_views_element) = sheet_views_elements.pop() {
-                loop {
-                    if let Some((element_id, element_tag)) = sheet_views_element.pop_child_mut() {
-                        // Validate element that are not accounted
-                        if element_tag != "sheetView" {
-                            return Err(anyhow!("Failed to Process Sheet Views child"));
-                        } else {
-                            let sheet_view_element = xml_doc_mut
-                                .pop_element_mut(&element_id)
-                                .context("Failed to get Sheet View Element")?;
-                            let mut worksheet_view = WorkSheetView::default();
-                            let attributes = sheet_view_element
-                                .get_attribute()
-                                .context("Failed to Get Attributes of Sheet View")?;
-                            worksheet_view.workbook_view_id = attributes
-                                .get("workbookViewId")
-                                .context(
-                                    "Mandatory attribute \"workbookViewId\" is missing from sheetView",
-                                )?
-                                .clone();
-                            // Windows protection
-                            if let Some(window_protection) = attributes.get("windowProtection") {
-                                worksheet_view.window_protection = Some(
-                                    ConverterUtil::normalize_bool_property_bool(&window_protection),
-                                );
+            let child_records: Vec<(NodeId, String)> = xml_doc_mut
+                .get_element(sheet_views_id)
+                .context("Failed to get sheetViews element")?
+                .get_child_contents()
+                .as_ref()
+                .map(|contents| {
+                    contents
+                        .iter()
+                        .filter_map(|content| match content {
+                            XmlElementContentType::Element((id, tag, _)) => {
+                                Some((*id, tag.clone()))
                             }
-                            // Show formula
-                            if let Some(show_formula_bar) = attributes.get("showFormulas") {
-                                worksheet_view.show_formula_bar = Some(
-                                    ConverterUtil::normalize_bool_property_bool(&show_formula_bar),
-                                );
-                            }
-                            // Show Grid Line
-                            if let Some(show_grid_line) = attributes.get("showGridLines") {
-                                worksheet_view.show_grid_line = Some(
-                                    ConverterUtil::normalize_bool_property_bool(&show_grid_line),
-                                );
-                            }
-                            // Show row column header
-                            if let Some(show_row_col_header) = attributes.get("showRowColHeaders") {
-                                worksheet_view.show_row_col_header =
-                                    Some(ConverterUtil::normalize_bool_property_bool(
-                                        &show_row_col_header,
-                                    ));
-                            }
-                            // Show Zero
-                            if let Some(show_zero) = attributes.get("showZeros") {
-                                worksheet_view.show_zero =
-                                    Some(ConverterUtil::normalize_bool_property_bool(&show_zero));
-                            }
-                            // Right to Left
-                            if let Some(view_right_to_left) = attributes.get("rightToLeft") {
-                                worksheet_view.view_right_to_left =
-                                    Some(ConverterUtil::normalize_bool_property_bool(
-                                        &view_right_to_left,
-                                    ));
-                            }
-                            // Tab Selected
-                            if let Some(tab_selected) = attributes.get("tabSelected") {
-                                worksheet_view.tab_selected = Some(
-                                    ConverterUtil::normalize_bool_property_bool(&tab_selected),
-                                );
-                            }
-                            // show ruler
-                            if let Some(show_ruler) = attributes.get("showRuler") {
-                                worksheet_view.show_ruler =
-                                    Some(ConverterUtil::normalize_bool_property_bool(&show_ruler));
-                            }
-                            // show white space
-                            if let Some(show_white_space) = attributes.get("showWhiteSpace") {
-                                worksheet_view.show_white_space = Some(
-                                    ConverterUtil::normalize_bool_property_bool(&show_white_space),
-                                );
-                            }
-                            // Show outlined Symbols
-                            if let Some(show_outline_symbol) = attributes.get("showOutlineSymbols")
-                            {
-                                worksheet_view.show_outline_symbol =
-                                    Some(ConverterUtil::normalize_bool_property_bool(
-                                        &show_outline_symbol,
-                                    ));
-                            }
-                            // Default Grid Color
-                            if let Some(default_grid_color) = attributes.get("defaultGridColor") {
-                                worksheet_view.default_grid_color =
-                                    Some(ConverterUtil::normalize_bool_property_bool(
-                                        &default_grid_color,
-                                    ));
-                            }
-                            // Top Left Cell
-                            if let Some(top_left_cell) = attributes.get("topLeftCell") {
-                                worksheet_view.top_left_cell = Some(top_left_cell.clone());
-                            }
-                            // View Setting
-                            if let Some(view) = attributes.get("view") {
-                                worksheet_view.view = Some(view.clone());
-                            }
-                            // Zoom Scale
-                            if let Some(zoom_scale) = attributes.get("zoomScale") {
-                                worksheet_view.zoom_scale = Some(
-                                    zoom_scale
-                                        .parse()
-                                        .context("Failed to Convert Zoom Normal to i16")?,
-                                );
-                            }
-                            // Zoom Scale Normal
-                            if let Some(zoom_scale_normal) = attributes.get("zoomScaleNormal") {
-                                worksheet_view.zoom_scale_normal = Some(
-                                    zoom_scale_normal
-                                        .parse()
-                                        .context("Failed to Convert Zoom Normal to i16")?,
-                                );
-                            }
-                            // Zoom Scale Sheet Layout View
-                            if let Some(zoom_scale_sheet_layout) =
-                                attributes.get("zoomScaleSheetLayoutView")
-                            {
-                                worksheet_view.zoom_scale_sheet_layout = Some(
-                                    zoom_scale_sheet_layout
-                                        .parse()
-                                        .context("Failed to Convert Zoom Normal to i16")?,
-                                );
-                            }
-                            // Zoom Scale Page Layout View
-                            if let Some(zoom_scale_page_layout) =
-                                attributes.get("zoomScalePageLayoutView")
-                            {
-                                worksheet_view.zoom_scale_page_layout = Some(
-                                    zoom_scale_page_layout
-                                        .parse()
-                                        .context("Failed to Convert Zoom Normal to i16")?,
-                                );
-                            }
-                            worksheet_views.view_collection.push(worksheet_view);
-                        }
-                    } else {
-                        break;
-                    }
+                            _ => None,
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            for (element_id, element_tag) in child_records {
+                // Validate element that are not accounted
+                if element_tag != "sheetView" {
+                    return Err(anyhow!("Failed to Process Sheet Views child"));
                 }
+                let sheet_view_element = xml_doc_mut
+                    .get_element(element_id)
+                    .context("Failed to get Sheet View Element")?;
+                let mut worksheet_view = WorkSheetView::default();
+                worksheet_view.workbook_view_id = sheet_view_element
+                    .get_attribute("workbookViewId")
+                    .map(|a| a.get_value())
+                    .context(
+                        "Mandatory attribute \"workbookViewId\" is missing from sheetView",
+                    )?
+                    .to_string();
+                // Windows protection
+                if let Some(window_protection) = sheet_view_element
+                    .get_attribute("windowProtection")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.window_protection =
+                        Some(ConverterUtil::normalize_bool_property_bool(window_protection));
+                }
+                // Show formula
+                if let Some(show_formula_bar) = sheet_view_element
+                    .get_attribute("showFormulas")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.show_formula_bar =
+                        Some(ConverterUtil::normalize_bool_property_bool(show_formula_bar));
+                }
+                // Show Grid Line
+                if let Some(show_grid_line) = sheet_view_element
+                    .get_attribute("showGridLines")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.show_grid_line =
+                        Some(ConverterUtil::normalize_bool_property_bool(show_grid_line));
+                }
+                // Show row column header
+                if let Some(show_row_col_header) = sheet_view_element
+                    .get_attribute("showRowColHeaders")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.show_row_col_header =
+                        Some(ConverterUtil::normalize_bool_property_bool(show_row_col_header));
+                }
+                // Show Zero
+                if let Some(show_zero) = sheet_view_element
+                    .get_attribute("showZeros")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.show_zero =
+                        Some(ConverterUtil::normalize_bool_property_bool(show_zero));
+                }
+                // Right to Left
+                if let Some(view_right_to_left) = sheet_view_element
+                    .get_attribute("rightToLeft")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.view_right_to_left =
+                        Some(ConverterUtil::normalize_bool_property_bool(view_right_to_left));
+                }
+                // Tab Selected
+                if let Some(tab_selected) = sheet_view_element
+                    .get_attribute("tabSelected")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.tab_selected =
+                        Some(ConverterUtil::normalize_bool_property_bool(tab_selected));
+                }
+                // show ruler
+                if let Some(show_ruler) = sheet_view_element
+                    .get_attribute("showRuler")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.show_ruler =
+                        Some(ConverterUtil::normalize_bool_property_bool(show_ruler));
+                }
+                // show white space
+                if let Some(show_white_space) = sheet_view_element
+                    .get_attribute("showWhiteSpace")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.show_white_space =
+                        Some(ConverterUtil::normalize_bool_property_bool(show_white_space));
+                }
+                // Show outlined Symbols
+                if let Some(show_outline_symbol) = sheet_view_element
+                    .get_attribute("showOutlineSymbols")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.show_outline_symbol =
+                        Some(ConverterUtil::normalize_bool_property_bool(show_outline_symbol));
+                }
+                // Default Grid Color
+                if let Some(default_grid_color) = sheet_view_element
+                    .get_attribute("defaultGridColor")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.default_grid_color =
+                        Some(ConverterUtil::normalize_bool_property_bool(default_grid_color));
+                }
+                // Top Left Cell
+                if let Some(top_left_cell) = sheet_view_element
+                    .get_attribute("topLeftCell")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.top_left_cell = Some(top_left_cell.to_string());
+                }
+                // View Setting
+                if let Some(view) = sheet_view_element.get_attribute("view").map(|a| a.get_value())
+                {
+                    worksheet_view.view = Some(view.to_string());
+                }
+                // Zoom Scale
+                if let Some(zoom_scale) = sheet_view_element
+                    .get_attribute("zoomScale")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.zoom_scale = Some(
+                        zoom_scale
+                            .parse()
+                            .context("Failed to Convert Zoom Normal to i16")?,
+                    );
+                }
+                // Zoom Scale Normal
+                if let Some(zoom_scale_normal) = sheet_view_element
+                    .get_attribute("zoomScaleNormal")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.zoom_scale_normal = Some(
+                        zoom_scale_normal
+                            .parse()
+                            .context("Failed to Convert Zoom Normal to i16")?,
+                    );
+                }
+                // Zoom Scale Sheet Layout View
+                if let Some(zoom_scale_sheet_layout) = sheet_view_element
+                    .get_attribute("zoomScaleSheetLayoutView")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.zoom_scale_sheet_layout = Some(
+                        zoom_scale_sheet_layout
+                            .parse()
+                            .context("Failed to Convert Zoom Normal to i16")?,
+                    );
+                }
+                // Zoom Scale Page Layout View
+                if let Some(zoom_scale_page_layout) = sheet_view_element
+                    .get_attribute("zoomScalePageLayoutView")
+                    .map(|a| a.get_value())
+                {
+                    worksheet_view.zoom_scale_page_layout = Some(
+                        zoom_scale_page_layout
+                            .parse()
+                            .context("Failed to Convert Zoom Normal to i16")?,
+                    );
+                }
+                worksheet_views.view_collection.push(worksheet_view);
             }
+            xml_doc_mut
+                .remove_element_mut(sheet_views_id)
+                .context("Failed to remove sheetViews element")?;
         }
         Ok(worksheet_views)
     }
@@ -1042,256 +1157,303 @@ impl WorkSheet {
         xml_doc_mut: &mut XmlDocument,
     ) -> AnyResult<(Option<BTreeMap<u32, RowRecords>>, Dimension), AnyError> {
         let mut dimension = Dimension::default();
-        if let Some(mut sheet_data_element) = xml_doc_mut.pop_elements_by_tag_mut("sheetData", None)
+        let root_id = xml_doc_mut.get_root_id();
+        if let Some(sheet_data_id) = xml_doc_mut
+            .find_first_child(root_id, "sheetData")
+            .context("Failed to find sheetData element")?
         {
-            if let Some(sheet_data) = sheet_data_element.pop() {
-                let mut sheet_data_collection: BTreeMap<u32, RowRecords> = BTreeMap::new();
-                // Loop All rows of sheet data
-                loop {
-                    if let Some((row_element_id, _)) = sheet_data.pop_child_mut() {
-                        if let Some(row_element) = xml_doc_mut.pop_element_mut(&row_element_id) {
-                            let mut row_record = RowProperties::default();
-                            let row_attribute = row_element
-                                .get_attribute()
-                                .context("Failed to pull Row Attribute.")?;
-                            // Get Row Id
-                            let row_index = row_attribute
-                                .get("r")
-                                .context("Missing mandatory row id attribute")?
-                                .parse()
-                                .context("Failed to parse row id")?;
-                            if let Some(row_span) = row_attribute.get("spans") {
-                                row_record.span = Some(row_span.to_string());
-                            }
-                            if let Some(style_id) = row_attribute.get("s") {
-                                if let Some(custom_formant) = row_attribute.get("customFormat") {
-                                    row_record.style_id = if custom_formant == "1" {
-                                        Some(StyleId::new(
-                                            style_id
-                                                .parse()
-                                                .context("Failed to parse the row style id")?,
-                                        ))
-                                    } else {
-                                        None
-                                    };
-                                }
-                            }
-                            if let Some(hidden) = row_attribute.get("hidden") {
-                                row_record.hidden = if hidden == "1" { Some(true) } else { None };
-                            }
-                            if let Some(height) = row_attribute.get("ht") {
-                                if let Some(custom_height) = row_attribute.get("customHeight") {
-                                    row_record.height = if custom_height == "1" {
-                                        Some(
-                                            height
-                                                .parse()
-                                                .context("Failed to parse the row height")?,
-                                        )
-                                    } else {
-                                        None
-                                    };
-                                }
-                            }
-                            if let Some(row_group_level) = row_attribute.get("outlineLevel") {
-                                let outline_level = row_group_level
+            let mut sheet_data_collection: BTreeMap<u32, RowRecords> = BTreeMap::new();
+            let row_ids: Vec<NodeId> = xml_doc_mut
+                .get_element(sheet_data_id)
+                .context("Failed to get sheetData element")?
+                .get_child_contents()
+                .as_ref()
+                .map(|contents| {
+                    contents
+                        .iter()
+                        .filter_map(|content| match content {
+                            XmlElementContentType::Element((id, _, _)) => Some(*id),
+                            _ => None,
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            // Loop All rows of sheet data
+            for row_id in row_ids {
+                let mut row_record = RowProperties::default();
+                let row_element = xml_doc_mut
+                    .get_element(row_id)
+                    .context("Failed to get row element")?;
+                // Get Row Id
+                let row_index: u32 = row_element
+                    .get_attribute("r")
+                    .map(|a| a.get_value())
+                    .context("Missing mandatory row id attribute")?
+                    .parse()
+                    .context("Failed to parse row id")?;
+                if let Some(row_span) = row_element.get_attribute("spans").map(|a| a.get_value()) {
+                    row_record.span = Some(row_span.to_string());
+                }
+                if let Some(style_id) = row_element.get_attribute("s").map(|a| a.get_value()) {
+                    if let Some(custom_formant) =
+                        row_element.get_attribute("customFormat").map(|a| a.get_value())
+                    {
+                        row_record.style_id = if custom_formant == "1" {
+                            Some(StyleId::new(
+                                style_id
                                     .parse()
-                                    .context("Failed to parse the row group level")?;
-                                row_record.group_level = if outline_level > 0 {
-                                    Some(outline_level)
-                                } else {
-                                    None
-                                };
-                            }
-                            if let Some(collapsed) = row_attribute.get("collapsed") {
-                                row_record.collapsed =
-                                    if collapsed == "1" { Some(true) } else { None };
-                            }
-                            if let Some(thick_top) = row_attribute.get("thickTop") {
-                                row_record.thick_top =
-                                    if thick_top == "1" { Some(true) } else { None };
-                            }
-                            if let Some(thick_bottom) = row_attribute.get("thickBot") {
-                                row_record.thick_bottom = if thick_bottom == "1" {
-                                    Some(true)
-                                } else {
-                                    None
-                                };
-                            }
-                            if let Some(place_holder) = row_attribute.get("ph") {
-                                row_record.place_holder = if place_holder == "1" {
-                                    Some(true)
-                                } else {
-                                    None
-                                };
-                            }
-                            let mut cell_records: BTreeMap<ColumnIndex, CellProperties> =
-                                BTreeMap::new();
-                            // Loop All Columns of row
-                            loop {
-                                let mut cell_record = CellProperties::default();
-                                if let Some((col_element_id, _)) = row_element.pop_child_mut() {
-                                    if let Some(col_element) =
-                                        xml_doc_mut.pop_element_mut(&col_element_id)
-                                    {
-                                        let cell_attribute = col_element
-                                            .get_attribute()
-                                            .context("Failed to pull attribute for Column")?;
-                                        // Get Col Id
-                                        let col_index = ConverterUtil::get_column_index(
-                                            cell_attribute
-                                                .get("r")
-                                                .context("Missing mandatory col id attribute")?,
-                                        )
-                                        .context("Failed to Convert col worksheet initialize")?;
-                                        if let Some(style_id) = cell_attribute.get("s") {
-                                            cell_record.style_id =
-                                                Some(StyleId::new(style_id.parse().context(
-                                                    "Failed to parse the col style id",
-                                                )?));
-                                        }
-                                        if let Some(cell_type) = cell_attribute.get("t") {
-                                            cell_record.data_type =
-                                                CellDataType::get_enum(&cell_type);
-                                        } else {
-                                            cell_record.data_type = CellDataType::Number;
-                                        }
-                                        if let Some(comment_id) = cell_attribute.get("cm") {
-                                            cell_record.comment_id =
-                                                Some(comment_id.parse().context(
-                                                    "Failed to parse the col comment id",
-                                                )?);
-                                        };
-                                        if let Some(value_meta_id) = cell_attribute.get("vm") {
-                                            cell_record.metadata =
-                                                Some(value_meta_id.parse().context(
-                                                    "Failed to parse the col value meta id",
-                                                )?);
-                                        };
-                                        if let Some(place_holder) = cell_attribute.get("ph") {
-                                            cell_record.place_holder = if place_holder == "1" {
-                                                Some(true)
-                                            } else {
-                                                None
-                                            };
-                                        };
-                                        loop {
-                                            if let Some((cell_child_id, _)) =
-                                                col_element.pop_child_mut()
-                                            {
-                                                if let Some(element) =
-                                                    xml_doc_mut.pop_element_mut(&cell_child_id)
-                                                {
-                                                    match element.get_tag() {
-                                                        "v" => {
-                                                            cell_record.value =
-                                                                element.get_value().clone();
-                                                        }
-                                                        "f" => {
-                                                            cell_record.formula =
-                                                                element.get_value().clone();
-                                                        }
-                                                        "is" => {
-                                                            if let Some((text_id, _)) =
-                                                                element.pop_child_mut()
-                                                            {
-                                                                if let Some(text_element) =
-                                                                    xml_doc_mut
-                                                                        .pop_element_mut(&text_id)
-                                                                {
-                                                                    cell_record.value =
-                                                                        text_element
-                                                                            .get_value()
-                                                                            .clone();
-                                                                }
-                                                            }
-                                                        }
-                                                        _ => {
-                                                            return Err(anyhow!(
-                                                                "Found un-know element cell child"
-                                                            ));
-                                                        }
-                                                    }
-                                                }
-                                            } else {
-                                                break;
-                                            }
-                                        }
-                                        dimension.start_col = min(dimension.start_col, col_index);
-                                        dimension.end_col = max(dimension.end_col, col_index);
-                                        cell_records.insert(col_index, cell_record);
-                                    }
-                                } else {
-                                    break;
-                                }
-                            }
-                            sheet_data_collection.insert(
-                                row_index,
-                                RowRecords {
-                                    row_property: row_record,
-                                    cell_records: if cell_records.len() > 0 {
-                                        Some(cell_records)
-                                    } else {
-                                        None
-                                    },
-                                },
-                            );
-                        }
-                    } else {
-                        break;
+                                    .context("Failed to parse the row style id")?,
+                            ))
+                        } else {
+                            None
+                        };
                     }
                 }
-                return Ok((Some(sheet_data_collection), dimension));
+                if let Some(hidden) = row_element.get_attribute("hidden").map(|a| a.get_value()) {
+                    row_record.hidden = if hidden == "1" { Some(true) } else { None };
+                }
+                if let Some(height) = row_element.get_attribute("ht").map(|a| a.get_value()) {
+                    if let Some(custom_height) =
+                        row_element.get_attribute("customHeight").map(|a| a.get_value())
+                    {
+                        row_record.height = if custom_height == "1" {
+                            Some(height.parse().context("Failed to parse the row height")?)
+                        } else {
+                            None
+                        };
+                    }
+                }
+                if let Some(row_group_level) =
+                    row_element.get_attribute("outlineLevel").map(|a| a.get_value())
+                {
+                    let outline_level = row_group_level
+                        .parse()
+                        .context("Failed to parse the row group level")?;
+                    row_record.group_level = if outline_level > 0 {
+                        Some(outline_level)
+                    } else {
+                        None
+                    };
+                }
+                if let Some(collapsed) = row_element.get_attribute("collapsed").map(|a| a.get_value())
+                {
+                    row_record.collapsed = if collapsed == "1" { Some(true) } else { None };
+                }
+                if let Some(thick_top) = row_element.get_attribute("thickTop").map(|a| a.get_value())
+                {
+                    row_record.thick_top = if thick_top == "1" { Some(true) } else { None };
+                }
+                if let Some(thick_bottom) =
+                    row_element.get_attribute("thickBot").map(|a| a.get_value())
+                {
+                    row_record.thick_bottom = if thick_bottom == "1" { Some(true) } else { None };
+                }
+                if let Some(place_holder) = row_element.get_attribute("ph").map(|a| a.get_value()) {
+                    row_record.place_holder = if place_holder == "1" { Some(true) } else { None };
+                }
+                let mut cell_records: BTreeMap<ColumnIndex, CellProperties> = BTreeMap::new();
+                let col_ids: Vec<NodeId> = xml_doc_mut
+                    .get_element(row_id)
+                    .context("Failed to get row element")?
+                    .get_child_contents()
+                    .as_ref()
+                    .map(|contents| {
+                        contents
+                            .iter()
+                            .filter_map(|content| match content {
+                                XmlElementContentType::Element((id, _, _)) => Some(*id),
+                                _ => None,
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                // Loop All Columns of row
+                for col_id in col_ids {
+                    let mut cell_record = CellProperties::default();
+                    let col_element = xml_doc_mut
+                        .get_element(col_id)
+                        .context("Failed to get col element")?;
+                    // Get Col Id
+                    let col_index = ConverterUtil::get_column_index(
+                        col_element
+                            .get_attribute("r")
+                            .map(|a| a.get_value())
+                            .context("Missing mandatory col id attribute")?,
+                    )
+                    .context("Failed to Convert col worksheet initialize")?;
+                    if let Some(style_id) = col_element.get_attribute("s").map(|a| a.get_value()) {
+                        cell_record.style_id = Some(StyleId::new(
+                            style_id.parse().context("Failed to parse the col style id")?,
+                        ));
+                    }
+                    if let Some(cell_type) = col_element.get_attribute("t").map(|a| a.get_value()) {
+                        cell_record.data_type = CellDataType::get_enum(cell_type);
+                    } else {
+                        cell_record.data_type = CellDataType::Number;
+                    }
+                    if let Some(comment_id) = col_element.get_attribute("cm").map(|a| a.get_value()) {
+                        cell_record.comment_id =
+                            Some(comment_id.parse().context("Failed to parse the col comment id")?);
+                    };
+                    if let Some(value_meta_id) =
+                        col_element.get_attribute("vm").map(|a| a.get_value())
+                    {
+                        cell_record.metadata = Some(
+                            value_meta_id
+                                .parse()
+                                .context("Failed to parse the col value meta id")?,
+                        );
+                    };
+                    if let Some(place_holder) = col_element.get_attribute("ph").map(|a| a.get_value())
+                    {
+                        cell_record.place_holder = if place_holder == "1" { Some(true) } else { None };
+                    };
+                    let cell_child_records: Vec<(NodeId, String)> = xml_doc_mut
+                        .get_element(col_id)
+                        .context("Failed to get col element")?
+                        .get_child_contents()
+                        .as_ref()
+                        .map(|contents| {
+                            contents
+                                .iter()
+                                .filter_map(|content| match content {
+                                    XmlElementContentType::Element((id, tag, _)) => {
+                                        Some((*id, tag.clone()))
+                                    }
+                                    _ => None,
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    for (cell_child_id, cell_child_tag) in cell_child_records {
+                        match cell_child_tag.as_str() {
+                            "v" => {
+                                cell_record.value = WorkSheet::get_element_text(
+                                    xml_doc_mut,
+                                    cell_child_id,
+                                )?;
+                            }
+                            "f" => {
+                                cell_record.formula = WorkSheet::get_element_text(
+                                    xml_doc_mut,
+                                    cell_child_id,
+                                )?;
+                            }
+                            "is" => {
+                                if let Some(text_id) = xml_doc_mut
+                                    .find_first_child(cell_child_id, "t")
+                                    .context("Failed to find inline string text element")?
+                                {
+                                    cell_record.value =
+                                        WorkSheet::get_element_text(xml_doc_mut, text_id)?;
+                                }
+                            }
+                            _ => {
+                                return Err(anyhow!("Found un-know element cell child"));
+                            }
+                        }
+                    }
+                    dimension.start_col = min(dimension.start_col, col_index);
+                    dimension.end_col = max(dimension.end_col, col_index);
+                    cell_records.insert(col_index, cell_record);
+                }
+                sheet_data_collection.insert(
+                    row_index,
+                    RowRecords {
+                        row_property: row_record,
+                        cell_records: if cell_records.len() > 0 {
+                            Some(cell_records)
+                        } else {
+                            None
+                        },
+                    },
+                );
             }
+            xml_doc_mut
+                .remove_element_mut(sheet_data_id)
+                .context("Failed to remove sheetData element")?;
+            return Ok((Some(sheet_data_collection), dimension));
         }
         Ok((None, dimension))
+    }
+
+    /// Reads the first text content of an element, returning None if there is no text.
+    fn get_element_text(
+        xml_doc_mut: &XmlDocument,
+        element_id: NodeId,
+    ) -> AnyResult<Option<String>, AnyError> {
+        Ok(xml_doc_mut
+            .get_element(element_id)
+            .context("Failed to get element for text read")?
+            .get_child_contents()
+            .as_ref()
+            .and_then(|contents| {
+                contents.iter().find_map(|content| match content {
+                    XmlElementContentType::Text(text) => Some(text.clone()),
+                    _ => None,
+                })
+            }))
     }
 
     /// Deserialize Merge Cell Collection
     fn deserialize_merge_cells(
         xml_doc_mut: &mut XmlDocument,
     ) -> AnyResult<Option<Vec<ReferenceRange>>> {
-        if let Some(mut merge_cells_element) =
-            xml_doc_mut.pop_elements_by_tag_mut("mergeCells", None)
+        let root_id = xml_doc_mut.get_root_id();
+        if let Some(merge_cells_id) = xml_doc_mut
+            .find_first_child(root_id, "mergeCells")
+            .context("Failed to find mergeCells element")?
         {
             let mut merge_cell_collection = Vec::new();
-            if let Some(merge_cells) = merge_cells_element.pop() {
-                loop {
-                    if let Some((merge_cell_id, _)) = merge_cells.pop_child_mut() {
-                        let merge_cell_element = xml_doc_mut
-                            .pop_element_mut(&merge_cell_id)
-                            .context("Failed to Get Element")?;
-                        let attribute = merge_cell_element
-                            .get_attribute()
-                            .context("Failed to pull Mandatory Attributes")?;
-                        let merge_range =
-                            attribute.get("ref").context("Failed to get merge ref")?;
-                        if merge_range.contains(':') {
-                            let range: Vec<&str> = merge_range.split(':').collect();
-                            let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
-                                .context("Failed to parse Cell Ref")?;
-                            let (row_end, column_end) = ConverterUtil::get_cell_index(range[1])
-                                .context("Failed to parse Cell Ref")?;
-                            merge_cell_collection.push(ReferenceRange {
-                                column_start,
-                                row_start,
-                                column_end,
-                                row_end,
-                            });
-                        } else {
-                            let (row, col) = ConverterUtil::get_cell_index(merge_range)
-                                .context("Failed to parse Cell Ref")?;
-                            merge_cell_collection.push(ReferenceRange {
-                                column_start: col,
-                                row_start: row,
-                                column_end: col,
-                                row_end: row,
-                            });
-                        }
-                    } else {
-                        break;
-                    }
+            let merge_cell_ids: Vec<NodeId> = xml_doc_mut
+                .get_element(merge_cells_id)
+                .context("Failed to get mergeCells element")?
+                .get_child_contents()
+                .as_ref()
+                .map(|contents| {
+                    contents
+                        .iter()
+                        .filter_map(|content| match content {
+                            XmlElementContentType::Element((id, _, _)) => Some(*id),
+                            _ => None,
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            for merge_cell_id in merge_cell_ids {
+                let merge_cell_element = xml_doc_mut
+                    .get_element(merge_cell_id)
+                    .context("Failed to Get Element")?;
+                let merge_range = merge_cell_element
+                    .get_attribute("ref")
+                    .map(|a| a.get_value())
+                    .context("Failed to get merge ref")?;
+                if merge_range.contains(':') {
+                    let range: Vec<&str> = merge_range.split(':').collect();
+                    let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
+                        .context("Failed to parse Cell Ref")?;
+                    let (row_end, column_end) = ConverterUtil::get_cell_index(range[1])
+                        .context("Failed to parse Cell Ref")?;
+                    merge_cell_collection.push(ReferenceRange {
+                        column_start,
+                        row_start,
+                        column_end,
+                        row_end,
+                    });
+                } else {
+                    let (row, col) = ConverterUtil::get_cell_index(merge_range)
+                        .context("Failed to parse Cell Ref")?;
+                    merge_cell_collection.push(ReferenceRange {
+                        column_start: col,
+                        row_start: row,
+                        column_end: col,
+                        row_end: row,
+                    });
                 }
             }
+            xml_doc_mut
+                .remove_element_mut(merge_cells_id)
+                .context("Failed to remove mergeCells element")?;
             if merge_cell_collection.len() > 0 {
                 Ok(Some(merge_cell_collection))
             } else {
@@ -1307,74 +1469,91 @@ impl WorkSheet {
         xml_doc_mut: &mut XmlDocument,
         relationship_part: &Rc<RefCell<RelationsPart>>,
     ) -> AnyResult<Option<Vec<HyperLinks>>> {
-        if let Some(mut hyperlinks_element) =
-            xml_doc_mut.pop_elements_by_tag_mut("hyperlinks", None)
+        let root_id = xml_doc_mut.get_root_id();
+        if let Some(hyperlinks_id) = xml_doc_mut
+            .find_first_child(root_id, "hyperlinks")
+            .context("Failed to find hyperlinks element")?
         {
             let mut hyperlink_collection = Vec::new();
-            if let Some(hyperlinks) = hyperlinks_element.pop() {
-                loop {
-                    if let Some((hyperlink_id, _)) = hyperlinks.pop_child_mut() {
-                        let merge_cell_element = xml_doc_mut
-                            .pop_element_mut(&hyperlink_id)
-                            .context("Failed to Get Element")?;
-                        let attribute = merge_cell_element
-                            .get_attribute()
-                            .context("Failed to pull Mandatory Attributes")?;
-                        let display = attribute.get("display").cloned();
-                        let hyperlink_ref = attribute
-                            .get("ref")
-                            .context("Failed to get hyperlink ref")?;
-                        let hyperlink_id = attribute.get("r:id").cloned();
-                        let range_reference = if hyperlink_ref.contains(':') {
-                            let range: Vec<&str> = hyperlink_ref.split(':').collect();
-                            let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
-                                .context("Failed to parse Cell Ref")?;
-                            let (row_end, column_end) = ConverterUtil::get_cell_index(range[1])
-                                .context("Failed to parse Cell Ref")?;
-                            ReferenceRange {
-                                column_start,
-                                row_start,
-                                column_end,
-                                row_end,
-                            }
-                        } else {
-                            let (row, col) = ConverterUtil::get_cell_index(hyperlink_ref)
-                                .context("Failed to parse Cell Ref")?;
-                            ReferenceRange {
-                                column_start: col,
-                                row_start: row,
-                                column_end: col,
-                                row_end: row,
-                            }
-                        };
-                        // If relationship ID exist pull from relationship part
-                        let link = if let Some(id) = hyperlink_id.as_ref() {
-                            let link = relationship_part
-                                .borrow()
-                                .get_target_by_id(id)
-                                .context("Failed to Pull Target From Relationship file")?
-                                .context("No Target Found in the relationship")?;
-                            relationship_part
-                                .borrow_mut()
-                                .delete_relationship_by_id_mut(&id);
-                            link
-                        } else {
-                            attribute
-                                .get("location")
-                                .context("Failed to Get Internal Location")?
-                                .clone()
-                        };
-                        hyperlink_collection.push(HyperLinks {
-                            id: hyperlink_id,
-                            display,
-                            link,
-                            range: range_reference,
-                        });
-                    } else {
-                        break;
+            let hyperlink_ids: Vec<NodeId> = xml_doc_mut
+                .get_element(hyperlinks_id)
+                .context("Failed to get hyperlinks element")?
+                .get_child_contents()
+                .as_ref()
+                .map(|contents| {
+                    contents
+                        .iter()
+                        .filter_map(|content| match content {
+                            XmlElementContentType::Element((id, _, _)) => Some(*id),
+                            _ => None,
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            for hyperlink_element_id in hyperlink_ids {
+                let hyperlink_element = xml_doc_mut
+                    .get_element(hyperlink_element_id)
+                    .context("Failed to Get Element")?;
+                let display = hyperlink_element
+                    .get_attribute("display")
+                    .map(|a| a.get_value().to_string());
+                let hyperlink_ref = hyperlink_element
+                    .get_attribute("ref")
+                    .map(|a| a.get_value())
+                    .context("Failed to get hyperlink ref")?;
+                let hyperlink_id = hyperlink_element
+                    .get_attribute_ns("r:id")
+                    .map(|a| a.get_value().to_string());
+                let range_reference = if hyperlink_ref.contains(':') {
+                    let range: Vec<&str> = hyperlink_ref.split(':').collect();
+                    let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
+                        .context("Failed to parse Cell Ref")?;
+                    let (row_end, column_end) = ConverterUtil::get_cell_index(range[1])
+                        .context("Failed to parse Cell Ref")?;
+                    ReferenceRange {
+                        column_start,
+                        row_start,
+                        column_end,
+                        row_end,
                     }
-                }
+                } else {
+                    let (row, col) = ConverterUtil::get_cell_index(hyperlink_ref)
+                        .context("Failed to parse Cell Ref")?;
+                    ReferenceRange {
+                        column_start: col,
+                        row_start: row,
+                        column_end: col,
+                        row_end: row,
+                    }
+                };
+                // If relationship ID exist pull from relationship part
+                let link = if let Some(id) = hyperlink_id.as_ref() {
+                    let link = relationship_part
+                        .borrow()
+                        .get_target_by_id(id)
+                        .context("Failed to Pull Target From Relationship file")?
+                        .context("No Target Found in the relationship")?;
+                    relationship_part
+                        .borrow_mut()
+                        .delete_relationship_by_id_mut(&id);
+                    link
+                } else {
+                    hyperlink_element
+                        .get_attribute("location")
+                        .map(|a| a.get_value())
+                        .context("Failed to Get Internal Location")?
+                        .to_string()
+                };
+                hyperlink_collection.push(HyperLinks {
+                    id: hyperlink_id,
+                    display,
+                    link,
+                    range: range_reference,
+                });
             }
+            xml_doc_mut
+                .remove_element_mut(hyperlinks_id)
+                .context("Failed to remove hyperlinks element")?;
             if hyperlink_collection.len() > 0 {
                 Ok(Some(hyperlink_collection))
             } else {

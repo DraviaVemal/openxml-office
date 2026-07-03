@@ -6,7 +6,7 @@ use crate::{
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use dashmap::DashMap;
-use draviavemal_xml_rs::{XmlDeSerializer, XmlDocument, XmlSerializer};
+use draviavemal_xml_rs::{XmlDeserializer, XmlDocument, XmlSerializer};
 use std::{
     cell::RefCell,
     collections::HashSet,
@@ -108,7 +108,7 @@ impl OfficeDocument {
                 .context("Failed To Get content vec")?;
             let decompressed_data =
                 decompress_content(&content).context("Raw Content Decompression Failed")?;
-            let xml_tree = XmlDeSerializer::vec_to_xml_doc_tree(decompressed_data)
+            let xml_tree = XmlDeserializer::vec_to_xml_doc_tree(decompressed_data)
                 .context("Xml Serializer Failed")?;
             Ok(Some((
                 xml_tree,
