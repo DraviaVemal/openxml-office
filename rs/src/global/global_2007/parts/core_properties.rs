@@ -11,7 +11,7 @@ use crate::{
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use chrono::Utc;
-use draviavemal_xml_rs::{XmlDeSerializer, XmlDocument};
+use draviavemal_xml_rs::{XmlDeserializer, XmlDocument, XmlElementContentType};
 use std::{cell::RefCell, rc::Weak};
 
 #[derive(Debug)]
@@ -39,31 +39,46 @@ impl XmlDocumentPartClose for CorePropertiesPart {
             let mut xml_document = xml_document_ref
                 .try_borrow_mut()
                 .context("Failed to Pull Office document")?;
-            match xml_document
-                .get_first_element_mut(vec!["cp:coreProperties", "dcterms:modified"], None)
+            let root_id = xml_document.get_root_id();
+            if let Ok(Some(modified_id)) =
+                xml_document.find_first_child_ns(root_id, "dcterms:modified")
             {
-                Ok(result) => {
-                    if let Some(element) = result {
-                        element.set_value_mut(
-                            Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                        );
-                    }
+                xml_document
+                    .clear_element_content_mut(modified_id)
+                    .context("Failed to Clear Elemenent node")?;
+                if let Ok(element) = xml_document.get_element_mut(modified_id) {
+                    element
+                        .add_text_mut(
+                            &Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                        )
+                        .context("Failed to Add Text to Element")?;
                 }
-                Err(_) => (),
             }
-            match xml_document
-                .get_first_element_mut(vec!["cp:coreProperties", "dcterms:created"], None)
+            if let Ok(Some(created_id)) =
+                xml_document.find_first_child_ns(root_id, "dcterms:created")
             {
-                Ok(result) => {
-                    if let Some(element) = result {
-                        if !element.has_value() {
-                            element.set_value_mut(
-                                Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                            );
-                        }
+                let has_value = xml_document
+                    .get_element(created_id)
+                    .map(|element| {
+                        element
+                            .get_child_contents()
+                            .as_ref()
+                            .map_or(false, |contents| {
+                                contents.iter().any(|content| {
+                                    matches!(content, XmlElementContentType::Text(_))
+                                })
+                            })
+                    })
+                    .unwrap_or(false);
+                if !has_value {
+                    if let Ok(element) = xml_document.get_element_mut(created_id) {
+                        element
+                            .add_text_mut(
+                                &Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                            )
+                            .context("Failed to Add Text to Element")?;
                     }
                 }
-                Err(_) => (),
             }
         }
         // Update the current state to DB before dropping the object
@@ -83,9 +98,8 @@ impl XmlDocumentPartInitializing for CorePropertiesPart {
     {
         let content = COMMON_TYPE_COLLECTION.get("docProps_core").unwrap();
         Ok((
-            XmlDeSerializer::vec_to_xml_doc_tree(
+            XmlDeserializer::vec_to_xml_doc_tree(
                 include_str!("core_properties.xml").as_bytes().to_vec(),
-                "Default Core Prop",
             )
             .context("Initializing Core Property Failed")?,
             Some(content.content_type.to_string()),

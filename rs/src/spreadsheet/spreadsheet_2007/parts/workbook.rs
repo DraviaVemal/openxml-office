@@ -21,10 +21,9 @@ use crate::{
     },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{XmlDeSerializer, XmlDocument};
+use draviavemal_xml_rs::{NodeId, XmlAttribute, XmlDeserializer, XmlDocument, XmlElementContentType};
 use std::{
     cell::RefCell,
-    collections::HashMap,
     rc::{Rc, Weak},
 };
 
@@ -102,110 +101,136 @@ impl XmlDocumentPartClose for WorkbookPart {
                         .try_borrow_mut()
                         .context("Borrow XML Document Failed")?;
                     let mut sheet_count = 1;
+                    let root_id = xml_doc_mut.get_root_id();
                     if let Some(workbook_view) = &self.workbook_view {
                         // Create and Set BookViews
                         let book_views_id = xml_doc_mut
-                            .insert_children_after_tag_mut("bookViews", "fileVersion", None, None)
-                            .context("Create book viewsD Node Failed")?
-                            .get_id();
-                        let workbook_view_element = xml_doc_mut
-                            .append_child_mut("workbookView", Some(&book_views_id), None)
-                            .context("Failed to create workbook view")?;
-                        let mut attributes: HashMap<String, String> = HashMap::new();
+                            .inser_child_element_after_last_tag_mut(
+                                root_id,
+                                "bookViews",
+                                "fileVersion",
+                                None,
+                            )
+                            .context("Create book viewsD Node Failed")?;
+                        let mut attributes: Vec<XmlAttribute> = Vec::new();
                         if let Some(active_tab) = &workbook_view.active_tab {
-                            attributes.insert("activeTab".to_string(), active_tab.clone());
+                            attributes.push(XmlAttribute::new(
+                                "activeTab".to_string(),
+                                active_tab.clone(),
+                            ));
                         }
                         if let Some(first_sheet) = &workbook_view.first_sheet {
-                            attributes.insert("firstSheet".to_string(), first_sheet.clone());
+                            attributes.push(XmlAttribute::new(
+                                "firstSheet".to_string(),
+                                first_sheet.clone(),
+                            ));
                         }
                         if let Some(tab_ratio) = &workbook_view.sheet_tab_ratio {
-                            attributes.insert("tabRatio".to_string(), tab_ratio.to_string());
+                            attributes.push(XmlAttribute::new(
+                                "tabRatio".to_string(),
+                                tab_ratio.to_string(),
+                            ));
                         }
                         if let Some(auto_filter_date_grouping) =
                             &workbook_view.auto_filter_date_grouping
                         {
-                            attributes.insert(
+                            attributes.push(XmlAttribute::new(
                                 "tabRatio".to_string(),
                                 if auto_filter_date_grouping.to_owned() {
                                     "1".to_string()
                                 } else {
                                     "0".to_string()
                                 },
-                            );
+                            ));
                         }
-                        attributes.insert(
+                        attributes.push(XmlAttribute::new(
                             "minimized".to_string(),
                             if workbook_view.minimize {
                                 "1".to_string()
                             } else {
                                 "0".to_string()
                             },
-                        );
+                        ));
                         if let Some(visibility) = &workbook_view.visibility {
-                            attributes.insert("visibility".to_string(), visibility.clone());
+                            attributes.push(XmlAttribute::new(
+                                "visibility".to_string(),
+                                visibility.clone(),
+                            ));
                         }
-                        attributes.insert(
+                        attributes.push(XmlAttribute::new(
                             "showSheetTabs".to_string(),
                             if workbook_view.hide_sheet_tab {
                                 "0".to_string()
                             } else {
                                 "1".to_string()
                             },
-                        );
-                        attributes.insert(
+                        ));
+                        attributes.push(XmlAttribute::new(
                             "showVerticalScroll".to_string(),
                             if workbook_view.hide_vertical_scroll {
                                 "0".to_string()
                             } else {
                                 "1".to_string()
                             },
-                        );
-                        attributes.insert(
+                        ));
+                        attributes.push(XmlAttribute::new(
                             "showHorizontalScroll".to_string(),
                             if workbook_view.hide_horizontal_scroll {
                                 "0".to_string()
                             } else {
                                 "1".to_string()
                             },
-                        );
-                        workbook_view_element
-                            .set_attribute_mut(attributes)
-                            .context("Failed to set workbook view attributes")?;
+                        ));
+                        xml_doc_mut
+                            .append_child_element_mut(book_views_id, "workbookView", Some(attributes))
+                            .context("Failed to create workbook view")?;
                     }
                     // Create and set Sheets
                     let sheets_id = xml_doc_mut
-                        .insert_children_after_tag_mut("sheets", "bookViews", None, None)
-                        .context("Create Sheets Node Failed")?
-                        .get_id();
+                        .inser_child_element_after_last_tag_mut(root_id, "sheets", "bookViews", None)
+                        .context("Create Sheets Node Failed")?;
                     for (sheet_display_name, relationship_id, _, hide) in &self
                         .sheet_collection
                         .try_borrow_mut()
                         .context("Failed to pull Sheet Name Collection")?
                         .clone()
                     {
-                        let sheet = xml_doc_mut
-                            .append_child_mut("sheet", Some(&sheets_id), None)
-                            .context("Create Sheet Node Failed")?;
-                        let mut attributes = HashMap::new();
-                        attributes.insert("name".to_string(), sheet_display_name.to_string());
-                        attributes.insert("sheetId".to_string(), sheet_count.to_string());
-                        attributes.insert("r:id".to_string(), relationship_id.to_string());
+                        let mut attributes = Vec::new();
+                        attributes.push(XmlAttribute::new(
+                            "name".to_string(),
+                            sheet_display_name.to_string(),
+                        ));
+                        attributes.push(XmlAttribute::new(
+                            "sheetId".to_string(),
+                            sheet_count.to_string(),
+                        ));
+                        attributes.push(XmlAttribute::new(
+                            "r:id".to_string(),
+                            relationship_id.to_string(),
+                        ));
                         if *hide {
-                            attributes.insert("state".to_string(), "hidden".to_string());
+                            attributes.push(XmlAttribute::new(
+                                "state".to_string(),
+                                "hidden".to_string(),
+                            ));
                         }
-                        sheet
-                            .set_attribute_mut(attributes)
-                            .context("Sheet Attributes Failed")?;
+                        xml_doc_mut
+                            .append_child_element_mut(sheets_id, "sheet", Some(attributes))
+                            .context("Create Sheet Node Failed")?;
                         sheet_count += 1;
                     }
-                    if let Some(root_element) = xml_doc_mut.get_root_mut() {
-                        root_element
-                            .order_child_mut(
-                                EXCEL_ORDER_COLLECTION
-                                    .get("workbook")
-                                    .context("Failed to get workbook default order")?,
-                            )
-                            .context("Failed Reorder the element child's")?;
+                    if let Some(order) = EXCEL_ORDER_COLLECTION.get("workbook") {
+                        if let Ok(root_element) = xml_doc_mut.get_element_mut(root_id) {
+                            if let Some(contents) = root_element.get_child_contents_mut() {
+                                contents.sort_by_key(|content| match content {
+                                    XmlElementContentType::Element((_, _, ns_tag)) => order
+                                        .iter()
+                                        .position(|item| *item == ns_tag.as_str())
+                                        .unwrap_or(usize::MAX),
+                                    _ => usize::MAX,
+                                });
+                            }
+                        }
                     }
                 }
                 if let Some(xml_tree) = self.office_document.upgrade() {
@@ -232,9 +257,8 @@ impl XmlDocumentPartInitializing for WorkbookPart {
     <fileVersion appName="openxml-office" lastEdited="7" lowestEdited="7" />
 </workbook>"#;
         Ok((
-            XmlDeSerializer::vec_to_xml_doc_tree(
+            XmlDeserializer::vec_to_xml_doc_tree(
                 template_core_properties.as_bytes().to_vec(),
-                "Default workbook",
             )
             .context("Initializing Workbook Failed")?,
             Some(content.content_type.to_string()),
@@ -328,148 +352,133 @@ impl WorkbookPart {
                 let mut sheet_collection = Vec::new();
                 let mut workbook_view = None;
                 if let Some(xml_document) = xml_document.upgrade() {
-                    let mut xml_doc_mut = xml_document
+                    let xml_doc_mut = xml_document
                         .try_borrow_mut()
                         .context("xml doc borrow failed")?;
+                    let root_id = xml_doc_mut.get_root_id();
                     // Deconstruct Book View for sheet collection data
-                    if let Some(mut book_views_vec) =
-                        xml_doc_mut.pop_elements_by_tag_mut("bookViews", None)
+                    if let Some(book_views_id) = xml_doc_mut
+                        .find_first_child(root_id, "bookViews")
+                        .context("Failed to find bookViews element")?
                     {
-                        if let Some(book_views) = book_views_vec.pop() {
-                            loop {
-                                if let Some((workbook_view_id, _)) = book_views.pop_child_mut() {
-                                    if let Some(workbook_view_element) =
-                                        xml_doc_mut.pop_element_mut(&workbook_view_id)
-                                    {
-                                        if let Some(attributes) =
-                                            workbook_view_element.get_attribute()
-                                        {
-                                            workbook_view = Some(WorkbookView {
-                                                auto_filter_date_grouping: if let Some(
-                                                    auto_filter_data_group,
-                                                ) =
-                                                    attributes.get("autoFilterDateGrouping")
-                                                {
-                                                    Some(
-                                                        ConverterUtil::normalize_bool_property_u8(
-                                                            auto_filter_data_group,
-                                                        ) == 1,
-                                                    )
-                                                } else {
-                                                    None
-                                                },
-                                                sheet_tab_ratio: if let Some(tab_ratio) =
-                                                    attributes.get("tabRatio")
-                                                {
-                                                    Some(tab_ratio.parse().context(
-                                                        "Failed to Parse Tab Ratio Numeric",
-                                                    )?)
-                                                } else {
-                                                    None
-                                                },
-                                                active_tab: if let Some(active_tab) =
-                                                    attributes.get("activeTab")
-                                                {
-                                                    Some(active_tab.to_string())
-                                                } else {
-                                                    None
-                                                },
-                                                first_sheet: if let Some(first_sheet) =
-                                                    attributes.get("firstSheet")
-                                                {
-                                                    Some(first_sheet.to_string())
-                                                } else {
-                                                    None
-                                                },
-                                                hide_sheet_tab: if let Some(hide_sheet_tab) =
-                                                    attributes.get("showSheetTabs")
-                                                {
-                                                    ConverterUtil::normalize_bool_property_u8(
-                                                        hide_sheet_tab,
-                                                    ) == 1
-                                                } else {
-                                                    false
-                                                },
-                                                visibility: if let Some(visibility) =
-                                                    attributes.get("visibility")
-                                                {
-                                                    Some(visibility.to_string())
-                                                } else {
-                                                    None
-                                                },
-                                                minimize: if let Some(minimize) =
-                                                    attributes.get("minimized")
-                                                {
-                                                    ConverterUtil::normalize_bool_property_u8(
-                                                        minimize,
-                                                    ) == 1
-                                                } else {
-                                                    false
-                                                },
-                                                hide_horizontal_scroll: if let Some(
-                                                    hide_horizontal_scroll,
-                                                ) =
-                                                    attributes.get("showHorizontalScroll")
-                                                {
-                                                    ConverterUtil::normalize_bool_property_u8(
-                                                        hide_horizontal_scroll,
-                                                    ) == 0
-                                                } else {
-                                                    false
-                                                },
-                                                hide_vertical_scroll: if let Some(
-                                                    hide_vertical_scroll,
-                                                ) =
-                                                    attributes.get("showVerticalScroll")
-                                                {
-                                                    ConverterUtil::normalize_bool_property_u8(
-                                                        hide_vertical_scroll,
-                                                    ) == 0
-                                                } else {
-                                                    false
-                                                },
-                                            })
-                                        }
-                                    }
-                                } else {
-                                    break;
-                                }
-                            }
+                        let workbook_view_ids: Vec<NodeId> = xml_doc_mut
+                            .get_element(book_views_id)
+                            .context("Failed to pull bookViews element")?
+                            .get_child_contents()
+                            .as_ref()
+                            .map(|contents| {
+                                contents
+                                    .iter()
+                                    .filter_map(|content| match content {
+                                        XmlElementContentType::Element((id, _, _)) => Some(*id),
+                                        _ => None,
+                                    })
+                                    .collect()
+                            })
+                            .unwrap_or_default();
+                        for workbook_view_id in workbook_view_ids {
+                            let workbook_view_element = xml_doc_mut
+                                .get_element(workbook_view_id)
+                                .context("Failed to pull workbookView element")?;
+                            workbook_view = Some(WorkbookView {
+                                auto_filter_date_grouping: match workbook_view_element
+                                    .get_attribute("autoFilterDateGrouping")
+                                {
+                                    Some(auto_filter_data_group) => Some(
+                                        ConverterUtil::normalize_bool_property_u8(
+                                            auto_filter_data_group.get_value(),
+                                        ) == 1,
+                                    ),
+                                    None => None,
+                                },
+                                sheet_tab_ratio: match workbook_view_element
+                                    .get_attribute("tabRatio")
+                                {
+                                    Some(tab_ratio) => Some(
+                                        tab_ratio
+                                            .get_value()
+                                            .parse()
+                                            .context("Failed to Parse Tab Ratio Numeric")?,
+                                    ),
+                                    None => None,
+                                },
+                                active_tab: workbook_view_element
+                                    .get_attribute("activeTab")
+                                    .map(|attribute| attribute.get_value().to_string()),
+                                first_sheet: workbook_view_element
+                                    .get_attribute("firstSheet")
+                                    .map(|attribute| attribute.get_value().to_string()),
+                                hide_sheet_tab: workbook_view_element
+                                    .get_attribute("showSheetTabs")
+                                    .map_or(false, |attribute| {
+                                        ConverterUtil::normalize_bool_property_u8(
+                                            attribute.get_value(),
+                                        ) == 1
+                                    }),
+                                visibility: workbook_view_element
+                                    .get_attribute("visibility")
+                                    .map(|attribute| attribute.get_value().to_string()),
+                                minimize: workbook_view_element
+                                    .get_attribute("minimized")
+                                    .map_or(false, |attribute| {
+                                        ConverterUtil::normalize_bool_property_u8(
+                                            attribute.get_value(),
+                                        ) == 1
+                                    }),
+                                hide_horizontal_scroll: workbook_view_element
+                                    .get_attribute("showHorizontalScroll")
+                                    .map_or(false, |attribute| {
+                                        ConverterUtil::normalize_bool_property_u8(
+                                            attribute.get_value(),
+                                        ) == 0
+                                    }),
+                                hide_vertical_scroll: workbook_view_element
+                                    .get_attribute("showVerticalScroll")
+                                    .map_or(false, |attribute| {
+                                        ConverterUtil::normalize_bool_property_u8(
+                                            attribute.get_value(),
+                                        ) == 0
+                                    }),
+                            })
                         }
                     }
                     // Deconstruct Sheets into collection
-                    if let Some(mut sheets_vec) =
-                        xml_doc_mut.pop_elements_by_tag_mut("sheets", None)
+                    if let Some(sheets_id) = xml_doc_mut
+                        .find_first_child(root_id, "sheets")
+                        .context("Failed to find sheets element")?
                     {
-                        if let Some(sheets) = sheets_vec.pop() {
-                            // Load Sheet from File if exist
-                            loop {
-                                if let Some((sheet_id, _)) = sheets.pop_child_mut() {
-                                    if let Some(sheet) = xml_doc_mut.pop_element_mut(&sheet_id) {
-                                        if let Some(attributes) = sheet.get_attribute() {
-                                            let name = attributes.get("name").context(
-                                                "Error When Trying to read Sheet Details.",
-                                            )?;
-                                            let r_id = attributes.get("r:id").context(
-                                                "Error When Trying to read Sheet Details.",
-                                            )?;
-                                            let state = attributes.get("state");
-                                            sheet_collection.push((
-                                                name.to_string(),
-                                                r_id.to_string(),
-                                                false,
-                                                if let Some(state) = state {
-                                                    state == "hidden"
-                                                } else {
-                                                    false
-                                                },
-                                            ));
-                                        }
-                                    }
-                                } else {
-                                    break;
-                                }
-                            }
+                        let sheet_ids: Vec<NodeId> = xml_doc_mut
+                            .get_element(sheets_id)
+                            .context("Failed to pull sheets element")?
+                            .get_child_contents()
+                            .as_ref()
+                            .map(|contents| {
+                                contents
+                                    .iter()
+                                    .filter_map(|content| match content {
+                                        XmlElementContentType::Element((id, _, _)) => Some(*id),
+                                        _ => None,
+                                    })
+                                    .collect()
+                            })
+                            .unwrap_or_default();
+                        for sheet_id in sheet_ids {
+                            let sheet = xml_doc_mut
+                                .get_element(sheet_id)
+                                .context("Failed to pull sheet element")?;
+                            let name = sheet
+                                .get_attribute("name")
+                                .context("Error When Trying to read Sheet Details.")?;
+                            let r_id = sheet
+                                .get_attribute_ns("r:id")
+                                .context("Error When Trying to read Sheet Details.")?;
+                            let state = sheet.get_attribute("state");
+                            sheet_collection.push((
+                                name.get_value().to_string(),
+                                r_id.get_value().to_string(),
+                                false,
+                                state.map_or(false, |state| state.get_value() == "hidden"),
+                            ));
                         }
                     }
                 }
