@@ -21,7 +21,9 @@ use crate::{
     },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{NodeId, XmlAttribute, XmlDeserializer, XmlDocument, XmlElementContentType};
+use draviavemal_xml_rs::{
+    NodeId, XmlAttribute, XmlDeserializer, XmlDocument, XmlElementContentType,
+};
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -35,8 +37,8 @@ pub struct WorkbookPart {
     common_service: Rc<RefCell<CommonServices>>,
     workbook_relationship_part: Rc<RefCell<RelationsPart>>,
     theme_part: ThemePart,
-    /// This contain the sheet name, relationId, active sheet, hide sheet
-    sheet_collection: Rc<RefCell<Vec<(String, String, bool, bool)>>>,
+    /// This contain the sheet name, relationId, hide sheet
+    sheet_collection: Rc<RefCell<Vec<(String, String, bool)>>>,
     workbook_view: Option<WorkbookView>,
 }
 
@@ -182,14 +184,23 @@ impl XmlDocumentPartClose for WorkbookPart {
                             },
                         ));
                         xml_doc_mut
-                            .append_child_element_mut(book_views_id, "workbookView", Some(attributes))
+                            .append_child_element_mut(
+                                book_views_id,
+                                "workbookView",
+                                Some(attributes),
+                            )
                             .context("Failed to create workbook view")?;
                     }
                     // Create and set Sheets
                     let sheets_id = xml_doc_mut
-                        .inser_child_element_after_last_tag_mut(root_id, "sheets", "bookViews", None)
+                        .inser_child_element_after_last_tag_mut(
+                            root_id,
+                            "sheets",
+                            "bookViews",
+                            None,
+                        )
                         .context("Create Sheets Node Failed")?;
-                    for (sheet_display_name, relationship_id, _, hide) in &self
+                    for (sheet_display_name, relationship_id, hide) in &self
                         .sheet_collection
                         .try_borrow_mut()
                         .context("Failed to pull Sheet Name Collection")?
@@ -209,10 +220,8 @@ impl XmlDocumentPartClose for WorkbookPart {
                             relationship_id.to_string(),
                         ));
                         if *hide {
-                            attributes.push(XmlAttribute::new(
-                                "state".to_string(),
-                                "hidden".to_string(),
-                            ));
+                            attributes
+                                .push(XmlAttribute::new("state".to_string(), "hidden".to_string()));
                         }
                         xml_doc_mut
                             .append_child_element_mut(sheets_id, "sheet", Some(attributes))
@@ -257,10 +266,8 @@ impl XmlDocumentPartInitializing for WorkbookPart {
     <fileVersion appName="openxml-office" lastEdited="7" lowestEdited="7" />
 </workbook>"#;
         Ok((
-            XmlDeserializer::vec_to_xml_doc_tree(
-                template_core_properties.as_bytes().to_vec(),
-            )
-            .context("Initializing Workbook Failed")?,
+            XmlDeserializer::vec_to_xml_doc_tree(template_core_properties.as_bytes().to_vec())
+                .context("Initializing Workbook Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -346,7 +353,7 @@ impl XmlDocumentPart for WorkbookPart {
 impl WorkbookPart {
     fn load_sheet_names(
         xml_document: &mut Weak<RefCell<XmlDocument>>,
-    ) -> AnyResult<(Vec<(String, String, bool, bool)>, Option<WorkbookView>), AnyError> {
+    ) -> AnyResult<(Vec<(String, String, bool)>, Option<WorkbookView>), AnyError> {
         log_elapsed!(
             || {
                 let mut sheet_collection = Vec::new();
@@ -377,9 +384,10 @@ impl WorkbookPart {
                             })
                             .unwrap_or_default();
                         for workbook_view_id in workbook_view_ids {
-                            let workbook_view_element = xml_doc_mut
-                                .get_element(workbook_view_id)
-                                .context("Failed to pull workbookView element")?;
+                            let workbook_view_element =
+                                xml_doc_mut
+                                    .get_element(workbook_view_id)
+                                    .context("Failed to pull workbookView element")?;
                             workbook_view = Some(WorkbookView {
                                 auto_filter_date_grouping: match workbook_view_element
                                     .get_attribute("autoFilterDateGrouping")
@@ -418,13 +426,14 @@ impl WorkbookPart {
                                 visibility: workbook_view_element
                                     .get_attribute("visibility")
                                     .map(|attribute| attribute.get_value().to_string()),
-                                minimize: workbook_view_element
-                                    .get_attribute("minimized")
-                                    .map_or(false, |attribute| {
+                                minimize: workbook_view_element.get_attribute("minimized").map_or(
+                                    false,
+                                    |attribute| {
                                         ConverterUtil::normalize_bool_property_u8(
                                             attribute.get_value(),
                                         ) == 1
-                                    }),
+                                    },
+                                ),
                                 hide_horizontal_scroll: workbook_view_element
                                     .get_attribute("showHorizontalScroll")
                                     .map_or(false, |attribute| {
@@ -476,7 +485,6 @@ impl WorkbookPart {
                             sheet_collection.push((
                                 name.get_value().to_string(),
                                 r_id.get_value().to_string(),
-                                false,
                                 state.map_or(false, |state| state.get_value() == "hidden"),
                             ));
                         }
@@ -519,7 +527,7 @@ impl WorkbookPart {
             .try_borrow()
             .context("Failed to pull Sheet Name Collection")?
             .iter()
-            .map(|(sheet_name, _, _, _)| sheet_name.to_string())
+            .map(|(sheet_name, _, _)| sheet_name.to_string())
             .collect::<Vec<String>>())
     }
 }
@@ -545,7 +553,7 @@ impl WorkbookPart {
             .sheet_collection
             .borrow()
             .iter()
-            .any(|(ref_sheet_name, _, _, _)| ref_sheet_name == sheet_name)
+            .any(|(ref_sheet_name, _, _)| ref_sheet_name == sheet_name)
         {
             log_elapsed!(
                 || {
@@ -567,17 +575,20 @@ impl WorkbookPart {
 
     /// Set Active sheet on opening the excel
     pub(crate) fn set_active_sheet_mut(&mut self, sheet_name: &str) -> AnyResult<(), AnyError> {
-        for (current_sheet_name, _, active_sheet, _) in self
+        let mut tab_count: i32 = 0;
+        for (current_sheet_name, _, _) in self
             .sheet_collection
-            .try_borrow_mut()
+            .try_borrow()
             .context("Failed to pull Sheet Collection Handle")?
-            .iter_mut()
+            .iter()
         {
             if current_sheet_name == sheet_name {
-                *active_sheet = true
-            } else {
-                *active_sheet = false
+                self.workbook_view
+                    .get_or_insert(WorkbookView::default())
+                    .active_tab = Some(tab_count.to_string());
+                break;
             }
+            tab_count += 1;
         }
         Ok(())
     }
@@ -663,7 +674,7 @@ impl WorkbookPart {
 
     /// Hide sheet on opening the excel
     pub(crate) fn hide_sheet_mut(&mut self, sheet_name: &str) -> AnyResult<(), AnyError> {
-        for (current_sheet_name, _, _, hide_sheet) in self
+        for (current_sheet_name, _, hide_sheet) in self
             .sheet_collection
             .try_borrow_mut()
             .context("Failed to pull Sheet Collection Handle")?
