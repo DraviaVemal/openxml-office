@@ -144,7 +144,7 @@ pub(crate) static EXCEL_TYPE_COLLECTION: Map<&'static str, &'static Content> = p
         extension:"xml",
         extension_type:"application/xml",
         default_path:"drawings",
-        default_name:"drawings1"
+        default_name:"drawing1"
     },
     "worksheet"=>&Content{
         schemas_namespace:"http://schemas.openxmlformats.org/spreadsheetml/2006/main",
