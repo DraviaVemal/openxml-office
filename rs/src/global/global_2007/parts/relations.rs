@@ -102,7 +102,7 @@ impl RelationsPart {
     ) -> AnyResult<Vec<(String, String, String, Option<String>)>, AnyError> {
         let mut relationships = Vec::new();
         if let Some(xml_document) = xml_document.upgrade() {
-            let xml_doc_mut = xml_document
+            let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
                 .context("Failed for get XML Handle")?;
             let root_id = xml_doc_mut.get_root_id();
@@ -134,6 +134,9 @@ impl RelationsPart {
                             .get_attribute("TargetMode")
                             .map(|attribute| attribute.get_value().to_string()),
                     ));
+                    xml_doc_mut
+                        .remove_element_mut(relationship_id)
+                        .context("Failed to remove Relationship node")?;
                 }
             }
         }

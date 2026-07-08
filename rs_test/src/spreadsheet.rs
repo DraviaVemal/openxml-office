@@ -145,7 +145,7 @@ mod spreadsheet_test {
         .expect("Create New File Failed");
         file.hide_sheet_tabs_mut(true)
             .expect("Failed to add static Sheet");
-        file.save_as(&format!("{}", &get_save_file(Some("show_tab"))))
+        file.save_as(&format!("{}", &get_save_file(Some("hide_tab"))))
             .expect("File Save Failed");
         assert_eq!(true, true);
     }

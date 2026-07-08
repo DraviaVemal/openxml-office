@@ -359,7 +359,7 @@ impl WorkbookPart {
                 let mut sheet_collection = Vec::new();
                 let mut workbook_view = None;
                 if let Some(xml_document) = xml_document.upgrade() {
-                    let xml_doc_mut = xml_document
+                    let mut xml_doc_mut = xml_document
                         .try_borrow_mut()
                         .context("xml doc borrow failed")?;
                     let root_id = xml_doc_mut.get_root_id();
@@ -450,6 +450,10 @@ impl WorkbookPart {
                                     }),
                             })
                         }
+                        // Delete Deconstructed Book View from XML
+                        xml_doc_mut
+                            .remove_element_mut(book_views_id)
+                            .context("Failed remove bookViews element")?
                     }
                     // Deconstruct Sheets into collection
                     if let Some(sheets_id) = xml_doc_mut
@@ -488,6 +492,10 @@ impl WorkbookPart {
                                 state.map_or(false, |state| state.get_value() == "hidden"),
                             ));
                         }
+                        // Delete Deconstructed Sheets from XML
+                        xml_doc_mut
+                            .remove_element_mut(sheets_id)
+                            .context("Failed remove sheets element")?
                     }
                 }
                 Ok((sheet_collection, workbook_view))
