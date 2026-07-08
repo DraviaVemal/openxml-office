@@ -26,7 +26,9 @@ use crate::{
     },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{NodeId, XmlAttribute, XmlDeserializer, XmlDocument, XmlElementContentType};
+use draviavemal_xml_rs::{
+    NodeId, XmlAttribute, XmlDeserializer, XmlDocument, XmlElementContentType,
+};
 use std::{
     cell::RefCell,
     cmp::{max, min},
@@ -131,7 +133,7 @@ pub struct WorkSheet {
     xml_document: Weak<RefCell<XmlDocument>>,
     common_service: Weak<RefCell<CommonServices>>,
     workbook_relationship_part: Weak<RefCell<RelationsPart>>,
-    sheet_collection: Weak<RefCell<Vec<(String, String, bool, bool)>>>,
+    sheet_collection: Weak<RefCell<Vec<(String, String, bool)>>>,
     sheet_relationship_part: Rc<RefCell<RelationsPart>>,
     dimension: Dimension,
     // sheet_property: Option<_>,
@@ -249,10 +251,8 @@ impl XmlDocumentPartInitializing for WorkSheet {
                 <sheetData />
             </worksheet>"#;
         Ok((
-            XmlDeserializer::vec_to_xml_doc_tree(
-                template_core_properties.as_bytes().to_vec(),
-            )
-            .context("Initializing Worksheet Failed")?,
+            XmlDeserializer::vec_to_xml_doc_tree(template_core_properties.as_bytes().to_vec())
+                .context("Initializing Worksheet Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -265,7 +265,7 @@ impl WorkSheet {
     /// Create New object for the group
     pub(crate) fn new(
         office_document: Weak<RefCell<OfficeDocument>>,
-        sheet_collection: Weak<RefCell<Vec<(String, String, bool, bool)>>>,
+        sheet_collection: Weak<RefCell<Vec<(String, String, bool)>>>,
         workbook_relationship_part: Weak<RefCell<RelationsPart>>,
         common_service: Weak<RefCell<CommonServices>>,
         sheet_name: Option<String>,
@@ -414,8 +414,7 @@ impl WorkSheet {
 
     fn serialize_dimension(&mut self, xml_doc_mut: &mut XmlDocument) -> Result<(), AnyError> {
         fn set_default(xml_doc_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
-            let dimension_attribute =
-                vec![XmlAttribute::new("ref".to_string(), "A1".to_string())];
+            let dimension_attribute = vec![XmlAttribute::new("ref".to_string(), "A1".to_string())];
             let root_id = xml_doc_mut.get_root_id();
             xml_doc_mut
                 .append_child_element_mut(root_id, "dimension", Some(dimension_attribute))
@@ -466,8 +465,10 @@ impl WorkSheet {
                         attribute.push(XmlAttribute::new("min".to_string(), item.min.to_string()));
                         attribute.push(XmlAttribute::new("max".to_string(), item.max.to_string()));
                         if let Some(width) = item.width {
-                            attribute
-                                .push(XmlAttribute::new("customWidth".to_string(), "1".to_string()));
+                            attribute.push(XmlAttribute::new(
+                                "customWidth".to_string(),
+                                "1".to_string(),
+                            ));
                             attribute
                                 .push(XmlAttribute::new("width".to_string(), width.to_string()));
                         }
@@ -478,7 +479,8 @@ impl WorkSheet {
                             ));
                         }
                         if item.hidden.is_some() {
-                            attribute.push(XmlAttribute::new("hidden".to_string(), "1".to_string()));
+                            attribute
+                                .push(XmlAttribute::new("hidden".to_string(), "1".to_string()));
                         }
                         if item.best_fit.is_some() {
                             attribute
@@ -927,12 +929,14 @@ impl WorkSheet {
                         style.parse().context("Failed to parse style ID")?,
                     ));
                 }
-                if let Some(outline_level) = col.get_attribute("outlineLevel").map(|a| a.get_value())
+                if let Some(outline_level) =
+                    col.get_attribute("outlineLevel").map(|a| a.get_value())
                 {
                     column_properties.group_level =
                         outline_level.parse().context("Failed to parse style ID")?;
                 }
-                if let Some(custom_width) = col.get_attribute("customWidth").map(|a| a.get_value()) {
+                if let Some(custom_width) = col.get_attribute("customWidth").map(|a| a.get_value())
+                {
                     if custom_width == "1" {
                         column_properties.width = Some(
                             col.get_attribute("width")
@@ -995,25 +999,25 @@ impl WorkSheet {
                 worksheet_view.workbook_view_id = sheet_view_element
                     .get_attribute("workbookViewId")
                     .map(|a| a.get_value())
-                    .context(
-                        "Mandatory attribute \"workbookViewId\" is missing from sheetView",
-                    )?
+                    .context("Mandatory attribute \"workbookViewId\" is missing from sheetView")?
                     .to_string();
                 // Windows protection
                 if let Some(window_protection) = sheet_view_element
                     .get_attribute("windowProtection")
                     .map(|a| a.get_value())
                 {
-                    worksheet_view.window_protection =
-                        Some(ConverterUtil::normalize_bool_property_bool(window_protection));
+                    worksheet_view.window_protection = Some(
+                        ConverterUtil::normalize_bool_property_bool(window_protection),
+                    );
                 }
                 // Show formula
                 if let Some(show_formula_bar) = sheet_view_element
                     .get_attribute("showFormulas")
                     .map(|a| a.get_value())
                 {
-                    worksheet_view.show_formula_bar =
-                        Some(ConverterUtil::normalize_bool_property_bool(show_formula_bar));
+                    worksheet_view.show_formula_bar = Some(
+                        ConverterUtil::normalize_bool_property_bool(show_formula_bar),
+                    );
                 }
                 // Show Grid Line
                 if let Some(show_grid_line) = sheet_view_element
@@ -1028,8 +1032,9 @@ impl WorkSheet {
                     .get_attribute("showRowColHeaders")
                     .map(|a| a.get_value())
                 {
-                    worksheet_view.show_row_col_header =
-                        Some(ConverterUtil::normalize_bool_property_bool(show_row_col_header));
+                    worksheet_view.show_row_col_header = Some(
+                        ConverterUtil::normalize_bool_property_bool(show_row_col_header),
+                    );
                 }
                 // Show Zero
                 if let Some(show_zero) = sheet_view_element
@@ -1044,8 +1049,9 @@ impl WorkSheet {
                     .get_attribute("rightToLeft")
                     .map(|a| a.get_value())
                 {
-                    worksheet_view.view_right_to_left =
-                        Some(ConverterUtil::normalize_bool_property_bool(view_right_to_left));
+                    worksheet_view.view_right_to_left = Some(
+                        ConverterUtil::normalize_bool_property_bool(view_right_to_left),
+                    );
                 }
                 // Tab Selected
                 if let Some(tab_selected) = sheet_view_element
@@ -1068,24 +1074,27 @@ impl WorkSheet {
                     .get_attribute("showWhiteSpace")
                     .map(|a| a.get_value())
                 {
-                    worksheet_view.show_white_space =
-                        Some(ConverterUtil::normalize_bool_property_bool(show_white_space));
+                    worksheet_view.show_white_space = Some(
+                        ConverterUtil::normalize_bool_property_bool(show_white_space),
+                    );
                 }
                 // Show outlined Symbols
                 if let Some(show_outline_symbol) = sheet_view_element
                     .get_attribute("showOutlineSymbols")
                     .map(|a| a.get_value())
                 {
-                    worksheet_view.show_outline_symbol =
-                        Some(ConverterUtil::normalize_bool_property_bool(show_outline_symbol));
+                    worksheet_view.show_outline_symbol = Some(
+                        ConverterUtil::normalize_bool_property_bool(show_outline_symbol),
+                    );
                 }
                 // Default Grid Color
                 if let Some(default_grid_color) = sheet_view_element
                     .get_attribute("defaultGridColor")
                     .map(|a| a.get_value())
                 {
-                    worksheet_view.default_grid_color =
-                        Some(ConverterUtil::normalize_bool_property_bool(default_grid_color));
+                    worksheet_view.default_grid_color = Some(
+                        ConverterUtil::normalize_bool_property_bool(default_grid_color),
+                    );
                 }
                 // Top Left Cell
                 if let Some(top_left_cell) = sheet_view_element
@@ -1095,7 +1104,9 @@ impl WorkSheet {
                     worksheet_view.top_left_cell = Some(top_left_cell.to_string());
                 }
                 // View Setting
-                if let Some(view) = sheet_view_element.get_attribute("view").map(|a| a.get_value())
+                if let Some(view) = sheet_view_element
+                    .get_attribute("view")
+                    .map(|a| a.get_value())
                 {
                     worksheet_view.view = Some(view.to_string());
                 }
@@ -1195,8 +1206,9 @@ impl WorkSheet {
                     row_record.span = Some(row_span.to_string());
                 }
                 if let Some(style_id) = row_element.get_attribute("s").map(|a| a.get_value()) {
-                    if let Some(custom_formant) =
-                        row_element.get_attribute("customFormat").map(|a| a.get_value())
+                    if let Some(custom_formant) = row_element
+                        .get_attribute("customFormat")
+                        .map(|a| a.get_value())
                     {
                         row_record.style_id = if custom_formant == "1" {
                             Some(StyleId::new(
@@ -1213,8 +1225,9 @@ impl WorkSheet {
                     row_record.hidden = if hidden == "1" { Some(true) } else { None };
                 }
                 if let Some(height) = row_element.get_attribute("ht").map(|a| a.get_value()) {
-                    if let Some(custom_height) =
-                        row_element.get_attribute("customHeight").map(|a| a.get_value())
+                    if let Some(custom_height) = row_element
+                        .get_attribute("customHeight")
+                        .map(|a| a.get_value())
                     {
                         row_record.height = if custom_height == "1" {
                             Some(height.parse().context("Failed to parse the row height")?)
@@ -1223,8 +1236,9 @@ impl WorkSheet {
                         };
                     }
                 }
-                if let Some(row_group_level) =
-                    row_element.get_attribute("outlineLevel").map(|a| a.get_value())
+                if let Some(row_group_level) = row_element
+                    .get_attribute("outlineLevel")
+                    .map(|a| a.get_value())
                 {
                     let outline_level = row_group_level
                         .parse()
@@ -1235,21 +1249,32 @@ impl WorkSheet {
                         None
                     };
                 }
-                if let Some(collapsed) = row_element.get_attribute("collapsed").map(|a| a.get_value())
+                if let Some(collapsed) = row_element
+                    .get_attribute("collapsed")
+                    .map(|a| a.get_value())
                 {
                     row_record.collapsed = if collapsed == "1" { Some(true) } else { None };
                 }
-                if let Some(thick_top) = row_element.get_attribute("thickTop").map(|a| a.get_value())
+                if let Some(thick_top) =
+                    row_element.get_attribute("thickTop").map(|a| a.get_value())
                 {
                     row_record.thick_top = if thick_top == "1" { Some(true) } else { None };
                 }
                 if let Some(thick_bottom) =
                     row_element.get_attribute("thickBot").map(|a| a.get_value())
                 {
-                    row_record.thick_bottom = if thick_bottom == "1" { Some(true) } else { None };
+                    row_record.thick_bottom = if thick_bottom == "1" {
+                        Some(true)
+                    } else {
+                        None
+                    };
                 }
                 if let Some(place_holder) = row_element.get_attribute("ph").map(|a| a.get_value()) {
-                    row_record.place_holder = if place_holder == "1" { Some(true) } else { None };
+                    row_record.place_holder = if place_holder == "1" {
+                        Some(true)
+                    } else {
+                        None
+                    };
                 }
                 let mut cell_records: BTreeMap<ColumnIndex, CellProperties> = BTreeMap::new();
                 let col_ids: Vec<NodeId> = xml_doc_mut
@@ -1283,7 +1308,9 @@ impl WorkSheet {
                     .context("Failed to Convert col worksheet initialize")?;
                     if let Some(style_id) = col_element.get_attribute("s").map(|a| a.get_value()) {
                         cell_record.style_id = Some(StyleId::new(
-                            style_id.parse().context("Failed to parse the col style id")?,
+                            style_id
+                                .parse()
+                                .context("Failed to parse the col style id")?,
                         ));
                     }
                     if let Some(cell_type) = col_element.get_attribute("t").map(|a| a.get_value()) {
@@ -1291,9 +1318,13 @@ impl WorkSheet {
                     } else {
                         cell_record.data_type = CellDataType::Number;
                     }
-                    if let Some(comment_id) = col_element.get_attribute("cm").map(|a| a.get_value()) {
-                        cell_record.comment_id =
-                            Some(comment_id.parse().context("Failed to parse the col comment id")?);
+                    if let Some(comment_id) = col_element.get_attribute("cm").map(|a| a.get_value())
+                    {
+                        cell_record.comment_id = Some(
+                            comment_id
+                                .parse()
+                                .context("Failed to parse the col comment id")?,
+                        );
                     };
                     if let Some(value_meta_id) =
                         col_element.get_attribute("vm").map(|a| a.get_value())
@@ -1304,9 +1335,14 @@ impl WorkSheet {
                                 .context("Failed to parse the col value meta id")?,
                         );
                     };
-                    if let Some(place_holder) = col_element.get_attribute("ph").map(|a| a.get_value())
+                    if let Some(place_holder) =
+                        col_element.get_attribute("ph").map(|a| a.get_value())
                     {
-                        cell_record.place_holder = if place_holder == "1" { Some(true) } else { None };
+                        cell_record.place_holder = if place_holder == "1" {
+                            Some(true)
+                        } else {
+                            None
+                        };
                     };
                     let cell_child_records: Vec<(NodeId, String)> = xml_doc_mut
                         .get_element(col_id)
@@ -1328,16 +1364,12 @@ impl WorkSheet {
                     for (cell_child_id, cell_child_tag) in cell_child_records {
                         match cell_child_tag.as_str() {
                             "v" => {
-                                cell_record.value = WorkSheet::get_element_text(
-                                    xml_doc_mut,
-                                    cell_child_id,
-                                )?;
+                                cell_record.value =
+                                    WorkSheet::get_element_text(xml_doc_mut, cell_child_id)?;
                             }
                             "f" => {
-                                cell_record.formula = WorkSheet::get_element_text(
-                                    xml_doc_mut,
-                                    cell_child_id,
-                                )?;
+                                cell_record.formula =
+                                    WorkSheet::get_element_text(xml_doc_mut, cell_child_id)?;
                             }
                             "is" => {
                                 if let Some(text_id) = xml_doc_mut
@@ -1567,7 +1599,7 @@ impl WorkSheet {
     fn get_sheet_file_name(
         sheet_name: Option<String>,
         office_document: &Weak<RefCell<OfficeDocument>>,
-        sheet_collection: &Weak<RefCell<Vec<(String, String, bool, bool)>>>,
+        sheet_collection: &Weak<RefCell<Vec<(String, String, bool)>>>,
         workbook_relationship_part: &Weak<RefCell<RelationsPart>>,
     ) -> AnyResult<(String, String), AnyError> {
         let worksheet_content = EXCEL_TYPE_COLLECTION.get("worksheet").unwrap();
@@ -1575,7 +1607,7 @@ impl WorkSheet {
             if let Some(workbook_relationship_part) = workbook_relationship_part.upgrade() {
                 if let Some(sheet_name) = sheet_name.clone() {
                     // If the Sheet name already exist get the path of sheet name
-                    if let Some((_, rel_id, _, _)) = sheet_collection
+                    if let Some((_, rel_id, _)) = sheet_collection
                         .try_borrow()
                         .context("Failed to Get Sheet Collection")?
                         .iter()
@@ -1644,7 +1676,7 @@ impl WorkSheet {
                 sheet_collection
                     .try_borrow_mut()
                     .context("Failed To pull Sheet Collection Handle")?
-                    .push((sheet_name.clone(), relationship_id, false, false));
+                    .push((sheet_name.clone(), relationship_id, false));
                 return Ok((
                     format!(
                         "{}/{}{}.{}",
@@ -1923,7 +1955,7 @@ impl WorkSheet {
                                     sheet_id: (sheet_collection
                                         .borrow()
                                         .iter()
-                                        .position(|(sheet_name, _, _, _)| {
+                                        .position(|(sheet_name, _, _)| {
                                             *sheet_name == self.sheet_name
                                         })
                                         .context("Sheet Not Found To ID")?
