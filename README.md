@@ -18,7 +18,7 @@ This project is **dual-licensed**:
 [sponsoring](https://github.com/sponsors/DraviaVemal) — sponsors get the
 commercial license, private releases, and priority support.
 
-## V2/Stable Version (C# Only)
+## v2.x - Stable Version (C# Only) Open-XML-SDK based
 
 Please refer [stable branch](https://github.com/DraviaVemal/OpenXML-Office/tree/stable) for V2/Stable Package related details. This is active development Branch
 
@@ -31,11 +31,11 @@ Please refer [stable branch](https://github.com/DraviaVemal/OpenXML-Office/tree/
 | Code Coverage     | [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/5b420a599805426ab8a990a1a741247a)](https://app.codacy.com/gh/DraviaVemal/OpenXML-Office/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage) | Excel Files Generated | [![Generated](https://draviavemal.com/openxml-office/excel-count.svg)](https://openxml-office.draviavemal.com/)                                                                                                                                   |
 | Package Downloads | [![Downloads](https://img.shields.io/nuget/dt/openxmloffice.Presentation.svg)](https://www.nuget.org/packages/openxmloffice.Presentation)                                                                                                    | Word Files Generated  | [![Generated](https://draviavemal.com/openxml-office/word-count.svg)](https://openxml-office.draviavemal.com/)                                                                                                                                    |
 
-## Important Note about V3 (Discontinued) 🚫
+## Important Note about v3.x (Discontinued) 🚫
 
 After thorough analysis, I have concluded that the full OpenXML format relations and connections are adequately addressed. Therefore, to eliminate duplicate work, V3 is no longer under development. Please follow V4 updates for final results.
 
-# V4 Release and Targets 🚧🛠️
+# v4.x Release and Targets 🚧🛠️
 
 Docs - [Will Try to keep the alpha release documents updated as much possible](https://openxml-office.draviavemal.com/v4.x-alpha)
 
@@ -51,77 +51,6 @@ Docs - [Will Try to keep the alpha release documents updated as much possible](h
 | Go                  | 1.22                | TODO                                                                                | Go                         | [Github](https://github.com/DraviaVemal/OpenXML-Office/)           | Go wrapper package wrote around FFI layer of rust                         |
 | TypeScript          |                     | TODO                                                                                | TypeScript                 | [npm](https://www.npmjs.com/)                                      | NAPI-RS is used to expose the core lib as node addon                      |
 |                     |                     |                                                                                     | Rust-API                   | [Docker Hub](https://hub.docker.com/)                              | API container running rust crate for HTTP support along with quic support |
-
-## V4 Development Status
-
-| Language    | Package      | Progress |
-| ----------- | ------------ | -------- |
-| Flatbuffers | common       | 🟩⬜⬜⬜⬜    |
-| Rust        | fbs          | 🟩⬜⬜⬜⬜    |
-| Rust        | xml          | 🟩🟩🟩🟩⬜    |
-| Rust        | global       | 🟩🟩⬜⬜⬜    |
-| Rust        | spreadsheet  | 🟩🟩🟩🟩⬜    |
-| Rust        | presentation | 🟩⬜⬜⬜⬜    |
-| Rust        | document     | 🟩⬜⬜⬜⬜    |
-| Rust        | FFI          | 🟩⬜⬜⬜⬜    |
-| C#          | fbs          | 🟩⬜⬜⬜⬜    |
-| C#          | spreadsheet  | 🟩⬜⬜⬜⬜    |
-| C#          | presentation | 🟩⬜⬜⬜⬜    |
-| C#          | document     | 🟩⬜⬜⬜⬜    |
-| Python      | fbs          | 🟩⬜⬜⬜⬜    |
-| Python      | spreadsheet  | ⬜⬜⬜⬜⬜    |
-| Python      | presentation | ⬜⬜⬜⬜⬜    |
-| Python      | document     | ⬜⬜⬜⬜⬜    |
-| ----------- | -----------  | -------- |
-| PHASE 2     | PHASE 2      | PHASE 2  |
-| ----------- | -----------  | -------- |
-| Java        | fbs          | ⬜⬜⬜⬜⬜    |
-| Java        | spreadsheet  | ⬜⬜⬜⬜⬜    |
-| Java        | presentation | ⬜⬜⬜⬜⬜    |
-| Java        | document     | ⬜⬜⬜⬜⬜    |
-| Go          | fbs          | ⬜⬜⬜⬜⬜    |
-| Go          | spreadsheet  | ⬜⬜⬜⬜⬜    |
-| Go          | presentation | ⬜⬜⬜⬜⬜    |
-| Go          | document     | ⬜⬜⬜⬜⬜    |
-| TypeScript  | fbs          | ⬜⬜⬜⬜⬜    |
-| TypeScript  | spreadsheet  | ⬜⬜⬜⬜⬜    |
-| TypeScript  | presentation | ⬜⬜⬜⬜⬜    |
-| TypeScript  | document     | ⬜⬜⬜⬜⬜    |
-
-## Repo & Design Block Diagram
-![Design](design.svg)
-
-
-## Technical Details
-
-This release marks a significant evolution for the OpenXML-office project. The upcoming version, V4, will be a complete rewrite of this package. It aims to maintain previous release structures as much as possible, with a strong focus on minimizing migration efforts for adopters.
-
-## Inspiration
-
-This project has been in the works for nearly a year, driven by a desire to explore the OpenXML standards for office documents. Initially developed as a C# project using the OpenXML-SDK as a baseline, I have now gathered sufficient knowledge to transition into a cross-platform, multi-language supported package. This effort is a way to give back to the community that has been instrumental in my professional and personal growth.
-
-### Architecture
-
-The core system is written in Rust, ensuring optimal performance and memory usage. This system is then exposed as a "C" extern FFI, facilitating interaction with other languages. Wrappers for each supported language have been created, and the package is published in the respective package managers. For TypeScript/Javascript, `wasm` is utilized to create a Node.js package, preserving performance advantages. The data transmission is handled using FlatBuffer, following a central schema that ensures consistent patterns across all supported languages and facilitates code organization and documentation maintenance.
-
-## Support Scope
-
-This package supports `.xlsx`, `.pptx`, and `.docx` formats starting from Office 2007. Features are organized into respective modules, namespaces, and directories to provide clarity on the minimum supported version for each feature. The package is designed to be compatible with all applications that open standard OpenXML documents, including online solutions.
-
-## Project Timeline
-
-I will be halting work on the V3 version to prevent duplicate efforts. I have gathered all foundational information necessary for designing the system from the ground up, leading to this decision. 
-
-I anticipate a timeline of 6-8 months for migrating all existing features from the repository to the new codebase. The same functionality will be available across all supported languages and operating systems. While timelines may vary based on my availability, I am committed to maintaining consistent progress, so there should not be significant surprises.
-
-Until then, V2 will remain the stable version for use, and any issues related to Excel and PowerPoint will be prioritized until V4 is ready for release.
-
-## License
-
-This project is **dual-licensed** under **AGPL-3.0** and a **commercial license**.
-See the [LICENSE](LICENSE) file for the AGPL-3.0 terms and
-[COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) for the commercial option available
-to [sponsors](https://github.com/sponsors/DraviaVemal).
 
 ## Contributing
 
