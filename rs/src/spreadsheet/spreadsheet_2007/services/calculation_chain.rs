@@ -86,11 +86,7 @@ impl XmlDocumentPartClose for CalculationChainPart {
                                     ));
                                 }
                                 xml_doc_mut
-                                    .append_child_element_mut(
-                                        root_id,
-                                        "c",
-                                        Some(attributes),
-                                    )
+                                    .append_child_element_mut(root_id, "c", Some(attributes))
                                     .context("Failed To Add Child Item")?;
                             }
                         }
@@ -191,7 +187,7 @@ impl CalculationChainPart {
     ) -> AnyResult<Vec<CalculationChain>, AnyError> {
         let mut calculation_collection = Vec::new();
         if let Some(xml_document) = xml_document.upgrade() {
-            let xml_doc_mut = xml_document
+            let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
                 .context("xml doc borrow failed")?;
             let root_id = xml_doc_mut.get_root_id();
@@ -226,6 +222,9 @@ impl CalculationChainPart {
                             }),
                         });
                     }
+                    xml_doc_mut
+                        .remove_element_mut(element_id)
+                        .context("Falied to remove element")?;
                 }
             }
         }
