@@ -7,11 +7,7 @@ use crate::log_elapsed;
 use crate::{files::OfficeDocument, global_2007::traits::XmlDocumentPart};
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use draviavemal_xml_rs::{XmlAttribute, XmlDocument, XmlElementContentType};
-use std::{
-    cell::RefCell,
-    collections::HashSet,
-    rc::Weak,
-};
+use std::{cell::RefCell, collections::HashSet, rc::Weak};
 
 #[derive(Debug)]
 pub struct ShareStringPart {
@@ -184,7 +180,7 @@ impl ShareStringPart {
     ) -> AnyResult<Vec<String>, AnyError> {
         let mut share_string_collection = Vec::new();
         if let Some(xml_document) = xml_document.upgrade() {
-            let xml_doc_mut = xml_document
+            let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
                 .context("xml doc borrow failed")?;
             let root_id = xml_doc_mut.get_root_id();
@@ -223,6 +219,9 @@ impl ShareStringPart {
                             .unwrap_or_default();
                         share_string_collection.push(value);
                     }
+                    xml_doc_mut
+                        .remove_element_mut(si_id)
+                        .context("Failed To remove element")?;
                 }
             }
         }

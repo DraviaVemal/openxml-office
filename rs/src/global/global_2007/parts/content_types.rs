@@ -38,6 +38,9 @@ impl ContentTypesPart {
                         .get_value()
                         .to_string(),
                 ));
+                self.xml_document
+                    .remove_element_mut(default_id)
+                    .context("Falied to remove element from tree")?;
             }
             if elements.len() > 0 {
                 return Ok(Some(elements));
@@ -64,6 +67,9 @@ impl ContentTypesPart {
                 if let Some(attribute) = element.get_attribute("ContentType") {
                     return Ok(Some(attribute.get_value().to_string()));
                 }
+                self.xml_document
+                    .remove_element_mut(id)
+                    .context("Falied to remove element from tree")?;
             }
         }
         Ok(None)
