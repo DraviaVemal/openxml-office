@@ -36,7 +36,7 @@ For language-specific integration guides and documentation, refer to the respect
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/main/LICENSE) file for details.
+This project is This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/main/LICENSE) file for details.
 
 ## Contributing
 

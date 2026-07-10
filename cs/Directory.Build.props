@@ -9,7 +9,7 @@
         <CosturaOutputType>SingleFile</CosturaOutputType>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
         <OutputPath>.\bin\</OutputPath>
         <Authors>DraviaVemal</Authors>
         <Version>4.0.0-alpha.4</Version>

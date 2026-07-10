@@ -10,7 +10,7 @@ with open("lib/methods.h") as f:
 ffi.set_source(
     "draviavemal_openxml_office_ffi",
     """
-    #include "bindings.h"
+    #include "methods.h"
     """,
     libraries=["draviavemal_openxml_office_ffi"],  # Name of your Rust library
     library_dirs=["./lib"],  # Path to the shared library
