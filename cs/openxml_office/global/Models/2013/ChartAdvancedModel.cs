@@ -1,4 +1,4 @@
-// Copyright (c) DraviaVemal. Licensed under the MIT License. See License in the project root.
+// Copyright (c) DraviaVemal. This project is dual-licensed. See License in the project root.
 
 using System.Collections.Generic;
 namespace draviavemal.openxml_office.Global_2013

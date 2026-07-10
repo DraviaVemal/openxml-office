@@ -43,7 +43,7 @@ For more information on the overarching project, visit the main repository:
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/main/LICENSE) file for details.
+This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/release/README.md) file for details.
 
 ## Contributing
 

@@ -34,7 +34,7 @@ This Rust package serves as the core implementation for the OpenXML Office proje
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/main/LICENSE) file for details.
+This project is This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/main/LICENSE) file for details.
 
 ## Contributing
 

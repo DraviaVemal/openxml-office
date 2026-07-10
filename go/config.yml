@@ -1,7 +1,7 @@
 GENERATOR:
   PackageName: draviavemal_openxml_office_ffi
   PackageDescription: "FFI Core for rust openxml-office"
-  PackageLicense: "MIT License"
+  PackageLicense: " This project is dual-licensed"
   FlagGroups:
   - {name: LDFLAGS, flags: [-L./lib -ldraviavemal_openxml_office_ffi]}
 

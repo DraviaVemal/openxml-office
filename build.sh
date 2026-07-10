@@ -78,6 +78,7 @@ cargo build $release_flag --target x86_64-unknown-linux-gnu
 # Copy Result binary to CS targets
 cp $win_binary_dir/draviavemal_openxml_office_ffi.dll cs/openxml_office/lib/draviavemal_openxml_office_ffi.dll
 cp $linux_binary_dir/libdraviavemal_openxml_office_ffi.so cs/openxml_office/lib/draviavemal_openxml_office_ffi.so
+cp $target_dir/methods.h cs/openxml_office/lib/methods.h
 
 # Copy Result binary to Python targets
 cp $win_binary_dir/draviavemal_openxml_office_ffi.dll python/lib/draviavemal_openxml_office_ffi.dll
