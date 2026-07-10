@@ -81,7 +81,6 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             }
             FlatBufferBuilder builder = new(1024);
             ExcelPropertiesModel.StartExcelPropertiesModel(builder);
-            ExcelPropertiesModel.AddIsInMemory(builder, excelProperties.IsInMemory);
             ExcelPropertiesModel.AddIsEditable(builder, true);
             Offset<ExcelPropertiesModel> excelPropertiesModel = ExcelPropertiesModel.EndExcelPropertiesModel(builder);
             builder.Finish(excelPropertiesModel.Value);
@@ -111,7 +110,6 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             }
             FlatBufferBuilder builder = new(1024);
             ExcelPropertiesModel.StartExcelPropertiesModel(builder);
-            ExcelPropertiesModel.AddIsInMemory(builder, excelProperties.IsInMemory);
             ExcelPropertiesModel.AddIsEditable(builder, true);
             Offset<ExcelPropertiesModel> excelPropertiesModel = ExcelPropertiesModel.EndExcelPropertiesModel(builder);
             builder.Finish(excelPropertiesModel.Value);
