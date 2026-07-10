@@ -44,7 +44,6 @@ namespace draviavemal.openxml_office.document_2007
         {
             FlatBufferBuilder builder = new(1024);
             DocumentPropertiesModel.StartDocumentPropertiesModel(builder);
-            DocumentPropertiesModel.AddIsInMemory(builder, wordProperties.IsInMemory);
             Offset<DocumentPropertiesModel> wordPropertiesModel = DocumentPropertiesModel.EndDocumentPropertiesModel(builder);
             builder.Finish(wordPropertiesModel.Value);
             byte[] buffer = builder.SizedByteArray();
@@ -69,7 +68,6 @@ namespace draviavemal.openxml_office.document_2007
         {
             FlatBufferBuilder builder = new(1024);
             DocumentPropertiesModel.StartDocumentPropertiesModel(builder);
-            DocumentPropertiesModel.AddIsInMemory(builder, wordProperties.IsInMemory);
             Offset<DocumentPropertiesModel> wordPropertiesModel = DocumentPropertiesModel.EndDocumentPropertiesModel(builder);
             builder.Finish(wordPropertiesModel.Value);
             byte[] buffer = builder.SizedByteArray();

@@ -20,7 +20,6 @@ type Excel struct {
 func NewExcel(fileName string) (Excel, error) {
 	builder := flatbuffers.NewBuilder(0)
 	ExcelPropertiesModel.ExcelPropertiesModelStart(builder)
-	ExcelPropertiesModel.ExcelPropertiesModelAddIsInMemory(builder, true)
 	ExcelPropertiesModel.ExcelPropertiesModelAddIsEditable(builder, true)
 	excelPropertiesModel := ExcelPropertiesModel.ExcelPropertiesModelEnd(builder)
 	builder.Finish(excelPropertiesModel)

@@ -44,7 +44,6 @@ namespace draviavemal.openxml_office.presentation_2007
         {
             FlatBufferBuilder builder = new(1024);
             PresentationPropertiesModel.StartPresentationPropertiesModel(builder);
-            PresentationPropertiesModel.AddIsInMemory(builder, powerPointProperties.IsInMemory);
             Offset<PresentationPropertiesModel> powerPointPropertiesModel = PresentationPropertiesModel.EndPresentationPropertiesModel(builder);
             builder.Finish(powerPointPropertiesModel.Value);
             byte[] buffer = builder.SizedByteArray();
@@ -69,7 +68,6 @@ namespace draviavemal.openxml_office.presentation_2007
         {
             FlatBufferBuilder builder = new(1024);
             PresentationPropertiesModel.StartPresentationPropertiesModel(builder);
-            PresentationPropertiesModel.AddIsInMemory(builder, powerPointProperties.IsInMemory);
             Offset<PresentationPropertiesModel> powerPointPropertiesModel = PresentationPropertiesModel.EndPresentationPropertiesModel(builder);
             builder.Finish(powerPointPropertiesModel.Value);
             byte[] buffer = builder.SizedByteArray();
