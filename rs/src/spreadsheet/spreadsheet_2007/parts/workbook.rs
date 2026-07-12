@@ -572,7 +572,7 @@ impl WorkbookPart {
                         Rc::downgrade(&self.common_service),
                         Some(sheet_name.to_string()),
                     )
-                    .context("Worksheet Creation Failed")
+                    .context("Failed to Find Worksheet")
                 },
                 "Get Exiting Workbook"
             )

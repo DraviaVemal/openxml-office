@@ -7,7 +7,7 @@ use draviavemal_openxml_office::{
     },
 };
 use std::{
-    ffi::{c_char, c_void, CStr, CString},
+    ffi::{c_char, c_void, CStr},
     mem::ManuallyDrop,
     slice::from_raw_parts,
 };
@@ -85,44 +85,32 @@ pub extern "C" fn excel_add_sheet(
     let mut excel = unsafe { ManuallyDrop::new(Box::from_raw(excel_ptr)) };
     if sheet_name.is_null() {
         match excel.add_sheet_mut(None) {
-            Result::Ok(worksheet) => {
+            Ok(worksheet) => {
                 unsafe {
                     *out_worksheet = Box::into_raw(Box::new(worksheet)) as *mut c_void;
                 }
                 StatusCode::Success as i8
             }
-            Err(e) => match CString::new(format!("Flat Buffer Parse Error. {}", e)) {
-                Result::Ok(str) => {
-                    unsafe { *out_error = str.into_raw() };
-                    StatusCode::IoError as i8
-                }
-                Err(e) => {
-                    eprintln!("Error String send Error. {}", e);
-                    StatusCode::IoError as i8
-                }
-            },
+            Err(e) => {
+                unsafe { *out_error = chain_error(&e) };
+                StatusCode::IoError as i8
+            }
         }
     } else {
         let sheet_name = unsafe { CStr::from_ptr(sheet_name) }
             .to_string_lossy()
             .into_owned();
         match excel.add_sheet_mut(Some(sheet_name)) {
-            Result::Ok(worksheet) => {
+            Ok(worksheet) => {
                 unsafe {
                     *out_worksheet = Box::into_raw(Box::new(worksheet)) as *mut c_void;
                 }
                 StatusCode::Success as i8
             }
-            Err(e) => match CString::new(format!("Flat Buffer Parse Error. {}", e)) {
-                Result::Ok(str) => {
-                    unsafe { *out_error = str.into_raw() };
-                    StatusCode::IoError as i8
-                }
-                Err(e) => {
-                    eprintln!("Error String send Error. {}", e);
-                    StatusCode::IoError as i8
-                }
-            },
+            Err(e) => {
+                unsafe { *out_error = chain_error(&e) };
+                StatusCode::IoError as i8
+            }
         }
     }
 }
@@ -148,17 +136,11 @@ pub extern "C" fn excel_rename_sheet(
         .to_string_lossy()
         .into_owned();
     match excel.rename_sheet_name_mut(old_sheet_name, new_sheet_name) {
-        Result::Ok(()) => StatusCode::Success as i8,
-        Err(e) => match CString::new(format!("Flat Buffer Parse Error. {}", e)) {
-            Result::Ok(str) => {
-                unsafe { *out_error = str.into_raw() };
-                StatusCode::Success as i8
-            }
-            Err(e) => {
-                eprintln!("Error String send Error. {}", e);
-                StatusCode::IoError as i8
-            }
-        },
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => {
+            unsafe { *out_error = chain_error(&e) };
+            StatusCode::IoError as i8
+        }
     }
 }
 
@@ -180,22 +162,16 @@ pub extern "C" fn excel_get_sheet(
         .to_string_lossy()
         .into_owned();
     match excel.get_worksheet_mut(sheet_name) {
-        Result::Ok(worksheet) => {
+        Ok(worksheet) => {
             unsafe {
                 *out_worksheet = Box::into_raw(Box::new(worksheet)) as *mut c_void;
             }
             StatusCode::Success as i8
         }
-        Err(e) => match CString::new(format!("Flat Buffer Parse Error. {}", e)) {
-            Result::Ok(str) => {
-                unsafe { *out_error = str.into_raw() };
-                StatusCode::IoError as i8
-            }
-            Err(e) => {
-                eprintln!("Error String send Error. {}", e);
-                StatusCode::IoError as i8
-            }
-        },
+        Err(e) => {
+            unsafe { *out_error = chain_error(&e) };
+            StatusCode::IoError as i8
+        }
     }
 }
 
@@ -232,17 +208,11 @@ pub extern "C" fn excel_hide_sheet(
         .to_string_lossy()
         .into_owned();
     match excel.hide_sheet_mut(sheet_name) {
-        Result::Ok(()) => StatusCode::Success as i8,
-        Err(e) => match CString::new(format!("Flat Buffer Parse Error. {}", e)) {
-            Result::Ok(str) => {
-                unsafe { *out_error = str.into_raw() };
-                StatusCode::IoError as i8
-            }
-            Err(e) => {
-                eprintln!("Error String send Error. {}", e);
-                StatusCode::IoError as i8
-            }
-        },
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => {
+            unsafe { *out_error = chain_error(&e) };
+            StatusCode::IoError as i8
+        }
     }
 }
 
@@ -301,16 +271,10 @@ pub extern "C" fn get_style_id_mut(
                     }
                     StatusCode::Success as i8
                 }
-                Err(err) => match CString::new(format!("Flat Buffer Parse Error. {}", err)) {
-                    Result::Ok(str) => {
-                        unsafe { *out_error = str.into_raw() };
-                        StatusCode::IoError as i8
-                    }
-                    Err(e) => {
-                        eprintln!("Error String send Error. {}", e);
-                        StatusCode::IoError as i8
-                    }
-                },
+                Err(err) => {
+                    unsafe { *out_error = chain_error(&err) };
+                    StatusCode::IoError as i8
+                }
             }
         }
         Err(e) => {
@@ -336,16 +300,10 @@ pub extern "C" fn excel_save_as(
     let excel_ptr = excel_ptr as *mut Excel;
     let excel = unsafe { Box::from_raw(excel_ptr) };
     match excel.save_as(&file_name) {
-        Result::Ok(_full_path) => StatusCode::Success as i8,
-        Err(err) => match CString::new(format!("Flat Buffer Parse Error. {}", err)) {
-            Result::Ok(str) => {
-                unsafe { *out_error = str.into_raw() };
-                StatusCode::IoError as i8
-            }
-            Err(e) => {
-                eprintln!("Error String send Error. {}", e);
-                StatusCode::IoError as i8
-            }
-        },
+        Ok(_full_path) => StatusCode::Success as i8,
+        Err(err) => {
+            unsafe { *out_error = chain_error(&err) };
+            StatusCode::IoError as i8
+        }
     }
 }
