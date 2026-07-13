@@ -30,9 +30,7 @@ pub extern "C" fn word_create(
         return StatusCode::InvalidArgument as i8;
     }
     let buffer_slice = unsafe { from_raw_parts(buffer, buffer_size) };
-    match flatbuffers::root::<openxml_office_fbs::presentation_2007::PresentationPropertiesModel>(
-        buffer_slice,
-    ) {
+    match flatbuffers::root::<openxml_office_fbs::document::DocumentPropertiesModel>(buffer_slice) {
         Ok(fbs_word_properties) => {
             let word_properties = WordPropertiesModel {
                 is_editable: fbs_word_properties.is_editable(),

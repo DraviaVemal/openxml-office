@@ -1,0 +1,10 @@
+namespace openxml_office_fbs.document;
+
+table DocumentPropertiesModel {
+  is_editable:bool;
+}
+
+table DocumentSettingsModel {
+}
+
+root_type DocumentPropertiesModel;

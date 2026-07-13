@@ -30,7 +30,7 @@ pub extern "C" fn power_point_create(
         return StatusCode::InvalidArgument as i8;
     }
     let buffer_slice = unsafe { from_raw_parts(buffer, buffer_size) };
-    match flatbuffers::root::<openxml_office_fbs::presentation_2007::PresentationPropertiesModel>(
+    match flatbuffers::root::<openxml_office_fbs::presentation::PresentationPropertiesModel>(
         buffer_slice,
     ) {
         Ok(fbs_power_point_properties) => {
