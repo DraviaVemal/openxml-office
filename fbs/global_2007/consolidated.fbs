@@ -1,2 +1,0 @@
-include "theme_pallet_model.fbs";
-include "core_properties_model.fbs";

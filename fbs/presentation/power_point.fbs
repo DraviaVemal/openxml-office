@@ -1,0 +1,10 @@
+namespace openxml_office_fbs.presentation;
+
+table PresentationPropertiesModel {
+  is_editable:bool;
+}
+
+table PresentationSettingsModel {
+}
+
+root_type PresentationPropertiesModel;

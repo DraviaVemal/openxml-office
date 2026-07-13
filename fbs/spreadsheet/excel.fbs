@@ -1,0 +1,82 @@
+namespace openxml_office_fbs.spreadsheet;
+
+// excel_create - Start
+
+table excel_create {
+    file_name: string;
+    excel_settings: excel_settings(required);
+}
+
+table excel_settings {
+    is_editable: bool;
+}
+
+table excel_create_return {
+    excel_ptr: uint64;
+}
+
+// excel_create - End
+
+// excel_add_sheet - Start
+
+table excel_add_sheet {
+    excel_ptr: uint64;
+    sheet_name: string;
+}
+
+table excel_add_sheet_return {
+    worksheet_ptr: uint64;
+}
+
+// excel_add_sheet - End
+
+// excel_rename_sheet - Start
+
+table excel_rename_sheet{
+    excel_ptr: uint64;
+    old_sheet_name: string;
+    new_sheet_name: string;
+}
+
+// excel_rename_sheet - End
+
+
+// excel_get_sheet - Start
+
+table excel_get_sheet{
+    excel_ptr: uint64;
+    sheet_name: string;
+}
+
+table excel_get_sheet_return {
+    worksheet_ptr: uint64;
+}
+
+// excel_get_sheet - End
+
+
+
+// excel_list_sheet - Start
+
+table excel_list_sheet{
+    excel_ptr: uint64;
+}
+
+table excel_list_sheet_return {
+    sheet_names: [string];
+}
+
+// excel_list_sheet - End
+
+// excel_save_as - Start
+
+table excel_save_as {
+    excel_ptr: uint64;
+    file_name: string;
+}
+
+table excel_save_as_return {
+    full_path: string;
+}
+
+// excel_save_as - End
