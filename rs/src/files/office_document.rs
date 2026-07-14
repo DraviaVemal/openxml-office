@@ -37,12 +37,19 @@ pub(crate) struct ArchivedDocument {
     file_content: Option<Vec<u8>>,
 }
 
+const REORG_PART_GROUPS: &[(&str, &str, &str)] = &[
+    ("xl/worksheets", "sheet", "xml"),
+    ("xl/drawings", "drawing", "xml"),
+];
+
 #[derive(Debug, Clone)]
 pub(crate) struct OfficeDocument {
     /// Key : File_Name -> Value : Extracted content
     xml_document_collection: DashMap<String, ExtractedDocument>,
     /// Key : File_name -> Value : Prepared zip content
     archive_collection: DashMap<String, ArchivedDocument>,
+    /// Key : "{dir}/{base}.{ext}" -> Value : last issued number
+    part_counter: DashMap<String, usize>,
 }
 
 impl OfficeDocument {
@@ -57,11 +64,29 @@ impl OfficeDocument {
         Ok(Self {
             xml_document_collection: DashMap::new(),
             archive_collection,
+            part_counter: DashMap::new(),
         })
     }
 
     pub(crate) fn check_file_exist(&self, file_path: String) -> bool {
         self.archive_collection.contains_key(&file_path)
+    }
+
+    pub(crate) fn get_next_part_number(
+        &self,
+        dir_path: &str,
+        base_name: &str,
+        extension: &str,
+    ) -> usize {
+        let key = format!("{}/{}.{}", dir_path, base_name, extension);
+        let mut counter = self.part_counter.entry(key).or_insert(0);
+        loop {
+            *counter += 1;
+            let candidate = format!("{}/{}{}.{}", dir_path, base_name, *counter, extension);
+            if !self.archive_collection.contains_key(&candidate) {
+                return *counter;
+            }
+        }
     }
 
     pub(crate) fn delete_document_mut(&mut self, file_name: &str) {
@@ -171,6 +196,8 @@ impl OfficeDocument {
         //     self.close_xml_document(&key_file_path)
         //         .context(" Saving open object content failed")?;
         // }
+        self.reorganize_parts()
+            .context("Reorganizing part numbering before save Failed")?;
         let file_content: Vec<u8> = self
             .save_object_into_archive()
             .context("Save Object Data into xml")?;
@@ -188,6 +215,124 @@ impl OfficeDocument {
         file.write_all(&file_content)
             .context("Save File Write Failed")?;
         Ok(result_path.to_string_lossy().to_string())
+    }
+
+    fn reorganize_parts(&mut self) -> AnyResult<(), AnyError> {
+        // (old_path -> new_path) for every archive entry that moves (parts + their _rels)
+        let mut rename: Vec<(String, String)> = Vec::new();
+        // (old_path -> new_path) for part files only, used to rewrite relationship targets
+        let mut part_rename: Vec<(String, String)> = Vec::new();
+        for (dir, base, ext) in REORG_PART_GROUPS {
+            let prefix = format!("{}/{}", dir, base);
+            let suffix = format!(".{}", ext);
+            let mut members: Vec<(usize, String)> = self
+                .archive_collection
+                .iter()
+                .filter_map(|entry| {
+                    let key = entry.key();
+                    let num_str = key.strip_prefix(&prefix)?.strip_suffix(&suffix)?;
+                    if num_str.is_empty() || !num_str.chars().all(|c| c.is_ascii_digit()) {
+                        return None;
+                    }
+                    num_str.parse::<usize>().ok().map(|num| (num, key.clone()))
+                })
+                .collect();
+            if members.is_empty() {
+                continue;
+            }
+            members.sort_by_key(|member| member.0);
+            for (index, (_old_num, old_path)) in members.iter().enumerate() {
+                let new_path = format!("{}/{}{}.{}", dir, base, index + 1, ext);
+                if &new_path == old_path {
+                    continue;
+                }
+                part_rename.push((old_path.clone(), new_path.clone()));
+                rename.push((old_path.clone(), new_path.clone()));
+                let old_file = old_path.rsplit('/').next().unwrap_or_default();
+                let new_file = new_path.rsplit('/').next().unwrap_or_default();
+                let old_rels = format!("{}/_rels/{}.rels", dir, old_file);
+                if self.archive_collection.contains_key(&old_rels) {
+                    let new_rels = format!("{}/_rels/{}.rels", dir, new_file);
+                    rename.push((old_rels, new_rels));
+                }
+            }
+        }
+        if rename.is_empty() {
+            return Ok(());
+        }
+        // Rewrite relationship targets that point at any renamed part file.
+        self.rewrite_relationship_targets(&part_rename)
+            .context("Rewriting relationship targets during reorganize Failed")?;
+        let mut moved: Vec<(String, ArchivedDocument)> = Vec::new();
+        for (old, _new) in &rename {
+            if let Some((_, document)) = self.archive_collection.remove(old) {
+                moved.push((old.clone(), document));
+            }
+        }
+        for (old, document) in moved {
+            if let Some((_, new)) = rename.iter().find(|(source, _)| source == &old) {
+                self.archive_collection.insert(new.clone(), document);
+            }
+        }
+        Ok(())
+    }
+
+    fn rewrite_relationship_targets(
+        &mut self,
+        part_rename: &[(String, String)],
+    ) -> AnyResult<(), AnyError> {
+        if part_rename.is_empty() {
+            return Ok(());
+        }
+        let rels_keys: Vec<String> = self
+            .archive_collection
+            .iter()
+            .map(|entry| entry.key().clone())
+            .filter(|key| key.contains("/_rels/") || key.starts_with("_rels/"))
+            .collect();
+        for rels_key in rels_keys {
+            let compressed = self
+                .archive_collection
+                .get(&rels_key)
+                .and_then(|entry| entry.file_content.clone());
+            let Some(compressed) = compressed else {
+                continue;
+            };
+            let content =
+                decompress_content(&compressed).context("Decompress relationship file Failed")?;
+            let mut text = String::from_utf8(content)
+                .context("Relationship file content is not valid UTF-8")?;
+            let mut changed = false;
+            //  replace each old target with a unique placeholder.
+            for (index, (old_path, _new_path)) in part_rename.iter().enumerate() {
+                let from = format!("/{}\"", old_path);
+                if text.contains(&from) {
+                    let placeholder = format!("\u{0}RN{}\u{0}", index);
+                    text = text.replace(&from, &placeholder);
+                    changed = true;
+                }
+            }
+            if !changed {
+                continue;
+            }
+            //  replace each placeholder with the new target.
+            for (index, (_old_path, new_path)) in part_rename.iter().enumerate() {
+                let placeholder = format!("\u{0}RN{}\u{0}", index);
+                let to = format!("/{}\"", new_path);
+                text = text.replace(&placeholder, &to);
+            }
+            let compression_level = 4;
+            let recompressed = compress_content(text.as_bytes(), compression_level)
+                .context("Recompress relationship file Failed")?;
+            let uncompressed_size = text.len();
+            self.archive_collection.entry(rels_key).and_modify(|value| {
+                value.uncompressed_size = uncompressed_size;
+                value.compressed_size = recompressed.len();
+                value.compression_level = compression_level;
+                value.file_content = Some(recompressed);
+            });
+        }
+        Ok(())
     }
 
     /// Save the object content into file archive

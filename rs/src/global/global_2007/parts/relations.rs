@@ -221,14 +221,25 @@ impl RelationsPart {
                 )))
             }
         } else {
-            self.set_new_relationship_path_mut(content, file_path.clone(), file_name.clone())
-                .context("Setting New Theme Relationship Failed.")?;
-            Ok(format!(
-                "{}/{}.{}",
-                file_path.unwrap_or(content.default_path.to_string()),
-                file_name.unwrap_or(content.default_name.to_string()),
-                content.extension
-            ))
+            let dir_path = file_path
+                .clone()
+                .unwrap_or(content.default_path.to_string());
+            let file_name = if let Some(file_name) = file_name {
+                file_name
+            } else {
+                let office_document = self
+                    .office_document
+                    .upgrade()
+                    .context("Failed to upgrade office document for part numbering")?;
+                let next_number = office_document
+                    .try_borrow()
+                    .context("Failed to borrow office document for part numbering")?
+                    .get_next_part_number(&dir_path, content.default_name, content.extension);
+                format!("{}{}", content.default_name, next_number)
+            };
+            self.set_new_relationship_path_mut(content, file_path.clone(), Some(file_name.clone()))
+                .context("Setting New Part Relationship Failed.")?;
+            Ok(format!("{}/{}.{}", dir_path, file_name, content.extension))
         }
     }
 

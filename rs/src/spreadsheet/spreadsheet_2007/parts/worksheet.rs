@@ -297,10 +297,11 @@ impl WorkSheet {
             "Worksheet Initialize Time"
         )?;
         let drawing_part = Rc::new(RefCell::new(
-            DrawingPart::new_worksheet(
+            DrawingPart::new(
                 office_document.clone(),
                 Rc::downgrade(&sheet_relationship_part),
                 common_service.clone(),
+                &EXCEL_TYPE_COLLECTION,
             )
             .context("Failed to create/load drawing part of the sheet")?,
         ));
@@ -1624,7 +1625,7 @@ impl WorkSheet {
                         ));
                     }
                 }
-                let mut sheet_count = sheet_collection
+                let display_number = sheet_collection
                     .try_borrow()
                     .context("Failed to pull Sheet Name Collection")?
                     .len()
@@ -1634,33 +1635,23 @@ impl WorkSheet {
                     .context("Failed to pull relationship connection")?
                     .get_relative_path()
                     .context("Get Relative Path for Part File")?;
-                if let Some(office_doc) = office_document.upgrade() {
-                    let document = office_doc
-                        .try_borrow()
-                        .context("Failed to Borrow Document")?;
-                    loop {
-                        if document.check_file_exist(format!(
-                            "{}{}/{}{}.{}",
-                            relative_path,
-                            worksheet_content.default_path,
-                            worksheet_content.default_name,
-                            sheet_count,
-                            worksheet_content.extension
-                        )) {
-                            sheet_count += 1;
-                        } else {
-                            break;
-                        }
-                    }
-                }
                 let file_path = format!("{}{}", relative_path, worksheet_content.default_path);
-                let sheet_name = format!(
-                    "{}",
-                    sheet_name.clone().unwrap_or(format!(
-                        "{}{}",
-                        worksheet_content.default_name, &sheet_count
-                    ))
-                );
+                let file_number = if let Some(office_doc) = office_document.upgrade() {
+                    office_doc
+                        .try_borrow()
+                        .context("Failed to Borrow Document")?
+                        .get_next_part_number(
+                            &file_path,
+                            worksheet_content.default_name,
+                            worksheet_content.extension,
+                        )
+                } else {
+                    display_number
+                };
+                let sheet_name = sheet_name.clone().unwrap_or(format!(
+                    "{}{}",
+                    worksheet_content.default_name, &display_number
+                ));
                 let relationship_id = workbook_relationship_part
                     .try_borrow_mut()
                     .context("Failed to Get Relationship Handle")?
@@ -1669,10 +1660,10 @@ impl WorkSheet {
                         Some(file_path.clone()),
                         Some(format!(
                             "{}{}",
-                            worksheet_content.default_name, &sheet_count
+                            worksheet_content.default_name, &file_number
                         )),
                     )
-                    .context("Setting New Calculation Chain Relationship Failed.")?;
+                    .context("Setting New Worksheet Relationship Failed.")?;
                 sheet_collection
                     .try_borrow_mut()
                     .context("Failed To pull Sheet Collection Handle")?
@@ -1682,7 +1673,7 @@ impl WorkSheet {
                         "{}/{}{}.{}",
                         file_path,
                         worksheet_content.default_name,
-                        &sheet_count,
+                        &file_number,
                         worksheet_content.extension
                     ),
                     sheet_name,

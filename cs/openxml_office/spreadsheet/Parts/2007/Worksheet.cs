@@ -6,9 +6,9 @@ namespace draviavemal.openxml_office.spreadsheet_2007
 
     public class Worksheet
     {
-        private readonly IntPtr ffiWorksheet;
+        private readonly ulong ffiWorksheet;
 
-        public Worksheet(IntPtr ffiWorksheet)
+        public Worksheet(ulong ffiWorksheet)
         {
             this.ffiWorksheet = ffiWorksheet;
         }
