@@ -6,9 +6,10 @@ use std::{
 
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
 use draviavemal_xml_rs::{NodeId, XmlDeserializer, XmlDocument, XmlElementContentType};
+use phf::Map;
 
 use crate::{
-    element_dictionary::EXCEL_TYPE_COLLECTION,
+    element_dictionary::{Content, EXCEL_TYPE_COLLECTION},
     files::OfficeDocument,
     global_2007::{
         parts::{DrawingPartGlobal, RelationsPart},
@@ -27,6 +28,7 @@ pub(crate) struct DrawingPart {
     worksheet_relationship_part: Weak<RefCell<RelationsPart>>,
     drawing_relationship_part: Rc<RefCell<RelationsPart>>,
     anchor_collection: Option<VecDeque<DrawingAnchor>>,
+    is_new: bool,
     file_path: String,
 }
 
@@ -39,6 +41,28 @@ impl XmlDocumentPartClose for DrawingPart {
     {
         log_elapsed!(
             || {
+                if self.is_empty() {
+                    if let Some(worksheet_relationship_part) =
+                        self.worksheet_relationship_part.upgrade()
+                    {
+                        worksheet_relationship_part
+                            .try_borrow_mut()
+                            .context("Failed to pull worksheet relationship handle")?
+                            .delete_relationship_mut(&self.file_path);
+                    }
+                    if let Some(office_document) = self.office_document.upgrade() {
+                        office_document
+                            .try_borrow_mut()
+                            .context("Failed to pull office document")?
+                            .delete_document_mut(&self.file_path);
+                    }
+                    self.drawing_relationship_part
+                        .try_borrow_mut()
+                        .context("Failed to pull relationship handle")?
+                        .close_document()
+                        .context("Failed to Close relationship part")?;
+                    return Ok(());
+                }
                 if let Some(office_document) = self.office_document.upgrade() {
                     let mut office_doc_mut = office_document
                         .try_borrow_mut()
@@ -72,7 +96,7 @@ impl XmlDocumentPartClose for DrawingPart {
 impl XmlDocumentPartInitializing for DrawingPart {
     fn initialize_content_xml(
     ) -> anyhow::Result<(XmlDocument, Option<String>, String, String), anyhow::Error> {
-        let content = EXCEL_TYPE_COLLECTION.get("worksheet").unwrap();
+        let content = EXCEL_TYPE_COLLECTION.get("drawing").unwrap();
         let template_core_properties = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
             <xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
             </xdr:wsDr>"#;
@@ -87,13 +111,24 @@ impl XmlDocumentPartInitializing for DrawingPart {
 }
 
 impl DrawingPart {
-    pub(crate) fn new_worksheet(
+    pub(crate) fn new(
         office_document: Weak<RefCell<OfficeDocument>>,
         worksheet_relationship_part: Weak<RefCell<RelationsPart>>,
         common_service: Weak<RefCell<CommonServices>>,
+        type_collection: &Map<&'static str, &'static Content>,
     ) -> AnyResult<DrawingPart, AnyError> {
-        let file_path = Self::get_drawing_file_name(&worksheet_relationship_part)
+        let file_path = Self::get_drawing_file_name(&worksheet_relationship_part, type_collection)
             .context("Failed to pull worksheet file name")?;
+        // Detect whether this drawing already exists (loaded) before the xml document
+        // handle is created, since fetching the handle moves it out of the archive.
+        let is_new = if let Some(office_document) = office_document.upgrade() {
+            !office_document
+                .try_borrow()
+                .context("Failed to borrow office document")?
+                .check_file_exist(file_path.clone())
+        } else {
+            true
+        };
         let xml_document = Self::get_xml_document(&office_document, &file_path)?;
         let drawing_relationship_part = Rc::new(RefCell::new(
             RelationsPart::new(
@@ -106,10 +141,6 @@ impl DrawingPart {
             )
             .context("Creating Relation ship part for workbook failed.")?,
         ));
-        // let anchor_collection = log_elapsed!(
-        //     || { Self::deserialize_drawing(&xml_document).context("Failed to open Worksheet") },
-        //     "Worksheet Initialize Time"
-        // )?;
         Ok(Self {
             drawing_global: DrawingPartGlobal::new(),
             office_document,
@@ -118,14 +149,28 @@ impl DrawingPart {
             worksheet_relationship_part,
             drawing_relationship_part,
             anchor_collection: None,
+            is_new,
             file_path: file_path.to_string(),
         })
     }
 
+    /// A drawing is considered empty when it was newly created this session and has
+    /// not received any anchor/content. Loaded drawings are never treated as empty so
+    /// they always round-trip.
+    fn is_empty(&self) -> bool {
+        self.is_new
+            && self
+                .anchor_collection
+                .as_ref()
+                .map(|anchors| anchors.is_empty())
+                .unwrap_or(true)
+    }
+
     fn get_drawing_file_name(
         worksheet_relationship_part: &Weak<RefCell<RelationsPart>>,
+        type_collection: &Map<&'static str, &'static Content>,
     ) -> AnyResult<String, AnyError> {
-        let drawing_content = EXCEL_TYPE_COLLECTION.get("drawing").unwrap();
+        let drawing_content = type_collection.get("drawing").unwrap();
         if let Some(worksheet_relationship_part) = worksheet_relationship_part.upgrade() {
             Ok(worksheet_relationship_part
                 .try_borrow_mut()

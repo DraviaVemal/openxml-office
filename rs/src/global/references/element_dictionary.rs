@@ -69,8 +69,8 @@ pub(crate) static COMMON_TYPE_COLLECTION: Map<&'static str, &'static Content> = 
         content_type:"application/vnd.openxmlformats-officedocument.drawing+xml",
         extension:"xml",
         extension_type:"application/xml",
-        default_path:"drawing",
-        default_name:"drawing1"
+        default_path:"drawings",
+        default_name:"drawing"
     },
     // TODO Move to Drawing
     "theme"=>&Content{
@@ -81,7 +81,7 @@ pub(crate) static COMMON_TYPE_COLLECTION: Map<&'static str, &'static Content> = 
         extension:"xml",
         extension_type:"application/xml",
         default_path:"theme",
-        default_name:"theme1"
+        default_name:"theme"
     },
 };
 /// Excel Related Content
@@ -134,7 +134,7 @@ pub(crate) static EXCEL_TYPE_COLLECTION: Map<&'static str, &'static Content> = p
         extension:"xml",
         extension_type:"application/xml",
         default_path:"tables",
-        default_name:"table1"
+        default_name:"table"
     },
     "drawing"=>&Content{
         schemas_namespace:"http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing",
@@ -144,7 +144,7 @@ pub(crate) static EXCEL_TYPE_COLLECTION: Map<&'static str, &'static Content> = p
         extension:"xml",
         extension_type:"application/xml",
         default_path:"drawings",
-        default_name:"drawing1"
+        default_name:"drawing"
     },
     "worksheet"=>&Content{
         schemas_namespace:"http://schemas.openxmlformats.org/spreadsheetml/2006/main",

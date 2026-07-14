@@ -152,7 +152,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             builder.Finish(addSheetOffset.Value);
             byte[] responseBuffer = InvokeBufferFfi(ffi_excel_add_sheet, builder);
             excel_add_sheet_return response = excel_add_sheet_return.GetRootAsexcel_add_sheet_return(new ByteBuffer(responseBuffer));
-            return new Worksheet(new IntPtr((long)response.WorksheetPtr));
+            return new Worksheet(response.WorksheetPtr);
         }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             builder.Finish(getSheetOffset.Value);
             byte[] responseBuffer = InvokeBufferFfi(ffi_excel_get_sheet, builder);
             excel_get_sheet_return response = excel_get_sheet_return.GetRootAsexcel_get_sheet_return(new ByteBuffer(responseBuffer));
-            return new Worksheet(new IntPtr((long)response.WorksheetPtr));
+            return new Worksheet(response.WorksheetPtr);
         }
 
         /// <summary>

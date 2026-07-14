@@ -45,8 +45,17 @@ mod spreadsheet_test {
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default(),
         )
         .expect("Create New File Failed");
+        let mut test = file
+            .add_sheet_mut(None)
+            .expect("Failed to add static Sheet");
         file.add_sheet_mut(Some("Test".to_string()))
             .expect("Failed to add static Sheet");
+        test.set_row_value_index_mut(
+            1,
+            1,
+            vec![CellProperties::default().set_value(Some("Test".to_string()))],
+        )
+        .expect("Failed to set value");
         file.add_sheet_mut(Some("bust".to_string()))
             .expect("Failed to add static Sheet");
         file.add_sheet_mut(None)
