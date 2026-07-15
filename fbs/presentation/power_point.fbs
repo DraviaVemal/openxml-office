@@ -16,3 +16,16 @@ table power_point_create_return {
 }
 
 // power_point_create - End
+
+// power_point_save_as - Start
+
+table power_point_save_as {
+    power_point_ptr: uint64;
+    file_name: string;
+}
+
+table power_point_save_as_return {
+    full_path: string;
+}
+
+// power_point_save_as - End

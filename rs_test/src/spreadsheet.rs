@@ -5,7 +5,7 @@ mod spreadsheet_test {
         global_2007::traits::XmlDocumentPartFlush,
         log_elapsed,
         spreadsheet_2007::models::{
-            CellProperties, ExcelPictureSetting, ReferenceRange, StyleSetting,
+            CellProperty, ExcelPictureSetting, ReferenceRange, StyleSetting,
         },
     };
     use std::fs::{create_dir_all, exists};
@@ -50,10 +50,10 @@ mod spreadsheet_test {
             .expect("Failed to add static Sheet");
         file.add_sheet_mut(Some("Test".to_string()))
             .expect("Failed to add static Sheet");
-        test.set_row_index_value_mut(
+        test.set_cell_index_value_mut(
             1,
             1,
-            vec![CellProperties::default().set_value(Some("Test".to_string()))],
+            vec![CellProperty::default().set_value(Some("Test".to_string()))],
         )
         .expect("Failed to set value");
         file.add_sheet_mut(Some("bust".to_string()))
@@ -369,28 +369,28 @@ mod spreadsheet_test {
         )
         .expect("Failed to Set best fit Column prop");
         col_prop
-            .set_row_index_value_mut(
+            .set_cell_index_value_mut(
                 2,
                 1,
                 vec![
-                    CellProperties::default().set_value(Some("Cell Value 1".to_string())),
-                    CellProperties::default().set_value(Some("Cell Value 2".to_string())),
-                    CellProperties::default().set_value(Some("Cell Value 3".to_string())),
-                    CellProperties::default().set_value(Some("Cell Value 4".to_string())),
-                    CellProperties::default().set_value(Some("Cell Value 5".to_string())),
-                    CellProperties::default().set_value(Some("Cell Value 6".to_string())),
-                    CellProperties::default().set_value(Some("Cell Value 7".to_string())),
+                    CellProperty::default().set_value(Some("Cell Value 1".to_string())),
+                    CellProperty::default().set_value(Some("Cell Value 2".to_string())),
+                    CellProperty::default().set_value(Some("Cell Value 3".to_string())),
+                    CellProperty::default().set_value(Some("Cell Value 4".to_string())),
+                    CellProperty::default().set_value(Some("Cell Value 5".to_string())),
+                    CellProperty::default().set_value(Some("Cell Value 6".to_string())),
+                    CellProperty::default().set_value(Some("Cell Value 7".to_string())),
                 ],
             )
             .expect("Failed to set Column Value");
         col_prop
-            .set_row_index_value_mut(
+            .set_cell_index_value_mut(
                 4,
                 1,
                 vec![
-                    CellProperties::default().set_value(Some("1".to_string())),
-                    CellProperties::default().set_value(Some("2".to_string())),
-                    CellProperties::default().set_formula(Some("=SUM(A4:B4)".to_string())),
+                    CellProperty::default().set_value(Some("1".to_string())),
+                    CellProperty::default().set_value(Some("2".to_string())),
+                    CellProperty::default().set_formula(Some("=SUM(A4:B4)".to_string())),
                 ],
             )
             .expect("Failed to set Column Value");
@@ -466,14 +466,14 @@ mod spreadsheet_test {
                 .get_worksheet_mut("formula".to_string())
                 .expect("Failed to find the worksheet");
             formula
-                .set_row_ref_value_mut(
+                .set_cell_ref_value_mut(
                     "V3",
                     vec![
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Dravia".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Vemal".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Vemal".to_string()))
                         .set_style_id(Some(style_id)),
                 ],
@@ -516,26 +516,26 @@ mod spreadsheet_test {
                 .add_sheet_mut(None)
                 .expect("Failed to find the worksheet");
             formula
-                .set_row_ref_value_mut(
+                .set_cell_ref_value_mut(
                     "V3",
                     vec![
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Dravia".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Vemal".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Bold".to_string()))
                         .set_style_id(Some(bold_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Italic".to_string()))
                         .set_style_id(Some(italic_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("underline".to_string()))
                         .set_style_id(Some(underline_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("double underline".to_string()))
                         .set_style_id(Some(double_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some(
                             "This is a very long line to wrap the column. Test the wrap string"
                                 .to_string(),
@@ -579,26 +579,26 @@ mod spreadsheet_test {
                 .get_worksheet_mut("formula".to_string())
                 .expect("Failed to find the worksheet");
             formula
-                .set_row_ref_value_mut(
+                .set_cell_ref_value_mut(
                     "V3",
                     vec![
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Dravia".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Vemal".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Bold".to_string()))
                         .set_style_id(Some(bold_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Italic".to_string()))
                         .set_style_id(Some(italic_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("underline".to_string()))
                         .set_style_id(Some(underline_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("double underline".to_string()))
                         .set_style_id(Some(double_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some(
                             "This is a very long line to wrap the column. Test the wrap string"
                                 .to_string(),
@@ -659,12 +659,12 @@ mod spreadsheet_test {
                 .get_worksheet_mut("Sheet1".to_string())
                 .expect("Failed to find the worksheet");
             sheet
-                .set_row_ref_value_mut(
+                .set_cell_ref_value_mut(
                     "V3",
                     vec![
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Dravia".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
+                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
                         .set_value(Some("Vemal".to_string())),
                 ],
                 )
@@ -691,11 +691,11 @@ mod spreadsheet_test {
                 || {
                     for row in 1..100_000 {
                         sheet
-                        .set_row_index_value_mut(
+                        .set_cell_index_value_mut(
                             row,
                             1,
                             (1..10)
-                                .map(|_| draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default().set_value(Some("Test".to_string())))
+                                .map(|_| draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default().set_value(Some("Test".to_string())))
                                 .collect(),
                         )
                         .expect("Failed to Set Row Value");

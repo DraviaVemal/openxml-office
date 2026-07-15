@@ -2,15 +2,15 @@ use std::{ffi::c_char, mem::ManuallyDrop};
 
 use crate::{
     openxml_office_fbs::spreadsheet::{
-        worksheet_cell_data_type, worksheet_set_column_index_properties,
-        worksheet_set_column_ref_properties, worksheet_set_row_index_properties,
-        worksheet_set_row_ref_value,
+        worksheet_cell_data_type, worksheet_set_cell_index_value, worksheet_set_cell_ref_value,
+        worksheet_set_column_index_properties, worksheet_set_column_ref_properties,
+        worksheet_set_row_index_properties,
     },
     root_from_raw, set_error, StatusCode,
 };
 use anyhow::anyhow;
 use draviavemal_openxml_office::spreadsheet_2007::{
-    models::{CellDataType, CellProperties, ColumnProperties, RowProperties, StyleId},
+    models::{CellDataType, CellProperty, ColumnProperties, RowProperties, StyleId},
     WorkSheet,
 };
 
@@ -73,7 +73,7 @@ pub extern "C" fn set_column_index_properties(
         Ok(root) => root,
         Err(status) => return status,
     };
-    let cell_index = fbs_set_column_index_properties.cell_index();
+    let column_index = fbs_set_column_index_properties.column_index();
     let worksheet_ptr = fbs_set_column_index_properties.worksheet_ptr() as *mut WorkSheet;
     let mut worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
     let column_properties =
@@ -92,7 +92,7 @@ pub extern "C" fn set_column_index_properties(
         } else {
             None
         };
-    match worksheet.set_column_index_properties_mut(&cell_index, column_properties) {
+    match worksheet.set_column_index_properties_mut(&column_index, column_properties) {
         Ok(()) => StatusCode::Success as i8,
         Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
     }
@@ -132,18 +132,18 @@ pub extern "C" fn set_row_index_properties(
 }
 
 #[no_mangle]
-pub extern "C" fn set_row_ref_value_mut(
+pub extern "C" fn set_cell_ref_value(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
-    let fbs_set_row_ref_value = match unsafe {
-        root_from_raw::<worksheet_set_row_ref_value>(in_buffer, in_buffer_size, out_error)
+    let fbs_set_cell_ref_value = match unsafe {
+        root_from_raw::<worksheet_set_cell_ref_value>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
     };
-    let cell_ref = match fbs_set_row_ref_value.cell_ref() {
+    let cell_ref = match fbs_set_cell_ref_value.cell_ref() {
         Some(cell_ref) => cell_ref,
         None => {
             return unsafe {
@@ -155,12 +155,12 @@ pub extern "C" fn set_row_ref_value_mut(
             }
         }
     };
-    let worksheet_ptr = fbs_set_row_ref_value.worksheet_ptr() as *mut WorkSheet;
+    let worksheet_ptr = fbs_set_cell_ref_value.worksheet_ptr() as *mut WorkSheet;
     let mut worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
-    let column_cells = fbs_set_row_ref_value.column_cells();
+    let column_cells = fbs_set_cell_ref_value.column_cells();
     let mut cell_properties = Vec::new();
     for column_cell in column_cells {
-        let mut cell_property = CellProperties::default();
+        let mut cell_property = CellProperty::default();
         cell_property.value = column_cell.value().map(|item| item.to_string());
         cell_property.formula = column_cell.formula().map(|item| item.to_string());
         match column_cell.data_type() {
@@ -188,8 +188,64 @@ pub extern "C" fn set_row_ref_value_mut(
         };
         cell_properties.push(cell_property);
     }
-    match worksheet.set_row_ref_value_mut(&cell_ref, cell_properties) {
+    match worksheet.set_cell_ref_value_mut(&cell_ref, cell_properties) {
         Ok(()) => StatusCode::Success as i8,
         Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
     }
 }
+
+#[no_mangle]
+pub extern "C" fn set_cell_index_value(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs_set_cell_index_value = match unsafe {
+        root_from_raw::<worksheet_set_cell_index_value>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let worksheet_ptr = fbs_set_cell_index_value.worksheet_ptr() as *mut WorkSheet;
+    let mut worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
+    let column_cells = fbs_set_cell_index_value.column_cells();
+    let mut cell_properties = Vec::new();
+    for column_cell in column_cells {
+        let mut cell_property = CellProperty::default();
+        cell_property.value = column_cell.value().map(|item| item.to_string());
+        cell_property.formula = column_cell.formula().map(|item| item.to_string());
+        match column_cell.data_type() {
+            worksheet_cell_data_type::string => cell_property.data_type = CellDataType::String,
+            worksheet_cell_data_type::number => cell_property.data_type = CellDataType::Number,
+            worksheet_cell_data_type::boolean => cell_property.data_type = CellDataType::Boolean,
+            worksheet_cell_data_type::shared_string => {
+                cell_property.data_type = CellDataType::ShareString
+            }
+            worksheet_cell_data_type::inline_string => {
+                cell_property.data_type = CellDataType::InlineString
+            }
+            worksheet_cell_data_type::error => cell_property.data_type = CellDataType::Error,
+            _ => cell_property.data_type = CellDataType::Auto,
+        }
+        cell_property.style_id = if let Some(style_id_ptr) = column_cell.style_id_ptr() {
+            Some(unsafe { *(style_id_ptr as *const StyleId) })
+        } else {
+            None
+        };
+        cell_property.style_id = if let Some(style_id_ptr) = column_cell.style_id_ptr() {
+            Some(unsafe { *(style_id_ptr as *const StyleId) })
+        } else {
+            None
+        };
+        cell_properties.push(cell_property);
+    }
+    match worksheet.set_cell_index_value_mut(
+        fbs_set_cell_index_value.row_index(),
+        fbs_set_cell_index_value.column_index(),
+        cell_properties,
+    ) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
+    }
+}
+

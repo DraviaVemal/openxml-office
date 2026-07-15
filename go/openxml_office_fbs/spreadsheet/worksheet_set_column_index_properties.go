@@ -53,7 +53,7 @@ func (rcv *worksheet_set_column_index_properties) MutateWorksheetPtr(n uint64) b
 	return rcv._tab.MutateUint64Slot(4, n)
 }
 
-func (rcv *worksheet_set_column_index_properties) CellIndex() uint16 {
+func (rcv *worksheet_set_column_index_properties) ColumnIndex() uint16 {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
 		return rcv._tab.GetUint16(o + rcv._tab.Pos)
@@ -61,7 +61,7 @@ func (rcv *worksheet_set_column_index_properties) CellIndex() uint16 {
 	return 0
 }
 
-func (rcv *worksheet_set_column_index_properties) MutateCellIndex(n uint16) bool {
+func (rcv *worksheet_set_column_index_properties) MutateColumnIndex(n uint16) bool {
 	return rcv._tab.MutateUint16Slot(6, n)
 }
 
@@ -84,8 +84,8 @@ func worksheet_set_column_index_propertiesStart(builder *flatbuffers.Builder) {
 func worksheet_set_column_index_propertiesAddWorksheetPtr(builder *flatbuffers.Builder, worksheetPtr uint64) {
 	builder.PrependUint64Slot(0, worksheetPtr, 0)
 }
-func worksheet_set_column_index_propertiesAddCellIndex(builder *flatbuffers.Builder, cellIndex uint16) {
-	builder.PrependUint16Slot(1, cellIndex, 0)
+func worksheet_set_column_index_propertiesAddColumnIndex(builder *flatbuffers.Builder, columnIndex uint16) {
+	builder.PrependUint16Slot(1, columnIndex, 0)
 }
 func worksheet_set_column_index_propertiesAddColumnProperties(builder *flatbuffers.Builder, columnProperties flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(columnProperties), 0)

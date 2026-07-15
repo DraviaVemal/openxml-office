@@ -16,3 +16,16 @@ table word_create_return {
 }
 
 // document_create - End
+
+// word_save_as - Start
+
+table word_save_as {
+    word_ptr: uint64;
+    file_name: string;
+}
+
+table word_save_as_return {
+    full_path: string;
+}
+
+// word_save_as - End

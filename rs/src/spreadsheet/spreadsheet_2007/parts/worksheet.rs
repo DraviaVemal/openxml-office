@@ -18,7 +18,7 @@ use crate::{
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
         models::{
-            CellDataType, CellPackage, CellProperties, ColumnIndex, ColumnProperties,
+            CellDataType, CellPackage, CellProperty, ColumnIndex, ColumnProperties,
             ExcelPictureSetting, HyperLinks, ReferenceRange, RowIndex, RowProperties, StyleId,
         },
         parts::DrawingPart,
@@ -39,7 +39,7 @@ use std::{
 #[derive(Debug)]
 pub(crate) struct RowRecords {
     row_property: RowProperties,
-    cell_records: Option<BTreeMap<ColumnIndex, CellProperties>>,
+    cell_records: Option<BTreeMap<ColumnIndex, CellProperty>>,
 }
 
 #[derive(Debug)]
@@ -1277,7 +1277,7 @@ impl WorkSheet {
                         None
                     };
                 }
-                let mut cell_records: BTreeMap<ColumnIndex, CellProperties> = BTreeMap::new();
+                let mut cell_records: BTreeMap<ColumnIndex, CellProperty> = BTreeMap::new();
                 let col_ids: Vec<NodeId> = xml_doc_mut
                     .get_element(row_id)
                     .context("Failed to get row element")?
@@ -1295,7 +1295,7 @@ impl WorkSheet {
                     .unwrap_or_default();
                 // Loop All Columns of row
                 for col_id in col_ids {
-                    let mut cell_record = CellProperties::default();
+                    let mut cell_record = CellProperty::default();
                     let col_element = xml_doc_mut
                         .get_element(col_id)
                         .context("Failed to get col element")?;
@@ -1738,8 +1738,8 @@ impl WorkSheet {
 
     fn normalize_cell_property(
         &self,
-        cell_prop: &CellProperties,
-    ) -> Result<CellProperties, AnyError> {
+        cell_prop: &CellProperty,
+    ) -> Result<CellProperty, AnyError> {
         let mut parsed_property = cell_prop.clone();
         if parsed_property.data_type == CellDataType::ShareString {
             if let Some(cmn_service) = self.common_service.upgrade() {
@@ -1872,14 +1872,14 @@ impl WorkSheet {
     /// # Arguments
     /// - `cell_ref` (`&str`) -  Provide column reference name.
     /// - `column_cell` (`Vec<CellProperties>`) - Set the list of column values auto increment from start ref.
-    pub fn set_row_ref_value_mut(
+    pub fn set_cell_ref_value_mut(
         &mut self,
         cell_ref: &str,
-        column_cells: Vec<CellProperties>,
+        column_cells: Vec<CellProperty>,
     ) -> AnyResult<(), AnyError> {
         let (row_index, col_index) =
             ConverterUtil::get_cell_index(cell_ref).context("Failed to extract cell key")?;
-        self.set_row_index_value_mut(row_index, col_index, column_cells)
+        self.set_cell_index_value_mut(row_index, col_index, column_cells)
     }
 
     /// Set data for same row multiple columns along with row property.
@@ -1889,11 +1889,11 @@ impl WorkSheet {
     /// - `row_index` (`u32`) - Provide row index. Starts From 1
     /// - `mut col_index` (`u16`) - Provide column index. Starts From 1
     /// - `mut column_cell` (`Vec<CellProperties>`) - Describe this parameter.
-    pub fn set_row_index_value_mut(
+    pub fn set_cell_index_value_mut(
         &mut self,
         row_index: RowIndex,
         mut col_index: ColumnIndex,
-        mut column_cell: Vec<CellProperties>,
+        mut column_cell: Vec<CellProperty>,
     ) -> AnyResult<(), AnyError> {
         // Map Start Normalization
         for cell_data in column_cell.iter_mut() {
@@ -1964,7 +1964,7 @@ impl WorkSheet {
                 self.dimension.end_col = max(self.dimension.end_col, col_index);
                 Ok((col_index, item.clone()))
             })
-            .collect::<Result<Vec<(ColumnIndex, CellProperties)>, AnyError>>()
+            .collect::<Result<Vec<(ColumnIndex, CellProperty)>, AnyError>>()
             .context("Failed to Generate column cells")?;
         // Load If Sheet Data Exist
         if let Some(sheet_data) = self.sheet_data.as_mut() {
