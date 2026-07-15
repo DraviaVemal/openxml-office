@@ -1,101 +1,51 @@
-use crate::{chain_error, openxml_office_fbs, StatusCode};
-use draviavemal_openxml_office::presentation_2007::{PowerPoint, PowerPointPropertiesModel};
-use std::{
-    ffi::{c_char, c_void, CStr, CString},
-    slice::from_raw_parts,
+use crate::{
+    openxml_office_fbs::presentation::{
+        power_point_create, power_point_create_return, power_point_create_returnArgs,
+    },
+    root_from_raw, set_error, write_buffer, StatusCode,
 };
+use draviavemal_openxml_office::presentation_2007::{PowerPoint, PowerPointPropertiesModel};
+use std::ffi::c_char;
 
 #[no_mangle]
-/// Creates a new Power Point object.
+/// Creates a new Presentation object.
 ///
-/// Returns a pointer to the newly created Power Point object.
+/// Returns a pointer to the newly created Presentation object.
 /// If an error occurs, returns a null pointer.
-pub extern "C" fn power_point_create(
-    file_name: *const c_char,
-    buffer: *const u8,
-    buffer_size: usize,
-    out_power_point: *mut *mut c_void,
+pub extern "C" fn presentation_create(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_buffer: *mut *mut u8,
+    out_buffer_size: *mut usize,
     out_error: *mut *const c_char,
 ) -> i8 {
-    let file_name = if file_name.is_null() {
-        None
-    } else {
-        Some(
-            unsafe { CStr::from_ptr(file_name) }
-                .to_string_lossy()
-                .into_owned(),
-        )
+    let fbs_presentation_create = match unsafe {
+        root_from_raw::<power_point_create>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
     };
-    if buffer.is_null() || buffer_size == 0 {
-        return StatusCode::InvalidArgument as i8;
-    }
-    let buffer_slice = unsafe { from_raw_parts(buffer, buffer_size) };
-    match flatbuffers::root::<openxml_office_fbs::presentation::PresentationPropertiesModel>(
-        buffer_slice,
-    ) {
-        Ok(fbs_power_point_properties) => {
-            let power_point = if let Some(file_name) = file_name {
-                PowerPoint::new(
-                    Some(file_name),
-                    PowerPointPropertiesModel {
-                        is_editable: fbs_power_point_properties.is_editable(),
-                    },
-                )
-            } else {
-                PowerPoint::new(
-                    None,
-                    PowerPointPropertiesModel {
-                        is_editable: fbs_power_point_properties.is_editable(),
-                    },
-                )
-            };
-            match power_point {
-                Ok(power_point) => {
-                    unsafe {
-                        *out_power_point = Box::into_raw(Box::new(power_point)) as *mut c_void;
-                    }
-                    StatusCode::Success as i8
-                }
-                Err(e) => {
-                    unsafe { *out_error = chain_error(&e) };
-                    StatusCode::UnknownError as i8
-                }
-            }
+    let file_name = fbs_presentation_create
+        .file_name()
+        .map(|item| item.to_string());
+    let presentation_settings = fbs_presentation_create.power_point_settings();
+    let presentation_properties = PowerPointPropertiesModel {
+        is_editable: presentation_settings.is_editable(),
+    };
+    match PowerPoint::new(file_name, presentation_properties) {
+        Ok(presentation) => {
+            let presentation_ptr = Box::into_raw(Box::new(presentation)) as u64;
+            let mut builder = flatbuffers::FlatBufferBuilder::new();
+            let presentation_create_return = power_point_create_return::create(
+                &mut builder,
+                &power_point_create_returnArgs {
+                    power_point_ptr: presentation_ptr,
+                },
+            );
+            builder.finish(presentation_create_return, None);
+            unsafe { write_buffer(builder.finished_data(), out_buffer, out_buffer_size) };
+            StatusCode::Success as i8
         }
-        Err(e) => {
-            unsafe { *out_error = chain_error(&e.into()) };
-            StatusCode::FlatBufferError as i8
-        }
-    }
-}
-
-#[no_mangle]
-///Save the Power Point File in provided file path
-pub extern "C" fn power_point_save_as(
-    power_point_ptr: *const c_void,
-    file_name: *const c_char,
-    out_error: *mut *const c_char,
-) -> i8 {
-    if power_point_ptr.is_null() || file_name.is_null() {
-        eprintln!("Received null pointer");
-        return StatusCode::InvalidArgument as i8;
-    }
-    let file_name = unsafe { CStr::from_ptr(file_name) }
-        .to_string_lossy()
-        .into_owned();
-    let power_point_ptr = power_point_ptr as *mut PowerPoint;
-    let power_point = unsafe { Box::from_raw(power_point_ptr) };
-    match power_point.save_as(&file_name) {
-        Result::Ok(_full_path) => StatusCode::Success as i8,
-        Err(e) => match CString::new(format!("Flat Buffer Parse Error. {}", e)) {
-            Result::Ok(str) => {
-                unsafe { *out_error = str.into_raw() };
-                StatusCode::Success as i8
-            }
-            Err(e) => {
-                eprintln!("Error String send Error. {}", e);
-                StatusCode::IoError as i8
-            }
-        },
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
     }
 }

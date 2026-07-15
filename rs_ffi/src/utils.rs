@@ -3,7 +3,7 @@ use std::{
     slice::from_raw_parts,
 };
 
-use anyhow::Error as AnyError;
+use anyhow::{anyhow, Error as AnyError};
 use flatbuffers::{Follow, Verifiable};
 
 use crate::StatusCode;
@@ -42,7 +42,11 @@ where
     T: Follow<'a> + Verifiable + 'a,
 {
     if in_buffer.is_null() || in_buffer_size == 0 {
-        return Err(StatusCode::InvalidArgument as i8);
+        return Err(set_error(
+            out_error,
+            &anyhow!("Input buffer is null or empty"),
+            StatusCode::InvalidArgument,
+        ));
     }
     let buffer_slice = from_raw_parts(in_buffer, in_buffer_size);
     match flatbuffers::root::<T>(buffer_slice) {

@@ -121,10 +121,10 @@ namespace draviavemal.openxml_office.spreadsheet_2007
                 excelProperties = new ExcelProperties();
             }
             FlatBufferBuilder builder = new(1024);
-            StringOffset fileNameOffset = fileName != null ? builder.CreateString(fileName) : default;
-            Offset<excel_settings> excelSettingsOffset = excel_settings.Createexcel_settings(builder, true);
-            Offset<excel_create> excelCreateOffset = excel_create.Createexcel_create(builder, fileNameOffset, excelSettingsOffset);
-            builder.Finish(excelCreateOffset.Value);
+            StringOffset fbsFileName = fileName != null ? builder.CreateString(fileName) : default;
+            Offset<excel_settings> fbsExcelSettings = excel_settings.Createexcel_settings(builder, true);
+            Offset<excel_create> fbsExcelCreate = excel_create.Createexcel_create(builder, fbsFileName, fbsExcelSettings);
+            builder.Finish(fbsExcelCreate.Value);
             byte[] responseBuffer = InvokeBufferFfi(ffi_excel_create, builder);
             excel_create_return response = excel_create_return.GetRootAsexcel_create_return(new ByteBuffer(responseBuffer));
             return response.ExcelPtr;

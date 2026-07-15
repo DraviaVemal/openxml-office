@@ -1,7 +1,5 @@
 // Copyright (c) DraviaVemal. This project is dual-licensed. See License in the project root.
 
-using draviavemal.openxml_office.global_2007;
-
 namespace draviavemal.openxml_office.spreadsheet_2007
 {
 	/// <summary>
@@ -9,32 +7,23 @@ namespace draviavemal.openxml_office.spreadsheet_2007
 	/// </summary>
 	public class ExcelProperties
 	{
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool IsInMemory = false;
-		/// <summary>
-		/// Spreadsheet settings
-		/// </summary>
-		public ExcelSettings settings = new();
-		/// <summary>
-		/// Spreadsheet theme settings
-		/// </summary>
-		public ThemePallet theme = new();
-		/// <summary>
-		/// Add Meta Data Details to File
-		/// </summary>
-		public CorePropertiesModel coreProperties = new();
-	}
-	/// <summary>
-	/// Represents the settings of a spreadsheet.
-	/// </summary>
-	public class ExcelSettings
-	{
-	}
-	internal class ExcelInfo
-	{
 		public bool isEditable = true;
-		public bool isExistingFile;
+	}
+
+	public class ColumnProperties
+	{
+		public uint Min { get; set; }
+		public uint Max { get; set; }
+		public float Width { get; set; }
+		public bool Hidden { get; set; }
+		public bool BestFit { get; set; }
+	}
+
+	public class RowProperties
+	{
+		public float Height { get; set; }
+		public bool Hidden { get; set; }
+		public bool TickTop { get; set; }
+		public bool ThickBottom { get; set; }
 	}
 }

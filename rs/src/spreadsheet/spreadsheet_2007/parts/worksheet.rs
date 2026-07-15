@@ -1872,14 +1872,14 @@ impl WorkSheet {
     /// # Arguments
     /// - `cell_ref` (`&str`) -  Provide column reference name.
     /// - `column_cell` (`Vec<CellProperties>`) - Set the list of column values auto increment from start ref.
-    pub fn set_row_value_ref_mut(
+    pub fn set_row_ref_value_mut(
         &mut self,
         cell_ref: &str,
-        column_cell: Vec<CellProperties>,
+        column_cells: Vec<CellProperties>,
     ) -> AnyResult<(), AnyError> {
         let (row_index, col_index) =
             ConverterUtil::get_cell_index(cell_ref).context("Failed to extract cell key")?;
-        self.set_row_value_index_mut(row_index, col_index, column_cell)
+        self.set_row_index_value_mut(row_index, col_index, column_cells)
     }
 
     /// Set data for same row multiple columns along with row property.
@@ -1889,7 +1889,7 @@ impl WorkSheet {
     /// - `row_index` (`u32`) - Provide row index. Starts From 1
     /// - `mut col_index` (`u16`) - Provide column index. Starts From 1
     /// - `mut column_cell` (`Vec<CellProperties>`) - Describe this parameter.
-    pub fn set_row_value_index_mut(
+    pub fn set_row_index_value_mut(
         &mut self,
         row_index: RowIndex,
         mut col_index: ColumnIndex,

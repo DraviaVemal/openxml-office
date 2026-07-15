@@ -1,3 +1,5 @@
 **/*.dll
 */*.so
 **/openxml_office/
+# Commons
+**/openxml_office_fbs
