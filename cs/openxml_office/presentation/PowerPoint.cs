@@ -12,27 +12,29 @@ namespace draviavemal.openxml_office.presentation_2007
     /// </summary>
     public class PowerPoint : PrivacyProperties
     {
-        private readonly IntPtr ffiPowerPoint;
+        private readonly ulong ffiPowerPointPtr;
 
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern sbyte power_point_create(
-            [MarshalAs(UnmanagedType.LPStr)] string optional_string,
-            IntPtr buffer,
-            int length,
-            out IntPtr powerPoint,
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "presentation_create", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_presentation_create(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr out_buffer,
+            out UIntPtr out_buffer_size,
             out IntPtr error_msg
         );
 
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern sbyte power_point_save_as(
-            IntPtr powerPointPtr,
-            [MarshalAs(UnmanagedType.LPStr)] string file_name,
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "presentation_save_as", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_presentation_save_as(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr out_buffer,
+            out UIntPtr out_buffer_size,
             out IntPtr error_msg
         );
 
@@ -40,23 +42,9 @@ namespace draviavemal.openxml_office.presentation_2007
         /// Create New file in the system
         /// Read Privacy Details document at https://openxml-office.draviavemal.com/privacy-policy
         /// </summary>
-        public PowerPoint(PowerPointProperties powerPointProperties)
+        public PowerPoint(PowerPointProperties powerPointProperties = null)
         {
-            FlatBufferBuilder builder = new(1024);
-            PresentationPropertiesModel.StartPresentationPropertiesModel(builder);
-            Offset<PresentationPropertiesModel> powerPointPropertiesModel = PresentationPropertiesModel.EndPresentationPropertiesModel(builder);
-            builder.Finish(powerPointPropertiesModel.Value);
-            byte[] buffer = builder.SizedByteArray();
-            int bufferSize = buffer.Length;
-            unsafe
-            {
-                fixed (byte* bufferPtr = buffer)
-                {
-                    IntPtr bufferIntPtr = (IntPtr)bufferPtr;
-                    sbyte statusCode = power_point_create(null, bufferIntPtr, bufferSize, out ffiPowerPoint, out IntPtr errorMsg);
-                    StatusCode.ProcessStatusCode(statusCode, errorMsg);
-                }
-            }
+            ffiPowerPointPtr = CreatePowerPoint(null, powerPointProperties);
         }
 
         /// <summary>
@@ -64,23 +52,25 @@ namespace draviavemal.openxml_office.presentation_2007
 		/// Source file will be cloned and released. hence can be replace by saveAs method if you want to update the same file.
 		/// Read Privacy Details document at https://openxml-office.draviavemal.com/privacy-policy
 		/// </summary>
-        public PowerPoint(string fileName, PowerPointProperties powerPointProperties)
+        public PowerPoint(string fileName, PowerPointProperties powerPointProperties = null)
         {
-            FlatBufferBuilder builder = new(1024);
-            PresentationPropertiesModel.StartPresentationPropertiesModel(builder);
-            Offset<PresentationPropertiesModel> powerPointPropertiesModel = PresentationPropertiesModel.EndPresentationPropertiesModel(builder);
-            builder.Finish(powerPointPropertiesModel.Value);
-            byte[] buffer = builder.SizedByteArray();
-            int bufferSize = buffer.Length;
-            unsafe
+            ffiPowerPointPtr = CreatePowerPoint(fileName, powerPointProperties);
+        }
+
+        private static ulong CreatePowerPoint(string fileName, PowerPointProperties powerPointProperties)
+        {
+            if (powerPointProperties == null)
             {
-                fixed (byte* bufferPtr = buffer)
-                {
-                    IntPtr bufferIntPtr = (IntPtr)bufferPtr;
-                    sbyte statusCode = power_point_create(fileName, bufferIntPtr, bufferSize, out ffiPowerPoint, out IntPtr errorMsg);
-                    StatusCode.ProcessStatusCode(statusCode, errorMsg);
-                }
+                powerPointProperties = new PowerPointProperties();
             }
+            FlatBufferBuilder builder = new(1024);
+            StringOffset fbsFileName = fileName != null ? builder.CreateString(fileName) : default;
+            Offset<power_point_settings> fbsPowerPointSettings = power_point_settings.Createpower_point_settings(builder, true);
+            Offset<power_point_create> fbsPowerPointCreate = power_point_create.Createpower_point_create(builder, fbsFileName, fbsPowerPointSettings);
+            builder.Finish(fbsPowerPointCreate.Value);
+            byte[] responseBuffer = FfiInterop.InvokeBufferFfi(ffi_presentation_create, builder);
+            power_point_create_return response = power_point_create_return.GetRootAspower_point_create_return(new ByteBuffer(responseBuffer));
+            return response.PowerPointPtr;
         }
 
         /// <summary>
@@ -90,8 +80,11 @@ namespace draviavemal.openxml_office.presentation_2007
         /// </summary>
         public void SaveAs(string filePath)
         {
-            sbyte statusCode = power_point_save_as(ffiPowerPoint, filePath, out IntPtr errorMsg);
-            StatusCode.ProcessStatusCode(statusCode, errorMsg);
+            FlatBufferBuilder builder = new(1024);
+            StringOffset filePathOffset = builder.CreateString(filePath);
+            Offset<power_point_save_as> saveAsOffset = power_point_save_as.Createpower_point_save_as(builder, ffiPowerPointPtr, filePathOffset);
+            builder.Finish(saveAsOffset.Value);
+            FfiInterop.InvokeBufferFfi(ffi_presentation_save_as, builder);
         }
 
     }

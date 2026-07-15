@@ -12,27 +12,29 @@ namespace draviavemal.openxml_office.document_2007
     /// </summary>
     public class Word : PrivacyProperties
     {
-        private readonly IntPtr ffiWord;
+        private readonly ulong ffiWordPtr;
 
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern sbyte word_create(
-            [MarshalAs(UnmanagedType.LPStr)] string optional_string,
-            IntPtr buffer,
-            int length,
-            out IntPtr word,
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "word_create", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_word_create(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr out_buffer,
+            out UIntPtr out_buffer_size,
             out IntPtr error_msg
         );
 
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern sbyte word_save_as(
-            IntPtr wordPtr,
-            [MarshalAs(UnmanagedType.LPStr)] string file_name,
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "word_save_as", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_word_save_as(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr out_buffer,
+            out UIntPtr out_buffer_size,
             out IntPtr error_msg
         );
 
@@ -40,23 +42,9 @@ namespace draviavemal.openxml_office.document_2007
         /// Create New file in the system
         /// Read Privacy Details document at https://openxml-office.draviavemal.com/privacy-policy
         /// </summary>
-        public Word(WordProperties wordProperties)
+        public Word(WordProperties wordProperties = null)
         {
-            FlatBufferBuilder builder = new(1024);
-            DocumentPropertiesModel.StartDocumentPropertiesModel(builder);
-            Offset<DocumentPropertiesModel> wordPropertiesModel = DocumentPropertiesModel.EndDocumentPropertiesModel(builder);
-            builder.Finish(wordPropertiesModel.Value);
-            byte[] buffer = builder.SizedByteArray();
-            int bufferSize = buffer.Length;
-            unsafe
-            {
-                fixed (byte* bufferPtr = buffer)
-                {
-                    IntPtr bufferIntPtr = (IntPtr)bufferPtr;
-                    sbyte statusCode = word_create(null, bufferIntPtr, bufferSize, out ffiWord, out IntPtr errorMsg);
-                    StatusCode.ProcessStatusCode(statusCode, errorMsg);
-                }
-            }
+            ffiWordPtr = CreateWord(null, wordProperties);
         }
 
         /// <summary>
@@ -64,23 +52,25 @@ namespace draviavemal.openxml_office.document_2007
 		/// Source file will be cloned and released. hence can be replace by saveAs method if you want to update the same file.
 		/// Read Privacy Details document at https://openxml-office.draviavemal.com/privacy-policy
 		/// </summary>
-        public Word(string fileName, WordProperties wordProperties)
+        public Word(string fileName, WordProperties wordProperties = null)
         {
-            FlatBufferBuilder builder = new(1024);
-            DocumentPropertiesModel.StartDocumentPropertiesModel(builder);
-            Offset<DocumentPropertiesModel> wordPropertiesModel = DocumentPropertiesModel.EndDocumentPropertiesModel(builder);
-            builder.Finish(wordPropertiesModel.Value);
-            byte[] buffer = builder.SizedByteArray();
-            int bufferSize = buffer.Length;
-            unsafe
+            ffiWordPtr = CreateWord(fileName, wordProperties);
+        }
+
+        private static ulong CreateWord(string fileName, WordProperties wordProperties)
+        {
+            if (wordProperties == null)
             {
-                fixed (byte* bufferPtr = buffer)
-                {
-                    IntPtr bufferIntPtr = (IntPtr)bufferPtr;
-                    sbyte statusCode = word_create(fileName, bufferIntPtr, bufferSize, out ffiWord, out IntPtr errorMsg);
-                    StatusCode.ProcessStatusCode(statusCode, errorMsg);
-                }
+                wordProperties = new WordProperties();
             }
+            FlatBufferBuilder builder = new(1024);
+            StringOffset fbsFileName = fileName != null ? builder.CreateString(fileName) : default;
+            Offset<word_settings> fbsWordSettings = word_settings.Createword_settings(builder, true);
+            Offset<word_create> fbsWordCreate = word_create.Createword_create(builder, fbsFileName, fbsWordSettings);
+            builder.Finish(fbsWordCreate.Value);
+            byte[] responseBuffer = FfiInterop.InvokeBufferFfi(ffi_word_create, builder);
+            word_create_return response = word_create_return.GetRootAsword_create_return(new ByteBuffer(responseBuffer));
+            return response.WordPtr;
         }
 
         /// <summary>
@@ -90,8 +80,11 @@ namespace draviavemal.openxml_office.document_2007
         /// </summary>
         public void SaveAs(string filePath)
         {
-            sbyte statusCode = word_save_as(ffiWord, filePath, out IntPtr errorMsg);
-            StatusCode.ProcessStatusCode(statusCode, errorMsg);
+            FlatBufferBuilder builder = new(1024);
+            StringOffset filePathOffset = builder.CreateString(filePath);
+            Offset<word_save_as> saveAsOffset = word_save_as.Createword_save_as(builder, ffiWordPtr, filePathOffset);
+            builder.Finish(saveAsOffset.Value);
+            FfiInterop.InvokeBufferFfi(ffi_word_save_as, builder);
         }
 
     }

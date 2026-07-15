@@ -17,20 +17,6 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             this.ffiWorksheet = ffiWorksheet;
         }
 
-        private delegate sbyte FfiBufferCall(
-            IntPtr inBuffer,
-            UIntPtr inBufferSize,
-            out IntPtr outBuffer,
-            out UIntPtr outBufferSize,
-            out IntPtr errorMsg
-        );
-
-        private delegate sbyte FfiVoidCall(
-            IntPtr inBuffer,
-            UIntPtr inBufferSize,
-            out IntPtr errorMsg
-        );
-
         /// <summary>
         /// 
         /// </summary>
@@ -64,10 +50,21 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "free_buffer", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void ffi_free_buffer(
-            IntPtr buffer,
-            UIntPtr buffer_size
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "set_cell_ref_value", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_set_cell_ref_value(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr error_msg
+        );
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "set_cell_index_value", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_set_cell_index_value(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr error_msg
         );
 
         public void SetColumnRefProperties(string cellRef, ColumnProperties columnRefProperties)
@@ -77,7 +74,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             Offset<worksheet_column_properties> fbsColumnRefProperties = worksheet_column_properties.Createworksheet_column_properties(builder, columnRefProperties.Min, columnRefProperties.Max, columnRefProperties.Width, columnRefProperties.Hidden);
             Offset<worksheet_set_column_ref_properties> fbsSetColumnRefProperties = worksheet_set_column_ref_properties.Createworksheet_set_column_ref_properties(builder, ffiWorksheet, fbsCellRef, fbsColumnRefProperties);
             builder.Finish(fbsSetColumnRefProperties.Value);
-            InvokeVoidFfi(ffi_set_column_ref_properties, builder);
+            FfiInterop.InvokeVoidFfi(ffi_set_column_ref_properties, builder);
         }
 
         public void SetColumnindexProperties(ushort cellIndex, ColumnProperties columnRefProperties)
@@ -86,7 +83,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             Offset<worksheet_column_properties> fbsColumnRefProperties = worksheet_column_properties.Createworksheet_column_properties(builder, columnRefProperties.Min, columnRefProperties.Max, columnRefProperties.Width, columnRefProperties.Hidden);
             Offset<worksheet_set_column_index_properties> fbsSetColumnIndexProperties = worksheet_set_column_index_properties.Createworksheet_set_column_index_properties(builder, ffiWorksheet, cellIndex, fbsColumnRefProperties);
             builder.Finish(fbsSetColumnIndexProperties.Value);
-            InvokeVoidFfi(ffi_set_column_index_properties, builder);
+            FfiInterop.InvokeVoidFfi(ffi_set_column_index_properties, builder);
         }
 
         public void SetRowindexProperties(ushort cellIndex, RowProperties rowRefProperties)
@@ -95,52 +92,59 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             Offset<worksheet_row_properties> fbsRowRefProperties = worksheet_row_properties.Createworksheet_row_properties(builder, rowRefProperties.Height, rowRefProperties.Hidden, rowRefProperties.TickTop, rowRefProperties.ThickBottom);
             Offset<worksheet_set_row_index_properties> fbsSetRowIndexProperties = worksheet_set_row_index_properties.Createworksheet_set_row_index_properties(builder, ffiWorksheet, cellIndex, fbsRowRefProperties);
             builder.Finish(fbsSetRowIndexProperties.Value);
-            InvokeVoidFfi(ffi_set_row_index_properties, builder);
+            FfiInterop.InvokeVoidFfi(ffi_set_row_index_properties, builder);
         }
 
-
-        private static byte[] InvokeBufferFfi(FfiBufferCall ffiCall, FlatBufferBuilder builder)
+        public void SetCellRefValues(string cellRef, params CellProperty[] cellProperties)
         {
-            byte[] requestBuffer = builder.SizedByteArray();
-            unsafe
+            FlatBufferBuilder builder = new(1024);
+            StringOffset fbsCellRef = builder.CreateString(cellRef);
+            VectorOffset fbsColumnCells = worksheet_set_cell_ref_value.CreateColumnCellsVector(builder, BuildCellProperties(builder, cellProperties));
+            Offset<worksheet_set_cell_ref_value> fbsSetCellRefValue = worksheet_set_cell_ref_value.Createworksheet_set_cell_ref_value(builder, ffiWorksheet, fbsCellRef, fbsColumnCells);
+            builder.Finish(fbsSetCellRefValue.Value);
+            FfiInterop.InvokeVoidFfi(ffi_set_cell_ref_value, builder);
+        }
+
+        public void SetCellIndexValues(uint rowIndex, ushort columnIndex, params CellProperty[] cellProperties)
+        {
+            FlatBufferBuilder builder = new(1024);
+            VectorOffset fbsColumnCells = worksheet_set_cell_index_value.CreateColumnCellsVector(builder, BuildCellProperties(builder, cellProperties));
+            Offset<worksheet_set_cell_index_value> fbsSetCellIndexValue = worksheet_set_cell_index_value.Createworksheet_set_cell_index_value(builder, ffiWorksheet, rowIndex, columnIndex, fbsColumnCells);
+            builder.Finish(fbsSetCellIndexValue.Value);
+            FfiInterop.InvokeVoidFfi(ffi_set_cell_index_value, builder);
+        }
+
+        private static Offset<worksheet_cell_property>[] BuildCellProperties(FlatBufferBuilder builder, CellProperty[] cellProperties)
+        {
+            Offset<worksheet_cell_property>[] cellOffsets = new Offset<worksheet_cell_property>[cellProperties.Length];
+            for (int index = 0; index < cellProperties.Length; index++)
             {
-                fixed (byte* requestPtr = requestBuffer)
-                {
-                    sbyte statusCode = ffiCall(
-                        (IntPtr)requestPtr,
-                        new UIntPtr((uint)requestBuffer.Length),
-                        out IntPtr responsePtr,
-                        out UIntPtr responseSize,
-                        out IntPtr errorMsg);
-                    StatusCode.ProcessStatusCode(statusCode, errorMsg);
-                    int responseLength = (int)responseSize.ToUInt64();
-                    byte[] responseBuffer = new byte[responseLength];
-                    if (responseLength > 0)
-                    {
-                        Marshal.Copy(responsePtr, responseBuffer, 0, responseLength);
-                    }
-                    if (responsePtr != IntPtr.Zero)
-                    {
-                        ffi_free_buffer(responsePtr, responseSize);
-                    }
-                    return responseBuffer;
-                }
+                CellProperty cellProperty = cellProperties[index];
+                StringOffset fbsValue = cellProperty.Value != null ? builder.CreateString(cellProperty.Value) : default;
+                StringOffset fbsFormula = cellProperty.Formula != null ? builder.CreateString(cellProperty.Formula) : default;
+                cellOffsets[index] = worksheet_cell_property.Createworksheet_cell_property(builder, fbsValue, fbsFormula, MapCellDataType(cellProperty.DataType));
             }
+            return cellOffsets;
         }
 
-        private static void InvokeVoidFfi(FfiVoidCall ffiCall, FlatBufferBuilder builder)
+        private static worksheet_cell_data_type MapCellDataType(string dataType)
         {
-            byte[] requestBuffer = builder.SizedByteArray();
-            unsafe
+            switch (dataType)
             {
-                fixed (byte* requestPtr = requestBuffer)
-                {
-                    sbyte statusCode = ffiCall(
-                        (IntPtr)requestPtr,
-                        new UIntPtr((uint)requestBuffer.Length),
-                        out IntPtr errorMsg);
-                    StatusCode.ProcessStatusCode(statusCode, errorMsg);
-                }
+                case "number":
+                    return worksheet_cell_data_type.number;
+                case "boolean":
+                    return worksheet_cell_data_type.boolean;
+                case "string":
+                    return worksheet_cell_data_type.@string;
+                case "shared_string":
+                    return worksheet_cell_data_type.shared_string;
+                case "inline_string":
+                    return worksheet_cell_data_type.inline_string;
+                case "error":
+                    return worksheet_cell_data_type.error;
+                default:
+                    return worksheet_cell_data_type.auto;
             }
         }
     }

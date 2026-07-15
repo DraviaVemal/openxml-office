@@ -13,15 +13,16 @@ namespace openxmloffice.tests
         private static readonly string resultPath = "../../test_results";
         private static readonly Excel excel = new(new ExcelProperties
         {
-            coreProperties = new()
-            {
-                title = "Test File",
-                creator = "OpenXML-Office",
-                subject = "Test Subject",
-                tags = "Test",
-                category = "Test Category",
-                description = "Describe the test file"
-            }
+            isEditable = true,
+            // coreProperties = new()
+            // {
+            //     title = "Test File",
+            //     creator = "OpenXML-Office",
+            //     subject = "Test Subject",
+            //     tags = "Test",
+            //     category = "Test Category",
+            //     description = "Describe the test file"
+            // }
         });
         /// <summary>
         /// Initialize excel Test

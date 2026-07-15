@@ -151,7 +151,7 @@ impl Default for ColumnProperties {
 /// - `comment_id` (`Option<usize>`) - Describe this field.
 /// - `place_holder` (`Option<bool>`) - Describe this field.
 #[derive(Debug, Clone)]
-pub struct CellProperties {
+pub struct CellProperty {
     pub formula: Option<String>,
     pub value: Option<String>,
     pub data_type: CellDataType,
@@ -162,38 +162,38 @@ pub struct CellProperties {
     pub(crate) place_holder: Option<bool>,
 }
 
-impl CellProperties {
+impl CellProperty {
     /// Cell Formula of the cell. Use set_value to update resolved intital value.
     /// # Arguments
     /// - `formula` (`Option<String>`) - Set Formula for the cell.
-    pub fn set_formula(mut self, formula: Option<String>) -> CellProperties {
+    pub fn set_formula(mut self, formula: Option<String>) -> CellProperty {
         self.formula = formula;
         self
     }
     /// Set the value of the current cell
     /// # Arguments
     /// - `value` (`Option<String>`) - Set Formula for the cell.
-    pub fn set_value(mut self, value: Option<String>) -> CellProperties {
+    pub fn set_value(mut self, value: Option<String>) -> CellProperty {
         self.value = value;
         self
     }
     /// Set data type of the value cell. Use "set_formula" is you are trying to insert formula
     /// # Arguments
     /// - `data_type` (`CellDataType`) - Describe this parameter.
-    pub fn set_data_type(mut self, data_type: CellDataType) -> CellProperties {
+    pub fn set_data_type(mut self, data_type: CellDataType) -> CellProperty {
         self.data_type = data_type;
         self
     }
     /// Update the style id from result of excel book
     /// # Arguments
     /// - `style_id` (`Option<StyleId>`) - Set style value for the current cell.
-    pub fn set_style_id(mut self, style_id: Option<StyleId>) -> CellProperties {
+    pub fn set_style_id(mut self, style_id: Option<StyleId>) -> CellProperty {
         self.style_id = style_id;
         self
     }
 }
 
-impl Default for CellProperties {
+impl Default for CellProperty {
     fn default() -> Self {
         Self {
             formula: None,
@@ -210,7 +210,7 @@ impl Default for CellProperties {
 #[derive(Debug, Clone)]
 pub struct CellPackage {
     pub cell_ref: String,
-    pub cell_property: CellProperties,
+    pub cell_property: CellProperty,
     pub row_index: RowIndex,
     pub column_index: ColumnIndex,
 }

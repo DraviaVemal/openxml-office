@@ -26,4 +26,22 @@ namespace draviavemal.openxml_office.spreadsheet_2007
 		public bool TickTop { get; set; }
 		public bool ThickBottom { get; set; }
 	}
+
+	public class CellProperty
+	{
+		public string Value { get; set; }
+		public string Formula { get; set; }
+		public string DataType { get; set; }
+		public StyleId StyleId { get; set; }
+	}
+
+	public class StyleId
+	{
+		private readonly ulong ffiStyleIdPtr;
+
+		internal StyleId(ulong ffiStyleIdPtr)
+		{
+			this.ffiStyleIdPtr = ffiStyleIdPtr;
+		}
+	}
 }
