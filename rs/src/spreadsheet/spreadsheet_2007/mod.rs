@@ -6,3 +6,4 @@ pub mod components;
 pub(crate) mod services;
 // Local Class
 pub use excel::*;
+pub use parts::*;

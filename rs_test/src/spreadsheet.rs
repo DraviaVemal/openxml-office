@@ -50,7 +50,7 @@ mod spreadsheet_test {
             .expect("Failed to add static Sheet");
         file.add_sheet_mut(Some("Test".to_string()))
             .expect("Failed to add static Sheet");
-        test.set_row_value_index_mut(
+        test.set_row_index_value_mut(
             1,
             1,
             vec![CellProperties::default().set_value(Some("Test".to_string()))],
@@ -369,7 +369,7 @@ mod spreadsheet_test {
         )
         .expect("Failed to Set best fit Column prop");
         col_prop
-            .set_row_value_index_mut(
+            .set_row_index_value_mut(
                 2,
                 1,
                 vec![
@@ -384,7 +384,7 @@ mod spreadsheet_test {
             )
             .expect("Failed to set Column Value");
         col_prop
-            .set_row_value_index_mut(
+            .set_row_index_value_mut(
                 4,
                 1,
                 vec![
@@ -466,7 +466,7 @@ mod spreadsheet_test {
                 .get_worksheet_mut("formula".to_string())
                 .expect("Failed to find the worksheet");
             formula
-                .set_row_value_ref_mut(
+                .set_row_ref_value_mut(
                     "V3",
                     vec![
                     draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
@@ -516,7 +516,7 @@ mod spreadsheet_test {
                 .add_sheet_mut(None)
                 .expect("Failed to find the worksheet");
             formula
-                .set_row_value_ref_mut(
+                .set_row_ref_value_mut(
                     "V3",
                     vec![
                     draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
@@ -579,7 +579,7 @@ mod spreadsheet_test {
                 .get_worksheet_mut("formula".to_string())
                 .expect("Failed to find the worksheet");
             formula
-                .set_row_value_ref_mut(
+                .set_row_ref_value_mut(
                     "V3",
                     vec![
                     draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
@@ -659,7 +659,7 @@ mod spreadsheet_test {
                 .get_worksheet_mut("Sheet1".to_string())
                 .expect("Failed to find the worksheet");
             sheet
-                .set_row_value_ref_mut(
+                .set_row_ref_value_mut(
                     "V3",
                     vec![
                     draviavemal_openxml_office::spreadsheet_2007::models::CellProperties::default()
@@ -691,7 +691,7 @@ mod spreadsheet_test {
                 || {
                     for row in 1..100_000 {
                         sheet
-                        .set_row_value_index_mut(
+                        .set_row_index_value_mut(
                             row,
                             1,
                             (1..10)

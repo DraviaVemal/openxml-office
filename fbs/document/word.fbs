@@ -1,10 +1,18 @@
 namespace openxml_office_fbs.document;
 
-table DocumentPropertiesModel {
-  is_editable:bool;
+// word_create - Start
+
+table word_create {
+    file_name: string;
+    word_settings: word_settings(required);
 }
 
-table DocumentSettingsModel {
+table word_settings {
+    is_editable: bool;
 }
 
-root_type DocumentPropertiesModel;
+table word_create_return {
+    word_ptr: uint64;
+}
+
+// document_create - End

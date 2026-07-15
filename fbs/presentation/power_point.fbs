@@ -1,10 +1,18 @@
 namespace openxml_office_fbs.presentation;
 
-table PresentationPropertiesModel {
-  is_editable:bool;
+// power_point_create - Start
+
+table power_point_create {
+    file_name: string;
+    power_point_settings: power_point_settings(required);
 }
 
-table PresentationSettingsModel {
+table power_point_settings {
+    is_editable: bool;
 }
 
-root_type PresentationPropertiesModel;
+table power_point_create_return {
+    power_point_ptr: uint64;
+}
+
+// power_point_create - End

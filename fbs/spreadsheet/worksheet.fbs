@@ -1,0 +1,88 @@
+namespace openxml_office_fbs.spreadsheet;
+
+// Common worksheet properties - Start
+
+enum worksheet_cell_data_type: byte{
+    auto=0,
+    number=1,
+    boolean=2,
+    string=3,
+    shared_string=4,
+    inline_string=5,
+    error=6,
+}
+
+table worksheet_column_properties{
+    min: uint32;
+    max: uint32;
+    width: float = null;
+    hidden: bool = null;
+    best_fit: bool = null;
+    style_id_ptr: uint64 = null;
+}
+
+table worksheet_cell_properties{
+    value: string;
+    formula: string;
+    data_type: worksheet_cell_data_type;
+    style_id_ptr: uint64 = null;
+}
+
+// Common worksheet properties - End
+
+// worksheet_set_column_ref_properties - Start
+
+table worksheet_set_column_ref_properties{
+    worksheet_ptr: uint64;
+    cell_ref: string;
+    column_properties: worksheet_column_properties;
+}
+
+// worksheet_set_column_ref_properties - End
+
+// worksheet_set_column_index_properties - Start
+
+table worksheet_set_column_index_properties{
+    worksheet_ptr: uint64;
+    cell_index: uint16;
+    column_properties: worksheet_column_properties;
+}
+
+// worksheet_set_column_index_properties - End
+
+// worksheet_set_row_ref_properties - Start
+
+table worksheet_set_row_index_properties{
+    worksheet_ptr: uint64;
+    row_index: uint32;
+    row_properties: worksheet_row_properties(required);
+}
+
+table worksheet_row_properties{
+    height: float = null;
+    hidden: bool = null;
+    thick_top: bool = null;
+    thick_bottom: bool = null;
+    style_id_ptr: uint64 = null;
+}
+// worksheet_set_row_ref_properties - End
+
+// Worksheet set row ref value - Start
+
+table worksheet_set_row_ref_value{
+    worksheet_ptr: uint64;
+    cell_ref: string;
+    column_cells: [worksheet_cell_properties](required);
+}
+
+// Worksheet set row ref value - End
+
+// Worksheet set row index value - Start
+
+table worksheet_set_row_index_value{
+    worksheet_ptr: uint64;
+    cell_index: uint32;
+    column_cells: [worksheet_cell_properties](required);
+}
+
+// Worksheet set row index value - End
