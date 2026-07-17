@@ -2,16 +2,19 @@ use std::{ffi::c_char, mem::ManuallyDrop};
 
 use crate::{
     openxml_office_fbs::spreadsheet::{
-        worksheet_cell_data_type, worksheet_set_cell_index_value, worksheet_set_cell_ref_value,
-        worksheet_set_column_index_properties, worksheet_set_column_ref_properties,
-        worksheet_set_row_index_properties,
+        worksheet_cell_data_type, worksheet_flush, worksheet_set_cell_index_value,
+        worksheet_set_cell_ref_value, worksheet_set_column_index_properties,
+        worksheet_set_column_ref_properties, worksheet_set_row_index_properties,
     },
     root_from_raw, set_error, StatusCode,
 };
 use anyhow::anyhow;
-use draviavemal_openxml_office::spreadsheet_2007::{
-    models::{CellDataType, CellProperty, ColumnProperties, RowProperties, StyleId},
-    WorkSheet,
+use draviavemal_openxml_office::{
+    global_2007::traits::XmlDocumentPartFlush,
+    spreadsheet_2007::{
+        models::{CellDataType, CellProperty, ColumnProperties, RowProperties, StyleId},
+        WorkSheet,
+    },
 };
 
 #[no_mangle]
@@ -249,3 +252,21 @@ pub extern "C" fn set_cell_index_value(
     }
 }
 
+#[no_mangle]
+pub extern "C" fn worksheet_flush(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs_set_cell_index_value =
+        match unsafe { root_from_raw::<worksheet_flush>(in_buffer, in_buffer_size, out_error) } {
+            Ok(root) => root,
+            Err(status) => return status,
+        };
+    let worksheet_ptr = fbs_set_cell_index_value.worksheet_ptr() as *mut WorkSheet;
+    let worksheet = unsafe { *Box::from_raw(worksheet_ptr) };
+    match worksheet.flush() {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
+    }
+}

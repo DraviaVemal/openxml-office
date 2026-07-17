@@ -87,3 +87,11 @@ table worksheet_set_cell_index_value{
 }
 
 // Worksheet set cell index value - End
+
+// Worksheet flush - Start
+
+table worksheet_flush{
+    worksheet_ptr: uint64;
+}
+
+// Worksheet flush - End
