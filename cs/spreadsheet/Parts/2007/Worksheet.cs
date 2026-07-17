@@ -8,7 +8,7 @@ using openxml_office_fbs.spreadsheet;
 namespace draviavemal.openxml_office.spreadsheet_2007
 {
 
-    public class Worksheet
+    public class Worksheet : IDisposable
     {
         private readonly ulong ffiWorksheet;
 
@@ -66,6 +66,27 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "worksheet_flush", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_worksheet_flush(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr error_msg
+        );
+
+        /// <summary>
+        /// Destroys the worksheet and releases any unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            FlatBufferBuilder builder = new(1024);
+            Offset<worksheet_flush> fbsDestroyWorksheet = worksheet_flush.Createworksheet_flush(builder, ffiWorksheet);
+            builder.Finish(fbsDestroyWorksheet.Value);
+            FfiInterop.InvokeVoidFfi(ffi_worksheet_flush, builder);
+        }
 
         public void SetColumnRefProperties(string cellRef, ColumnProperties columnRefProperties)
         {
