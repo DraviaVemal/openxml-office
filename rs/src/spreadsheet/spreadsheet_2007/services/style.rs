@@ -13,7 +13,7 @@ use crate::{
     spreadsheet_2007::models::{
         BorderSetting, BorderStyle, BorderStyleValues, CellXfs, ColorSetting,
         ColorSettingTypeValues, FillStyle, FontSchemeValues, FontStyle, HorizontalAlignmentValues,
-        NumberFormat, NumberFormatValues, PatternTypeValues, StyleId, StyleSetting,
+        NumberFormat, NumberFormatValues, PatternTypeValues, StyleId, CellStyleSetting,
         VerticalAlignmentValues,
     },
 };
@@ -949,7 +949,7 @@ impl StylePart {
 
     pub(crate) fn get_style_id_mut(
         &mut self,
-        style_setting: StyleSetting,
+        style_setting: CellStyleSetting,
     ) -> AnyResult<StyleId, AnyError> {
         let style_hash = self.generate_setting_hash(&style_setting);
         if let Some((_, id)) = self.cache_id.get_key_value(&style_hash) {

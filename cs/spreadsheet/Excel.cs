@@ -63,6 +63,18 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_get_style_id", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_excel_get_style_id(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr out_buffer,
+            out UIntPtr out_buffer_size,
+            out IntPtr error_msg
+        );
+
+        /// <summary>
+        /// 
+        /// </summary>
         [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_save_as", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_save_as(
             IntPtr in_buffer,
@@ -162,6 +174,79 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             builder.Finish(renameSheetOffset.Value);
             FfiInterop.InvokeVoidFfi(ffi_excel_rename_sheet, builder);
             return true;
+        }
+
+        /// <summary>
+        /// Get or create a style ID for the given cell style settings.
+        /// </summary>
+        public StyleId GetStyleId(CellStyleSetting cellStyleSetting)
+        {
+            FlatBufferBuilder builder = new(1024);
+
+            // Build border settings
+            Offset<excel_border_settings> BuildBorderSettings(BorderSetting borderSetting)
+            {
+                Offset<excel_color_setting> colorOffset = default;
+                if (borderSetting.BorderColor != null)
+                {
+                    StringOffset colorValueOffset = builder.CreateString(borderSetting.BorderColor.Value ?? string.Empty);
+                    colorOffset = excel_color_setting.Createexcel_color_setting(builder,
+                        (color_setting_type_values)borderSetting.BorderColor.ColorSettingType,
+                        colorValueOffset);
+                }
+                return excel_border_settings.Createexcel_border_settings(builder,
+                    colorOffset,
+                    (border_style_values)borderSetting.Style);
+            }
+
+            Offset<excel_border_settings> borderLeftOffset = BuildBorderSettings(cellStyleSetting.BorderLeft ?? new BorderSetting());
+            Offset<excel_border_settings> borderTopOffset = BuildBorderSettings(cellStyleSetting.BorderTop ?? new BorderSetting());
+            Offset<excel_border_settings> borderRightOffset = BuildBorderSettings(cellStyleSetting.BorderRight ?? new BorderSetting());
+            Offset<excel_border_settings> borderBottomOffset = BuildBorderSettings(cellStyleSetting.BorderBottom ?? new BorderSetting());
+            Offset<excel_border_settings> borderDiagonalOffset = BuildBorderSettings(cellStyleSetting.BorderDiagonal ?? new BorderSetting());
+
+            StringOffset textColorValueOffset = builder.CreateString(cellStyleSetting.TextColor?.Value ?? string.Empty);
+            Offset<excel_color_setting> textColorOffset = excel_color_setting.Createexcel_color_setting(builder,
+                (color_setting_type_values)(cellStyleSetting.TextColor?.ColorSettingType ?? ColorSettingTypeValues.Indexed),
+                textColorValueOffset);
+
+            StringOffset fontFamilyOffset = builder.CreateString(cellStyleSetting.FontFamily ?? string.Empty);
+            StringOffset customNumberFormatOffset = cellStyleSetting.CustomNumberFormat != null
+                ? builder.CreateString(cellStyleSetting.CustomNumberFormat)
+                : default;
+            StringOffset backgroundColorOffset = cellStyleSetting.BackgroundColor != null
+                ? builder.CreateString(cellStyleSetting.BackgroundColor)
+                : default;
+            StringOffset foregroundColorOffset = cellStyleSetting.ForegroundColor != null
+                ? builder.CreateString(cellStyleSetting.ForegroundColor)
+                : default;
+
+            Offset<excel_style_setting> styleSettingOffset = excel_style_setting.Createexcel_style_setting(builder,
+                (number_format_values)cellStyleSetting.NumberFormat,
+                customNumberFormatOffset,
+                borderLeftOffset,
+                borderTopOffset,
+                borderRightOffset,
+                borderBottomOffset,
+                borderDiagonalOffset,
+                fontFamilyOffset,
+                cellStyleSetting.FontSize,
+                textColorOffset,
+                cellStyleSetting.IsBold,
+                cellStyleSetting.IsItalic,
+                cellStyleSetting.IsUnderline,
+                cellStyleSetting.IsDoubleUnderline,
+                cellStyleSetting.IsWrapText,
+                backgroundColorOffset,
+                foregroundColorOffset,
+                (horizontal_alignment_values)cellStyleSetting.HorizontalAlignment,
+                (vertical_alignment_values)cellStyleSetting.VerticalAlignment);
+
+            Offset<excel_get_style_id> getStyleIdOffset = excel_get_style_id.Createexcel_get_style_id(builder, ffiExcelPtr, styleSettingOffset);
+            builder.Finish(getStyleIdOffset.Value);
+            byte[] responseBuffer = FfiInterop.InvokeBufferFfi(ffi_excel_get_style_id, builder);
+            excel_get_style_id_return response = excel_get_style_id_return.GetRootAsexcel_get_style_id_return(new ByteBuffer(responseBuffer));
+            return new StyleId(response.StyleIdPtr);
         }
 
         /// <summary>

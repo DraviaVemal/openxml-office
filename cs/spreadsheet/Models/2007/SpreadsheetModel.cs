@@ -27,12 +27,141 @@ namespace draviavemal.openxml_office.spreadsheet_2007
 		public bool ThickBottom { get; set; }
 	}
 
+	public enum CellDataType
+	{
+		Auto = 0,
+		Number = 1,
+		Boolean = 2,
+		String = 3,
+		SharedString = 4,
+		InlineString = 5,
+		Error = 6,
+	}
+
 	public class CellProperty
 	{
 		public string Value { get; set; }
 		public string Formula { get; set; }
-		public string DataType { get; set; }
+		public CellDataType DataType { get; set; } = CellDataType.Auto;
 		public StyleId StyleId { get; set; }
+	}
+
+	public enum NumberFormatValues
+	{
+		General,
+		Integer,
+		DecimalTwoPlaces,
+		ThousandsSeparator,
+		ThousandsSeparatorTwoDecimals,
+		CurrencyNoDecimals,
+		CurrencyNoDecimalsRed,
+		CurrencyTwoDecimals,
+		CurrencyTwoDecimalsRed,
+		Percentage,
+		PercentageTwoDecimals,
+		Scientific,
+		FractionOneDigit,
+		FractionTwoDigits,
+		DateMMDDYY,
+		DateDMmmYY,
+		DateDMmm,
+		DateMmmYY,
+		Time12Hour,
+		Time12HourWithSeconds,
+		Time24Hour,
+		Time24HourWithSeconds,
+		DateTimeMMDDYY,
+		AccountingNoDecimals,
+		AccountingNoDecimalsRed,
+		AccountingTwoDecimals,
+		AccountingTwoDecimalsRed,
+		AccountingNegativeInParentheses,
+		AccountingTwoDecimalsNegativeInParentheses,
+		AccountingAlignedSymbols,
+		AccountingAlignedSymbolsTwoDecimals,
+		TimeMinutesSeconds,
+		TimeHoursMinutesSeconds,
+		ElapsedTimeWithFractions,
+		ScientificOneDecimal,
+		TextFormat,
+		Custom,
+	}
+
+	public enum BorderStyleValues
+	{
+		None,
+		Thin,
+		Thick,
+		Dotted,
+		Double,
+		Dashed,
+		DashDot,
+		DashDotDot,
+		Medium,
+		MediumDashed,
+		MediumDashDot,
+		MediumDashDotDot,
+		SlantDashDot,
+		Hair,
+	}
+
+	public enum ColorSettingTypeValues
+	{
+		Indexed,
+		Theme,
+		Rgb,
+	}
+
+	public enum HorizontalAlignmentValues
+	{
+		None,
+		Left,
+		Center,
+		Right,
+		Justify,
+	}
+
+	public enum VerticalAlignmentValues
+	{
+		None,
+		Top,
+		Middle,
+		Bottom,
+	}
+
+	public class ColorSetting
+	{
+		public ColorSettingTypeValues ColorSettingType { get; set; } = ColorSettingTypeValues.Indexed;
+		public string Value { get; set; } = string.Empty;
+	}
+
+	public class BorderSetting
+	{
+		public ColorSetting BorderColor { get; set; }
+		public BorderStyleValues Style { get; set; } = BorderStyleValues.None;
+	}
+
+	public class CellStyleSetting
+	{
+		public NumberFormatValues NumberFormat { get; set; } = NumberFormatValues.General;
+		public string CustomNumberFormat { get; set; }
+		public BorderSetting BorderLeft { get; set; } = new BorderSetting();
+		public BorderSetting BorderTop { get; set; } = new BorderSetting();
+		public BorderSetting BorderRight { get; set; } = new BorderSetting();
+		public BorderSetting BorderBottom { get; set; } = new BorderSetting();
+		public BorderSetting BorderDiagonal { get; set; } = new BorderSetting();
+		public string FontFamily { get; set; } = string.Empty;
+		public byte FontSize { get; set; } = 0;
+		public ColorSetting TextColor { get; set; } = new ColorSetting();
+		public bool IsBold { get; set; } = false;
+		public bool IsItalic { get; set; } = false;
+		public bool IsUnderline { get; set; } = false;
+		public bool IsDoubleUnderline { get; set; } = false;
+		public bool IsWrapText { get; set; } = false;
+		public string BackgroundColor { get; set; }
+		public string ForegroundColor { get; set; }
+		public HorizontalAlignmentValues HorizontalAlignment { get; set; } = HorizontalAlignmentValues.None;
+		public VerticalAlignmentValues VerticalAlignment { get; set; } = VerticalAlignmentValues.None;
 	}
 
 	public class StyleId

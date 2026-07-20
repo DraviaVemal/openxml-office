@@ -1736,10 +1736,7 @@ impl WorkSheet {
         Ok(())
     }
 
-    fn normalize_cell_property(
-        &self,
-        cell_prop: &CellProperty,
-    ) -> Result<CellProperty, AnyError> {
+    fn normalize_cell_property(&self, cell_prop: &CellProperty) -> Result<CellProperty, AnyError> {
         let mut parsed_property = cell_prop.clone();
         if parsed_property.data_type == CellDataType::ShareString {
             if let Some(cmn_service) = self.common_service.upgrade() {
@@ -1893,10 +1890,10 @@ impl WorkSheet {
         &mut self,
         row_index: RowIndex,
         mut col_index: ColumnIndex,
-        mut column_cell: Vec<CellProperty>,
+        mut column_cells: Vec<CellProperty>,
     ) -> AnyResult<(), AnyError> {
         // Map Start Normalization
-        for cell_data in column_cell.iter_mut() {
+        for cell_data in column_cells.iter_mut() {
             if let Some(cell_value) = cell_data.value.as_ref() {
                 match cell_data.data_type {
                     CellDataType::Auto => {
@@ -1930,7 +1927,7 @@ impl WorkSheet {
             }
         }
         col_index -= 1; // Reduce 1 to normalize the loop increment
-        let column_cells = column_cell
+        let column_cells = column_cells
             .iter_mut()
             .map(|item| {
                 col_index += 1;

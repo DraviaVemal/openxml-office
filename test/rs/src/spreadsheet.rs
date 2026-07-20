@@ -5,7 +5,7 @@ mod spreadsheet_test {
         global_2007::traits::XmlDocumentPartFlush,
         log_elapsed,
         spreadsheet_2007::models::{
-            CellProperty, ExcelPictureSetting, ReferenceRange, StyleSetting,
+            CellProperty, ExcelPictureSetting, ReferenceRange, CellStyleSetting,
         },
     };
     use std::fs::{create_dir_all, exists};
@@ -458,7 +458,7 @@ mod spreadsheet_test {
         .expect("Open Existing File Failed");
         let style_id = file
             .get_style_id_mut(
-                draviavemal_openxml_office::spreadsheet_2007::models::StyleSetting::default(),
+                draviavemal_openxml_office::spreadsheet_2007::models::CellStyleSetting::default(),
             )
             .expect("Failed to get Style Id");
         {
@@ -497,19 +497,19 @@ mod spreadsheet_test {
         )
         .expect("Open Existing File Failed");
         let bold_id = file
-            .get_style_id_mut(StyleSetting::default().set_is_bold(true))
+            .get_style_id_mut(CellStyleSetting::default().set_is_bold(true))
             .expect("Failed bold ID");
         let italic_id = file
-            .get_style_id_mut(StyleSetting::default().set_is_italic(true))
+            .get_style_id_mut(CellStyleSetting::default().set_is_italic(true))
             .expect("Failed italic ID");
         let underline_id = file
-            .get_style_id_mut(StyleSetting::default().set_is_underline(true))
+            .get_style_id_mut(CellStyleSetting::default().set_is_underline(true))
             .expect("Failed underline ID");
         let double_id = file
-            .get_style_id_mut(StyleSetting::default().set_is_double_underline(true))
+            .get_style_id_mut(CellStyleSetting::default().set_is_double_underline(true))
             .expect("Failed double underline ID");
         let wrap_text_id = file
-            .get_style_id_mut(StyleSetting::default().set_is_wrap_text(true))
+            .get_style_id_mut(CellStyleSetting::default().set_is_wrap_text(true))
             .expect("Failed wrape ID");
         {
             let mut formula = file
@@ -560,19 +560,19 @@ mod spreadsheet_test {
         )
         .expect("Open Existing File Failed");
         let bold_id = file
-            .get_style_id_mut(StyleSetting::default().set_is_bold(true))
+            .get_style_id_mut(CellStyleSetting::default().set_is_bold(true))
             .expect("Failed bold ID");
         let italic_id = file
-            .get_style_id_mut(StyleSetting::default().set_is_italic(true))
+            .get_style_id_mut(CellStyleSetting::default().set_is_italic(true))
             .expect("Failed italic ID");
         let underline_id = file
-            .get_style_id_mut(StyleSetting::default().set_is_underline(true))
+            .get_style_id_mut(CellStyleSetting::default().set_is_underline(true))
             .expect("Failed underline ID");
         let double_id = file
-            .get_style_id_mut(StyleSetting::default().set_is_double_underline(true))
+            .get_style_id_mut(CellStyleSetting::default().set_is_double_underline(true))
             .expect("Failed double underline ID");
         let wrap_text_id = file
-            .get_style_id_mut(StyleSetting::default().set_is_wrap_text(true))
+            .get_style_id_mut(CellStyleSetting::default().set_is_wrap_text(true))
             .expect("Failed wrape ID");
         {
             let mut formula = file

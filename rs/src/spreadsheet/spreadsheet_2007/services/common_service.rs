@@ -1,6 +1,6 @@
 use crate::global_2007::service::MediaFiles;
 use crate::global_2007::traits::XmlDocumentPartClose;
-use crate::spreadsheet_2007::models::{StyleId, StyleSetting};
+use crate::spreadsheet_2007::models::{StyleId, CellStyleSetting};
 use crate::spreadsheet_2007::services::{
     CalculationChain, CalculationChainPart, ShareStringPart, StylePart,
 };
@@ -56,7 +56,7 @@ impl CommonServices {
 impl CommonServices {
     pub(crate) fn get_style_id_mut(
         &mut self,
-        style_setting: StyleSetting,
+        style_setting: CellStyleSetting,
     ) -> AnyResult<StyleId, AnyError> {
         self.style.get_style_id_mut(style_setting)
     }
