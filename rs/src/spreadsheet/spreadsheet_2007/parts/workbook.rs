@@ -15,7 +15,7 @@ use crate::{
     log_elapsed,
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
-        models::{StyleId, StyleSetting},
+        models::{StyleId, CellStyleSetting},
         parts::WorkSheet,
         services::{CalculationChainPart, CommonServices, ShareStringPart, StylePart},
     },
@@ -730,7 +730,7 @@ impl WorkbookPart {
     /// Return Style Id for the said combination
     pub(crate) fn get_style_id_mut(
         &mut self,
-        style_setting: StyleSetting,
+        style_setting: CellStyleSetting,
     ) -> AnyResult<StyleId, AnyError> {
         self.common_service
             .try_borrow_mut()

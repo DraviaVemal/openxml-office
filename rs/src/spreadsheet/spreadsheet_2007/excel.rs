@@ -6,7 +6,7 @@ use crate::{
     },
     log_elapsed,
     spreadsheet_2007::{
-        models::{StyleId, StyleSetting},
+        models::{StyleId, CellStyleSetting},
         parts::{WorkSheet, WorkbookPart},
     },
 };
@@ -136,7 +136,7 @@ impl Excel {
     /// Return Style Id for the said combination
     pub fn get_style_id_mut(
         &mut self,
-        style_setting: StyleSetting,
+        style_setting: CellStyleSetting,
     ) -> AnyResult<StyleId, AnyError> {
         log_elapsed!(self.get_workbook_mut().get_style_id_mut(style_setting))
     }

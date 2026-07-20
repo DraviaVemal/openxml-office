@@ -148,25 +148,9 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             return cellOffsets;
         }
 
-        private static worksheet_cell_data_type MapCellDataType(string dataType)
+        private static worksheet_cell_data_type MapCellDataType(CellDataType dataType)
         {
-            switch (dataType)
-            {
-                case "number":
-                    return worksheet_cell_data_type.number;
-                case "boolean":
-                    return worksheet_cell_data_type.boolean;
-                case "string":
-                    return worksheet_cell_data_type.@string;
-                case "shared_string":
-                    return worksheet_cell_data_type.shared_string;
-                case "inline_string":
-                    return worksheet_cell_data_type.inline_string;
-                case "error":
-                    return worksheet_cell_data_type.error;
-                default:
-                    return worksheet_cell_data_type.auto;
-            }
+            return (worksheet_cell_data_type)(sbyte)dataType;
         }
     }
 

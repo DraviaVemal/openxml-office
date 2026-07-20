@@ -10,7 +10,7 @@ namespace openxmloffice.tests
     [TestClass]
     public class Spreadsheet
     {
-        private static readonly string resultPath = "../../test_results";
+        private static readonly string resultPath = "../../../test_results";
         private static readonly Excel excel = new(new ExcelProperties
         {
             isEditable = true,
@@ -24,6 +24,7 @@ namespace openxmloffice.tests
             //     description = "Describe the test file"
             // }
         });
+
         /// <summary>
         /// Initialize excel Test
         /// </summary>
@@ -43,6 +44,7 @@ namespace openxmloffice.tests
             PrivacyProperties.ShareUsageCounterDetails = false;
             excel.AddSheet();
         }
+
         /// <summary>
         /// Save the Test File After execution
         /// </summary>
@@ -51,6 +53,7 @@ namespace openxmloffice.tests
         {
             excel.SaveAs(string.Format("{1}/test-{0}.xlsx", DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss"), resultPath));
         }
+
         /// <summary>
         /// 
         /// </summary>
@@ -61,6 +64,7 @@ namespace openxmloffice.tests
             excel2.SaveAs(string.Format("{1}/Blank-{0}.xlsx", DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss"), resultPath));
             Assert.IsNotNull(excel2);
         }
+
         /// <summary>
         /// Add Sheet Test
         /// </summary>
@@ -70,6 +74,7 @@ namespace openxmloffice.tests
             Worksheet worksheet = excel.AddSheet("TestSheet1");
             Assert.IsNotNull(worksheet);
         }
+
         /// <summary>
         /// Add Sheet Test
         /// </summary>
@@ -79,6 +84,7 @@ namespace openxmloffice.tests
             Worksheet worksheet = excel.AddSheet("TestSheet2");
             Assert.IsNotNull(worksheet);
         }
+
         /// <summary>
         /// Rename Sheet Based on Index Test
         /// </summary>
@@ -89,97 +95,97 @@ namespace openxmloffice.tests
             Assert.IsNotNull(worksheet);
             Assert.IsTrue(excel.RenameSheet("TestSheet3", "RenameTestSheet3"));
         }
+
         /// <summary>
         /// Rename Sheet Based on Index Test
         /// </summary>
         [TestMethod]
         public void RenameSheet()
         {
-            Worksheet worksheet = excel.AddSheet("Sheet11");
+            Worksheet worksheet = excel.AddSheet("RenamedSheet11");
             Assert.IsNotNull(worksheet);
-            Assert.IsTrue(excel.RenameSheet("Sheet11", "RenameSheet11"));
+            Assert.IsTrue(excel.RenameSheet("RenamedSheet11", "RenameSheet11"));
         }
-        // /// <summary>
-        // /// Set Cell Test
-        // /// </summary>
-        // [TestMethod]
-        // public void SetColumn()
-        // {
-        //     Worksheet worksheet = excel.AddSheet("Data3");
-        //     Assert.IsNotNull(worksheet);
-        //     worksheet.SetColumn("A1", new ColumnProperties()
-        //     {
-        //         width = 30
-        //     });
-        //     worksheet.SetColumn("C4", new ColumnProperties()
-        //     {
-        //         width = 30,
-        //         bestFit = true
-        //     });
-        //     worksheet.SetColumn("G7", new ColumnProperties()
-        //     {
-        //         hidden = true
-        //     });
-        //     Assert.IsTrue(true);
-        // }
-        // /// <summary>
-        // /// Set Row Test
-        // /// </summary>
-        // [TestMethod]
-        // public void SetRow()
-        // {
-        //     Worksheet worksheet = excel.AddSheet("Data2");
-        //     uint styleId = excel.GetStyleId(new CellStyleSetting()
-        //     {
-        //         numberFormat = "00.000",
-        //     });
-        //     Assert.IsNotNull(worksheet);
-        //     worksheet.SetRow("A1", new ColumnCell[6]{
-        //         new(){
-        //             cellValue = "test1",
-        //             dataType = CellDataType.STRING
-        //         },
-        //          new(){
-        //             cellValue = "test2",
-        //             dataType = CellDataType.STRING
-        //         },
-        //          new(){
-        //             cellValue = "test3",
-        //             dataType = CellDataType.STRING
-        //         },
-        //          new(){
-        //             cellValue = "test4",
-        //             dataType = CellDataType.STRING,
-        //             styleSetting = new(){
-        //                 fontSize = 20
-        //             }
-        //         },
-        //          new(){
-        //             cellValue = "2.51",
-        //             dataType = CellDataType.NUMBER,
-        //             styleId=styleId
-        //         },new(){
-        //             cellValue = "5.51",
-        //             dataType = CellDataType.NUMBER,
-        //             styleSetting = new(){
-        //                 numberFormat = "₹ #,##0.00;₹ -#,##0.00",
-        //             }
-        //         }
-        //     }, new RowProperties()
-        //     {
-        //         height = 20
-        //     });
-        //     worksheet.SetRow("C1", new ColumnCell[1]{
-        //         new(){
-        //             cellValue = "Re Update",
-        //             dataType = CellDataType.STRING
-        //         }
-        //     }, new RowProperties()
-        //     {
-        //         height = 30
-        //     });
-        //     Assert.IsTrue(true);
-        // }
+
+        /// <summary>
+        /// Set Cell Test
+        /// </summary>
+        [TestMethod]
+        public void SetColumn()
+        {
+            using Worksheet worksheet = excel.AddSheet("Data3 Column properties");
+            Assert.IsNotNull(worksheet);
+            worksheet.SetColumnRefProperties("A1", new ColumnProperties()
+            {
+                Width = 30
+            });
+            worksheet.SetColumnRefProperties("C4", new ColumnProperties()
+            {
+                Width = 30,
+                BestFit = true
+            });
+            worksheet.SetColumnRefProperties("G7", new ColumnProperties()
+            {
+                Hidden = true
+            });
+            Assert.IsTrue(true);
+        }
+
+        /// <summary>
+        /// Set Row Test
+        /// </summary>
+        [TestMethod]
+        public void SetRow()
+        {
+            using Worksheet worksheet = excel.AddSheet("Data2");
+            StyleId styleId = excel.GetStyleId(new CellStyleSetting()
+            {
+                CustomNumberFormat = "00.000",
+            });
+            Assert.IsNotNull(worksheet);
+            worksheet.SetCellRefValues("A1", new CellProperty[6]{
+                new(){
+                    Value = "test1",
+                    DataType = CellDataType.String
+                },
+                 new(){
+                    Value = "test2",
+                    DataType = CellDataType.String
+                },
+                 new(){
+                    Value = "test3",
+                    DataType = CellDataType.String
+                },
+                 new(){
+                    Value = "test4",
+                    DataType = CellDataType.String,
+                    StyleId = excel.GetStyleId(new CellStyleSetting()
+                    {
+                        FontSize = 20
+                    })
+                },
+                 new(){
+                    Value = "2.51",
+                    DataType = CellDataType.Number,
+                    StyleId=styleId
+                },new(){
+                    Value = "5.51",
+                    DataType = CellDataType.Number,
+                    StyleId = excel.GetStyleId(new CellStyleSetting()
+                    {
+                        CustomNumberFormat = "₹ #,##0.00;₹ -#,##0.00",
+                    })
+                }
+            });
+            worksheet.SetCellRefValues("C1", new CellProperty[1]{
+                new(){
+                    Value = "Re Update",
+                    DataType = CellDataType.String
+                }
+            });
+            Assert.IsTrue(true);
+        }
+
         // /// <summary>
         // /// 
         // /// </summary>

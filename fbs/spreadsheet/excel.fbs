@@ -54,8 +54,6 @@ table excel_get_sheet_return {
 
 // excel_get_sheet - End
 
-
-
 // excel_list_sheet - Start
 
 table excel_list_sheet{
@@ -67,6 +65,133 @@ table excel_list_sheet_return {
 }
 
 // excel_list_sheet - End
+
+// excel_get_style_id - Start
+
+enum number_format_values: int {
+    general = 0,
+    integer = 1,
+    decimal_two_places = 2,
+    thousands_separator = 3,
+    thousands_separator_two_decimals = 4,
+    currency_no_decimals = 5,
+    currency_no_decimals_red = 6,
+    currency_two_decimals = 7,
+    currency_two_decimals_red = 8,
+    percentage = 9,
+    percentage_two_decimals = 10,
+    scientific = 11,
+    fraction_one_digit = 12,
+    fraction_two_digits = 13,
+    date_mmddyy = 14,
+    date_dmmmyy = 15,
+    date_dmmm = 16,
+    date_mmmyy = 17,
+    time_12_hour = 18,
+    time_12_hour_with_seconds = 19,
+    time_24_hour = 20,
+    time_24_hour_with_seconds = 21,
+    date_time_mmddyy = 22,
+    accounting_no_decimals = 23,
+    accounting_no_decimals_red = 24,
+    accounting_two_decimals = 25,
+    accounting_two_decimals_red = 26,
+    accounting_negative_in_parentheses = 27,
+    accounting_two_decimals_negative_in_parentheses = 28,
+    accounting_aligned_symbols = 29,
+    accounting_aligned_symbols_two_decimals = 30,
+    time_minutes_seconds = 31,
+    time_hours_minutes_seconds = 32,
+    elapsed_time_with_fractions = 33,
+    scientific_one_decimal = 34,
+    text_format = 35,
+    custom = 36,
+}
+
+enum horizontal_alignment_values: int {
+    none = 0,
+    left = 1,
+    center = 2,
+    right = 3,
+    justify = 4,
+}
+
+enum vertical_alignment_values: int {
+    none=0,
+    top = 1,
+    middle = 2,
+    bottom = 3,
+}
+
+enum border_style_values: int {
+    none = 0,
+    thin = 1,
+    thick = 2,
+    dotted = 3,
+    double = 4,
+    dashed = 5,
+    dash_dot = 6,
+    dash_dot_dot = 7,
+    medium = 8,
+    medium_dashed = 9,
+    medium_dash_dot = 10,
+    medium_dash_dot_dot = 11,
+    slant_dash_dot = 12
+}
+
+enum color_setting_type_values: int {
+    indexed = 0,
+    theme = 1,
+    rgb = 2,
+}
+
+table excel_color_setting{
+    color_setting_type:color_setting_type_values;
+    value: string;
+}
+
+table excel_border_settings{
+    border_color: excel_color_setting;
+    style: border_style_values;
+}
+
+table excel_style_setting {
+    // num format
+    number_format: number_format_values;
+    custom_number_format: string;
+    // border
+    border_left: excel_border_settings(required);
+    border_top: excel_border_settings(required);
+    border_right: excel_border_settings(required);
+    border_bottom: excel_border_settings(required);
+    border_diagonal: excel_border_settings(required);
+    // font
+    font_family: string;
+    font_size: uint8;
+    text_color: excel_color_setting(required);
+    is_bold: bool;
+    is_italic: bool;
+    is_underline: bool;
+    is_double_underline: bool;
+    is_wrap_text: bool;
+    //  fill
+    background_color: string;
+    foreground_color: string;
+    // xfs
+    horizontal_alignment: horizontal_alignment_values;
+    vertical_alignment: vertical_alignment_values;
+}
+
+table excel_get_style_id{
+    excel_ptr: uint64;
+    style_setting: excel_style_setting(required);
+}
+
+table excel_get_style_id_return {
+    style_id_ptr: uint64;
+}
+
+// excel_get_style_id - End
 
 // excel_save_as - Start
 

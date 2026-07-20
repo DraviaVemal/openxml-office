@@ -472,7 +472,7 @@ impl Default for FillStyle {
 
 /// Get Column Cell Input Combined for styling
 #[derive(Debug, Hash)]
-pub struct StyleSetting {
+pub struct CellStyleSetting {
     // num format
     pub number_format: NumberFormatValues,
     pub custom_number_format: Option<String>,
@@ -502,95 +502,95 @@ pub struct StyleSetting {
     pub(crate) protect: Option<()>,
 }
 
-impl StyleSetting {
-    pub fn set_number_format(mut self, number_format: NumberFormatValues) -> StyleSetting {
+impl CellStyleSetting {
+    pub fn set_number_format(mut self, number_format: NumberFormatValues) -> CellStyleSetting {
         self.number_format = number_format;
         self
     }
     pub fn set_custom_number_format(
         mut self,
         custom_number_format: Option<String>,
-    ) -> StyleSetting {
+    ) -> CellStyleSetting {
         self.custom_number_format = custom_number_format;
         self
     }
-    pub fn set_border_left(mut self, border_left: BorderSetting) -> StyleSetting {
+    pub fn set_border_left(mut self, border_left: BorderSetting) -> CellStyleSetting {
         self.border_left = border_left;
         self
     }
-    pub fn set_border_top(mut self, border_top: BorderSetting) -> StyleSetting {
+    pub fn set_border_top(mut self, border_top: BorderSetting) -> CellStyleSetting {
         self.border_top = border_top;
         self
     }
-    pub fn set_border_right(mut self, border_right: BorderSetting) -> StyleSetting {
+    pub fn set_border_right(mut self, border_right: BorderSetting) -> CellStyleSetting {
         self.border_right = border_right;
         self
     }
-    pub fn set_border_bottom(mut self, border_bottom: BorderSetting) -> StyleSetting {
+    pub fn set_border_bottom(mut self, border_bottom: BorderSetting) -> CellStyleSetting {
         self.border_bottom = border_bottom;
         self
     }
-    pub fn set_border_diagonal(mut self, border_diagonal: BorderSetting) -> StyleSetting {
+    pub fn set_border_diagonal(mut self, border_diagonal: BorderSetting) -> CellStyleSetting {
         self.border_diagonal = border_diagonal;
         self
     }
-    pub fn set_font_family(mut self, font_family: String) -> StyleSetting {
+    pub fn set_font_family(mut self, font_family: String) -> CellStyleSetting {
         self.font_family = font_family;
         self
     }
-    pub fn set_font_size(mut self, font_size: u8) -> StyleSetting {
+    pub fn set_font_size(mut self, font_size: u8) -> CellStyleSetting {
         self.font_size = font_size;
         self
     }
-    pub fn set_text_color(mut self, text_color: ColorSetting) -> StyleSetting {
+    pub fn set_text_color(mut self, text_color: ColorSetting) -> CellStyleSetting {
         self.text_color = text_color;
         self
     }
-    pub fn set_is_bold(mut self, is_bold: bool) -> StyleSetting {
+    pub fn set_is_bold(mut self, is_bold: bool) -> CellStyleSetting {
         self.is_bold = is_bold;
         self
     }
-    pub fn set_is_italic(mut self, is_italic: bool) -> StyleSetting {
+    pub fn set_is_italic(mut self, is_italic: bool) -> CellStyleSetting {
         self.is_italic = is_italic;
         self
     }
-    pub fn set_is_underline(mut self, is_underline: bool) -> StyleSetting {
+    pub fn set_is_underline(mut self, is_underline: bool) -> CellStyleSetting {
         self.is_underline = is_underline;
         self
     }
-    pub fn set_is_double_underline(mut self, is_double_underline: bool) -> StyleSetting {
+    pub fn set_is_double_underline(mut self, is_double_underline: bool) -> CellStyleSetting {
         self.is_double_underline = is_double_underline;
         self
     }
-    pub fn set_is_wrap_text(mut self, is_wrap_text: bool) -> StyleSetting {
+    pub fn set_is_wrap_text(mut self, is_wrap_text: bool) -> CellStyleSetting {
         self.is_wrap_text = is_wrap_text;
         self
     }
-    pub fn set_background_color(mut self, background_color: Option<String>) -> StyleSetting {
+    pub fn set_background_color(mut self, background_color: Option<String>) -> CellStyleSetting {
         self.background_color = background_color;
         self
     }
-    pub fn set_foreground_color(mut self, foreground_color: Option<String>) -> StyleSetting {
+    pub fn set_foreground_color(mut self, foreground_color: Option<String>) -> CellStyleSetting {
         self.foreground_color = foreground_color;
         self
     }
     pub fn set_horizontal_alignment(
         mut self,
         horizontal_alignment: HorizontalAlignmentValues,
-    ) -> StyleSetting {
+    ) -> CellStyleSetting {
         self.horizontal_alignment = horizontal_alignment;
         self
     }
     pub fn set_vertical_alignment(
         mut self,
         vertical_alignment: VerticalAlignmentValues,
-    ) -> StyleSetting {
+    ) -> CellStyleSetting {
         self.vertical_alignment = vertical_alignment;
         self
     }
 }
 
-impl Default for StyleSetting {
+impl Default for CellStyleSetting {
     fn default() -> Self {
         Self {
             // number format
