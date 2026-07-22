@@ -2,7 +2,7 @@ use crate::{
     element_dictionary::{Content, COMMON_TYPE_COLLECTION},
     files::OfficeDocument,
     global_2007::traits::{
-        XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
+        XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
     },
     utils,
 };
@@ -77,7 +77,6 @@ impl XmlDocumentPartInitializing for RelationsPart {
     }
 }
 
-/// ######################### Train implementation of XML Part - Only accessible within crate ##############
 impl RelationsPart {
     pub(crate) fn new(
         office_document: Weak<RefCell<OfficeDocument>>,
@@ -235,7 +234,11 @@ impl RelationsPart {
                     .try_borrow()
                     .context("Failed to borrow office document for part numbering")?
                     .get_next_part_number(&dir_path, content.default_name, content.extension);
-                format!("{}{}", content.default_name, next_number)
+                if content.is_unique == &true {
+                    content.default_name.to_string()
+                } else {
+                    format!("{}{}", content.default_name, next_number)
+                }
             };
             self.set_new_relationship_path_mut(content, file_path.clone(), Some(file_name.clone()))
                 .context("Setting New Part Relationship Failed.")?;

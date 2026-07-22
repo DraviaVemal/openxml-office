@@ -185,19 +185,10 @@ impl OfficeDocument {
 
     /// Save Current Document to final result
     pub(crate) fn save_as(&mut self, file_path: &str) -> AnyResult<String, AnyError> {
-        // TODO : Flush object automatically without user calling flush
-        // Save the live content update object to xml
-        // let keys = self
-        //     .xml_document_collection
-        //     .iter()
-        //     .map(|item| item.key().clone())
-        //     .collect::<Vec<String>>();
-        // for key_file_path in keys {
-        //     self.close_xml_document(&key_file_path)
-        //         .context(" Saving open object content failed")?;
-        // }
-        self.reorganize_parts()
-            .context("Reorganizing part numbering before save Failed")?;
+        // TODO : Reorganise the file order for more stable structure, mimic actual office document output and better diff for version control
+        // self.reorganize_parts()
+        //     .context("Reorganizing part numbering before save Failed")?;
+
         let file_content: Vec<u8> = self
             .save_object_into_archive()
             .context("Save Object Data into xml")?;

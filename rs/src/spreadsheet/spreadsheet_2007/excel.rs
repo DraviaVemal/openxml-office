@@ -6,7 +6,7 @@ use crate::{
     },
     log_elapsed,
     spreadsheet_2007::{
-        models::{StyleId, CellStyleSetting},
+        models::{CellStyleSetting, StyleId},
         parts::{WorkSheet, WorkbookPart},
     },
 };

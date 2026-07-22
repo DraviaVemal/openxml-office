@@ -1598,7 +1598,7 @@ impl WorkSheet {
     }
 
     fn get_sheet_file_name(
-        sheet_name: Option<String>,
+        user_sheet_name: Option<String>,
         office_document: &Weak<RefCell<OfficeDocument>>,
         sheet_collection: &Weak<RefCell<Vec<(String, String, bool)>>>,
         workbook_relationship_part: &Weak<RefCell<RelationsPart>>,
@@ -1606,7 +1606,7 @@ impl WorkSheet {
         let worksheet_content = EXCEL_TYPE_COLLECTION.get("worksheet").unwrap();
         if let Some(sheet_collection) = sheet_collection.upgrade() {
             if let Some(workbook_relationship_part) = workbook_relationship_part.upgrade() {
-                if let Some(sheet_name) = sheet_name.clone() {
+                if let Some(sheet_name) = user_sheet_name.clone() {
                     // If the Sheet name already exist get the path of sheet name
                     if let Some((_, rel_id, _)) = sheet_collection
                         .try_borrow()
@@ -1625,11 +1625,6 @@ impl WorkSheet {
                         ));
                     }
                 }
-                let display_number = sheet_collection
-                    .try_borrow()
-                    .context("Failed to pull Sheet Name Collection")?
-                    .len()
-                    + 1;
                 let relative_path = workbook_relationship_part
                     .try_borrow_mut()
                     .context("Failed to pull relationship connection")?
@@ -1646,35 +1641,34 @@ impl WorkSheet {
                             worksheet_content.extension,
                         )
                 } else {
-                    display_number
+                    sheet_collection
+                        .try_borrow()
+                        .context("Failed to pull Sheet Name Collection")?
+                        .len()
+                        + 1
                 };
-                let sheet_name = sheet_name.clone().unwrap_or(format!(
-                    "{}{}",
-                    worksheet_content.default_name, &display_number
-                ));
+                let sheet_name = format!("{}{}", worksheet_content.default_name, &file_number);
                 let relationship_id = workbook_relationship_part
                     .try_borrow_mut()
                     .context("Failed to Get Relationship Handle")?
                     .set_new_relationship_path_mut(
                         worksheet_content,
                         Some(file_path.clone()),
-                        Some(format!(
-                            "{}{}",
-                            worksheet_content.default_name, &file_number
-                        )),
+                        Some(sheet_name.clone()),
                     )
                     .context("Setting New Worksheet Relationship Failed.")?;
                 sheet_collection
                     .try_borrow_mut()
                     .context("Failed To pull Sheet Collection Handle")?
-                    .push((sheet_name.clone(), relationship_id, false));
+                    .push((
+                        user_sheet_name.clone().unwrap_or(sheet_name.clone()),
+                        relationship_id,
+                        false,
+                    ));
                 return Ok((
                     format!(
-                        "{}/{}{}.{}",
-                        file_path,
-                        worksheet_content.default_name,
-                        &file_number,
-                        worksheet_content.extension
+                        "{}/{}.{}",
+                        file_path, &sheet_name, worksheet_content.extension
                     ),
                     sheet_name,
                 ));

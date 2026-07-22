@@ -29,7 +29,7 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct StylePart {
+pub(crate) struct StylePart {
     office_document: Weak<RefCell<OfficeDocument>>,
     xml_document: Weak<RefCell<XmlDocument>>,
     file_path: String,
