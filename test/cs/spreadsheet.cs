@@ -42,7 +42,7 @@ namespace openxmloffice.tests
             PrivacyProperties.ShareOsDetails = false;
             PrivacyProperties.SharePackageRelatedDetails = false;
             PrivacyProperties.ShareUsageCounterDetails = false;
-            excel.AddSheet();
+            using Worksheet _ = excel.AddSheet();
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace openxmloffice.tests
         [TestMethod]
         public void AddSheet()
         {
-            Worksheet worksheet = excel.AddSheet("TestSheet1");
+            using Worksheet worksheet = excel.AddSheet("TestSheet1");
             Assert.IsNotNull(worksheet);
         }
 
@@ -81,7 +81,7 @@ namespace openxmloffice.tests
         [TestMethod]
         public void AddSecondSheet()
         {
-            Worksheet worksheet = excel.AddSheet("TestSheet2");
+            using Worksheet worksheet = excel.AddSheet("TestSheet2");
             Assert.IsNotNull(worksheet);
         }
 
@@ -91,7 +91,7 @@ namespace openxmloffice.tests
         [TestMethod]
         public void RenameBySheetId()
         {
-            Worksheet worksheet = excel.AddSheet("TestSheet3");
+            using Worksheet worksheet = excel.AddSheet("TestSheet3");
             Assert.IsNotNull(worksheet);
             Assert.IsTrue(excel.RenameSheet("TestSheet3", "RenameTestSheet3"));
         }
@@ -102,7 +102,7 @@ namespace openxmloffice.tests
         [TestMethod]
         public void RenameSheet()
         {
-            Worksheet worksheet = excel.AddSheet("RenamedSheet11");
+            using Worksheet worksheet = excel.AddSheet("RenamedSheet11");
             Assert.IsNotNull(worksheet);
             Assert.IsTrue(excel.RenameSheet("RenamedSheet11", "RenameSheet11"));
         }
