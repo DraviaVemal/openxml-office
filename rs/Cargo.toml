@@ -23,6 +23,7 @@ serde.workspace = true
 phf.workspace = true
 tokio.workspace = true
 dashmap.workspace = true
+log.workspace = true
 draviavemal-xml_rs.workspace = true
 
 [dev-dependencies]

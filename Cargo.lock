@@ -778,6 +778,7 @@ dependencies = [
  "dashmap",
  "draviavemal-xml_rs",
  "flate2",
+ "log",
  "phf",
  "quick-xml",
  "serde",
@@ -1693,6 +1694,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "draviavemal-openxml_office",
+ "log",
 ]
 
 [[package]]
