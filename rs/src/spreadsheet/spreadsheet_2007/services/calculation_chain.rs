@@ -21,7 +21,7 @@ pub(crate) struct CalculationChain {
 }
 
 #[derive(Debug)]
-pub struct CalculationChainPart {
+pub(crate) struct CalculationChainPart {
     office_document: Weak<RefCell<OfficeDocument>>,
     parent_relationship_part: Weak<RefCell<RelationsPart>>,
     calculation_collection: Vec<CalculationChain>,

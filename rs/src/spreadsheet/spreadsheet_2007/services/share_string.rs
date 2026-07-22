@@ -10,7 +10,7 @@ use draviavemal_xml_rs::{XmlAttribute, XmlDocument, XmlElementContentType};
 use std::{cell::RefCell, collections::HashSet, rc::Weak};
 
 #[derive(Debug)]
-pub struct ShareStringPart {
+pub(crate) struct ShareStringPart {
     office_document: Weak<RefCell<OfficeDocument>>,
     parent_relationship_part: Weak<RefCell<RelationsPart>>,
     xml_document: Weak<RefCell<XmlDocument>>,

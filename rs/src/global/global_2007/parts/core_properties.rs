@@ -15,7 +15,7 @@ use draviavemal_xml_rs::{XmlDeserializer, XmlDocument, XmlElementContentType};
 use std::{cell::RefCell, rc::Weak};
 
 #[derive(Debug)]
-pub struct CorePropertiesPart {
+pub(crate) struct CorePropertiesPart {
     office_document: Weak<RefCell<OfficeDocument>>,
     xml_document: Weak<RefCell<XmlDocument>>,
     file_path: String,

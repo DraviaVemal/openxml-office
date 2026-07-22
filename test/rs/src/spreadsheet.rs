@@ -5,7 +5,7 @@ mod spreadsheet_test {
         global_2007::traits::XmlDocumentPartFlush,
         log_elapsed,
         spreadsheet_2007::models::{
-            CellProperty, ExcelPictureSetting, ReferenceRange, CellStyleSetting,
+            CellProperty, CellStyleSetting, ExcelPictureSetting, ReferenceRange,
         },
     };
     use std::fs::{create_dir_all, exists};
@@ -45,6 +45,7 @@ mod spreadsheet_test {
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default(),
         )
         .expect("Create New File Failed");
+
         let mut test = file
             .add_sheet_mut(None)
             .expect("Failed to add static Sheet");
@@ -56,6 +57,13 @@ mod spreadsheet_test {
             vec![CellProperty::default().set_value(Some("Test".to_string()))],
         )
         .expect("Failed to set value");
+        test.set_cell_index_value_mut(
+            3,
+            2,
+            vec![CellProperty::default().set_value(Some("Test".to_string()))],
+        )
+        .expect("Failed to set value");
+
         file.add_sheet_mut(Some("bust".to_string()))
             .expect("Failed to add static Sheet");
         file.add_sheet_mut(None)

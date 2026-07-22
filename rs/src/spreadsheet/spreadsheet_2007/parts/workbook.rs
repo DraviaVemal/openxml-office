@@ -30,7 +30,7 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct WorkbookPart {
+pub(crate) struct WorkbookPart {
     office_document: Weak<RefCell<OfficeDocument>>,
     xml_document: Weak<RefCell<XmlDocument>>,
     file_path: String,

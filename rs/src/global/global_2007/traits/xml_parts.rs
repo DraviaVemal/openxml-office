@@ -61,6 +61,7 @@ pub(crate) trait XmlDocumentPartInitializing:
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>;
 }
 
+// ######################### Train implementation of XML Part - Only accessible within crate ##############
 #[warn(drop_bounds)]
 pub(crate) trait XmlDocumentPart:
     XmlDocumentPartInitializing + XmlDocumentPartClose
