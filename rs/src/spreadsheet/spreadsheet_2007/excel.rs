@@ -12,7 +12,6 @@ use crate::{
 };
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use std::{cell::RefCell, rc::Rc};
-
 #[derive(Debug)]
 pub struct Excel {
     office_document: Rc<RefCell<OfficeDocument>>,

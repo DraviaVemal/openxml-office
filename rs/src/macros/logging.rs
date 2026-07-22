@@ -1,3 +1,4 @@
+
 #[macro_export]
 macro_rules! log_elapsed {
     ($func_name:expr,$msg:expr) => {{
@@ -7,7 +8,7 @@ macro_rules! log_elapsed {
             let result = $func_name();
             let elapsed = start.elapsed();
             if elapsed.as_secs() > 2 {
-                println!("Function {} : Elapsed :{:?}", $msg, elapsed);
+                log::debug!("Function {} : Elapsed :{:?}", $msg, elapsed);
             }
             result
         } else {
@@ -21,7 +22,7 @@ macro_rules! log_elapsed {
             let fn_return = $func_name;
             let elapsed = start.elapsed();
             if elapsed.as_secs() > 2 {
-                println!("Function {}: Elapsed {:?}", stringify!($func_name), elapsed);
+                log::debug!("Function {}: Elapsed {:?}", stringify!($func_name), elapsed);
             }
             fn_return
         } else {

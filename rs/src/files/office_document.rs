@@ -185,10 +185,14 @@ impl OfficeDocument {
 
     /// Save Current Document to final result
     pub(crate) fn save_as(&mut self, file_path: &str) -> AnyResult<String, AnyError> {
+        if self.xml_document_collection.len() > 0 {
+            return Err(anyhow!(
+                "Please close all the open document before saving the file"
+            ));
+        }
         // TODO : Reorganise the file order for more stable structure, mimic actual office document output and better diff for version control
         // self.reorganize_parts()
         //     .context("Reorganizing part numbering before save Failed")?;
-
         let file_content: Vec<u8> = self
             .save_object_into_archive()
             .context("Save Object Data into xml")?;

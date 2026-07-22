@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 chrono.workspace = true
 draviavemal-openxml_office.workspace = true
+log.workspace = true
