@@ -46,23 +46,25 @@ mod spreadsheet_test {
         )
         .expect("Create New File Failed");
 
-        let mut test = file
-            .add_sheet_mut(None)
-            .expect("Failed to add static Sheet");
-        file.add_sheet_mut(Some("Test".to_string()))
-            .expect("Failed to add static Sheet");
-        test.set_cell_index_value_mut(
-            1,
-            1,
-            vec![CellProperty::default().set_value(Some("Test".to_string()))],
-        )
-        .expect("Failed to set value");
-        test.set_cell_index_value_mut(
-            3,
-            2,
-            vec![CellProperty::default().set_value(Some("Test".to_string()))],
-        )
-        .expect("Failed to set value");
+        {
+            let mut test = file
+                .add_sheet_mut(None)
+                .expect("Failed to add static Sheet");
+            file.add_sheet_mut(Some("Test".to_string()))
+                .expect("Failed to add static Sheet");
+            test.set_cell_index_value_mut(
+                1,
+                1,
+                vec![CellProperty::default().set_value(Some("Test".to_string()))],
+            )
+            .expect("Failed to set value");
+            test.set_cell_index_value_mut(
+                3,
+                2,
+                vec![CellProperty::default().set_value(Some("Test".to_string()))],
+            )
+            .expect("Failed to set value");
+        }
 
         file.add_sheet_mut(Some("bust".to_string()))
             .expect("Failed to add static Sheet");
@@ -346,10 +348,11 @@ mod spreadsheet_test {
             },
         )
         .expect("Open Existing File Failed");
-        let mut col_prop = file
-            .add_sheet_mut(Some("col_property".to_string()))
-            .expect("failed to add Sheet");
-        col_prop
+        {
+            let mut col_prop = file
+                .add_sheet_mut(Some("col_property".to_string()))
+                .expect("failed to add Sheet");
+            col_prop
         .set_column_index_properties_mut(
             &1,
             Some(
@@ -358,7 +361,7 @@ mod spreadsheet_test {
             ),
         )
         .expect("Failed to Set width Column prop");
-        col_prop
+            col_prop
         .set_column_index_properties_mut(
             &3,
             Some(
@@ -367,7 +370,7 @@ mod spreadsheet_test {
             ),
         )
         .expect("Failed to Set hidden prop");
-        col_prop
+            col_prop
         .set_column_index_properties_mut(
             &5,
             Some(
@@ -376,33 +379,33 @@ mod spreadsheet_test {
             ),
         )
         .expect("Failed to Set best fit Column prop");
-        col_prop
-            .set_cell_index_value_mut(
-                2,
-                1,
-                vec![
-                    CellProperty::default().set_value(Some("Cell Value 1".to_string())),
-                    CellProperty::default().set_value(Some("Cell Value 2".to_string())),
-                    CellProperty::default().set_value(Some("Cell Value 3".to_string())),
-                    CellProperty::default().set_value(Some("Cell Value 4".to_string())),
-                    CellProperty::default().set_value(Some("Cell Value 5".to_string())),
-                    CellProperty::default().set_value(Some("Cell Value 6".to_string())),
-                    CellProperty::default().set_value(Some("Cell Value 7".to_string())),
-                ],
-            )
-            .expect("Failed to set Column Value");
-        col_prop
-            .set_cell_index_value_mut(
-                4,
-                1,
-                vec![
-                    CellProperty::default().set_value(Some("1".to_string())),
-                    CellProperty::default().set_value(Some("2".to_string())),
-                    CellProperty::default().set_formula(Some("=SUM(A4:B4)".to_string())),
-                ],
-            )
-            .expect("Failed to set Column Value");
-        col_prop.flush().expect("Failed to write Data");
+            col_prop
+                .set_cell_index_value_mut(
+                    2,
+                    1,
+                    vec![
+                        CellProperty::default().set_value(Some("Cell Value 1".to_string())),
+                        CellProperty::default().set_value(Some("Cell Value 2".to_string())),
+                        CellProperty::default().set_value(Some("Cell Value 3".to_string())),
+                        CellProperty::default().set_value(Some("Cell Value 4".to_string())),
+                        CellProperty::default().set_value(Some("Cell Value 5".to_string())),
+                        CellProperty::default().set_value(Some("Cell Value 6".to_string())),
+                        CellProperty::default().set_value(Some("Cell Value 7".to_string())),
+                    ],
+                )
+                .expect("Failed to set Column Value");
+            col_prop
+                .set_cell_index_value_mut(
+                    4,
+                    1,
+                    vec![
+                        CellProperty::default().set_value(Some("1".to_string())),
+                        CellProperty::default().set_value(Some("2".to_string())),
+                        CellProperty::default().set_formula(Some("=SUM(A4:B4)".to_string())),
+                    ],
+                )
+                .expect("Failed to set Column Value");
+        }
         file.save_as(&get_save_file(None))
             .expect("Save File Failed");
         assert_eq!(true, true);

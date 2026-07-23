@@ -146,7 +146,7 @@ pub struct WorkSheet {
     merge_cells: Option<Vec<ReferenceRange>>,
     hyperlinks: Option<Vec<HyperLinks>>,
     file_path: String,
-    sheet_name: String,
+    display_sheet_name: String,
     drawing_part: Rc<RefCell<DrawingPart>>,
 }
 
@@ -268,10 +268,10 @@ impl WorkSheet {
         sheet_collection: Weak<RefCell<Vec<(String, String, bool)>>>,
         workbook_relationship_part: Weak<RefCell<RelationsPart>>,
         common_service: Weak<RefCell<CommonServices>>,
-        sheet_name: Option<String>,
+        display_sheet_name: Option<String>,
     ) -> AnyResult<WorkSheet, AnyError> {
-        let (file_path, sheet_name) = Self::get_sheet_file_name(
-            sheet_name,
+        let (file_path, display_sheet_name) = Self::get_sheet_file_name(
+            display_sheet_name,
             &office_document,
             &sheet_collection,
             &workbook_relationship_part,
@@ -319,7 +319,7 @@ impl WorkSheet {
             merge_cells,
             hyperlinks,
             file_path: file_path.to_string(),
-            sheet_name,
+            display_sheet_name,
             drawing_part,
         })
     }
@@ -1598,7 +1598,7 @@ impl WorkSheet {
     }
 
     fn get_sheet_file_name(
-        user_sheet_name: Option<String>,
+        display_sheet_name: Option<String>,
         office_document: &Weak<RefCell<OfficeDocument>>,
         sheet_collection: &Weak<RefCell<Vec<(String, String, bool)>>>,
         workbook_relationship_part: &Weak<RefCell<RelationsPart>>,
@@ -1606,7 +1606,7 @@ impl WorkSheet {
         let worksheet_content = EXCEL_TYPE_COLLECTION.get("worksheet").unwrap();
         if let Some(sheet_collection) = sheet_collection.upgrade() {
             if let Some(workbook_relationship_part) = workbook_relationship_part.upgrade() {
-                if let Some(sheet_name) = user_sheet_name.clone() {
+                if let Some(sheet_name) = display_sheet_name.clone() {
                     // If the Sheet name already exist get the path of sheet name
                     if let Some((_, rel_id, _)) = sheet_collection
                         .try_borrow()
@@ -1661,7 +1661,7 @@ impl WorkSheet {
                     .try_borrow_mut()
                     .context("Failed To pull Sheet Collection Handle")?
                     .push((
-                        user_sheet_name.clone().unwrap_or(sheet_name.clone()),
+                        display_sheet_name.clone().unwrap_or(sheet_name.clone()),
                         relationship_id,
                         false,
                     ));
@@ -1670,7 +1670,7 @@ impl WorkSheet {
                         "{}/{}.{}",
                         file_path, &sheet_name, worksheet_content.extension
                     ),
-                    sheet_name,
+                    display_sheet_name.clone().unwrap_or(sheet_name.clone()),
                 ));
             }
         }
@@ -1929,19 +1929,21 @@ impl WorkSheet {
                     // Check and add Calculation entry
                     if let Some(common_service) = self.common_service.upgrade() {
                         if let Some(sheet_collection) = self.sheet_collection.upgrade() {
+                            println!("Sheet name: {}", self.display_sheet_name);
+                            let sheet_id = (sheet_collection
+                                .borrow()
+                                .iter()
+                                .position(|(sheet_name, _, _)| {
+                                    *sheet_name == self.display_sheet_name
+                                })
+                                .context("Sheet Not Found To ID")?
+                                + 1) as u32;
                             common_service
                                 .borrow_mut()
                                 .add_replace_calculation_chain(CalculationChain {
                                     cell_ref: ConverterUtil::get_cell_ref(row_index, col_index)
                                         .context("Failed to convert Cell Ref")?,
-                                    sheet_id: (sheet_collection
-                                        .borrow()
-                                        .iter()
-                                        .position(|(sheet_name, _, _)| {
-                                            *sheet_name == self.sheet_name
-                                        })
-                                        .context("Sheet Not Found To ID")?
-                                        + 1) as u32,
+                                    sheet_id: sheet_id,
                                     level_calcualtion: None,
                                     formula_type: None,
                                     share_formula: None,
@@ -2099,7 +2101,7 @@ impl WorkSheet {
             sheet_collection
                 .try_borrow_mut()
                 .context("Failed to pull Sheets Collection")?
-                .retain(|item| item.0 != self.sheet_name);
+                .retain(|item| item.0 != self.display_sheet_name);
         }
         if let Some(workbook_relationship_part) = self.workbook_relationship_part.upgrade() {
             workbook_relationship_part
