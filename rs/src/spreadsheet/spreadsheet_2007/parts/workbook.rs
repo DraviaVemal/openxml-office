@@ -37,7 +37,7 @@ pub(crate) struct WorkbookPart {
     common_service: Rc<RefCell<CommonServices>>,
     workbook_relationship_part: Rc<RefCell<RelationsPart>>,
     theme_part: ThemePart,
-    /// This contain the sheet name, relationId, hide sheet
+    /// This contain the (display sheet name, relationId, hide sheet)
     sheet_collection: Rc<RefCell<Vec<(String, String, bool)>>>,
     workbook_view: Option<WorkbookView>,
 }
