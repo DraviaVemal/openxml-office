@@ -1,13 +1,15 @@
 package spreadsheet_2007
 
 /*
-#cgo LDFLAGS: -L../../lib -ldraviavemal_openxml_office_ffi
-#include <../../lib/headers.h>
+#cgo CFLAGS: -I${SRCDIR}/../../lib
+#cgo linux LDFLAGS: -L${SRCDIR}/../../lib -ldraviavemal_openxml_office_ffi -llzma -lbz2 -lgcc_s -lutil -lrt -lpthread -lm -ldl -lc
+#cgo darwin LDFLAGS: -L${SRCDIR}/../../lib -ldraviavemal_openxml_office_ffi -llzma -lbz2 -lpthread -lm -ldl -framework CoreFoundation -framework Security
+#cgo windows LDFLAGS: -L${SRCDIR}/../../lib -ldraviavemal_openxml_office_ffi -llzma -lbz2 -lws2_32 -luserenv -lbcrypt -lntdll
+#include <headers.h>
 */
 import "C"
 
 import (
-	ExcelPropertiesModel "draviavemal_openxml_office/openxml_office_fbs/spreadsheet_2007"
 	"errors"
 	"unsafe"
 
@@ -15,36 +17,96 @@ import (
 )
 
 type Excel struct {
-	excel_ptr unsafe.Pointer
+	excelPtr uint64
 }
 
-func NewExcel(fileName string) (Excel, error) {
+func NewExcel() (Excel, error) {
 	builder := flatbuffers.NewBuilder(0)
-	ExcelPropertiesModel.ExcelPropertiesModelStart(builder)
-	ExcelPropertiesModel.ExcelPropertiesModelAddIsInMemory(builder, true)
-	ExcelPropertiesModel.ExcelPropertiesModelAddIsEditable(builder, true)
-	excelPropertiesModel := ExcelPropertiesModel.ExcelPropertiesModelEnd(builder)
-	builder.Finish(excelPropertiesModel)
-	buffer := builder.Bytes[builder.Head():]
-	bufferPtr := (*C.uint8_t)(unsafe.Pointer(&buffer[0]))
-	bufferSize := C.uintptr_t(len(buffer))
-	var outExcel unsafe.Pointer
+
+	builder.StartObject(1)
+	builder.PrependBoolSlot(0, true, false)
+	settingsOffset := builder.EndObject()
+
+	builder.StartObject(2)
+	builder.PrependUOffsetTSlot(1, settingsOffset, 0)
+	createOffset := builder.EndObject()
+	builder.Finish(createOffset)
+
+	buffer := builder.FinishedBytes()
+
+	var outBuffer *C.uint8_t
+	var outBufferSize C.uintptr_t
 	var outError *C.char
-	code := C.excel_create(C.CString(fileName), bufferPtr, bufferSize, &outExcel, &outError)
+
+	code := C.excel_create(
+		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
+		C.uintptr_t(len(buffer)),
+		&outBuffer,
+		&outBufferSize,
+		&outError,
+	)
 	if code != 0 {
-		if outError != nil {
-			return Excel{}, errors.New(C.GoString(outError))
-		} else {
-			return Excel{}, errors.New(C.GoString(outError))
-		}
+		return Excel{}, ffiError(outError)
 	}
-	return Excel{
-		excel_ptr: outExcel,
-	}, nil
+
+	return Excel{excelPtr: readExcelPtr(outBuffer, outBufferSize)}, nil
 }
 
-func (excel *Excel) SaveAs(fileName string) {
+func (excel *Excel) SaveAs(fileName string) error {
 	if excel == nil {
-		panic("attempted to use a nil Excel object")
+		return errors.New("attempted to use a nil Excel object")
 	}
+
+	builder := flatbuffers.NewBuilder(0)
+	fileNameOffset := builder.CreateString(fileName)
+
+	builder.StartObject(2)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
+	builder.PrependUOffsetTSlot(1, fileNameOffset, 0)
+	saveOffset := builder.EndObject()
+	builder.Finish(saveOffset)
+
+	buffer := builder.FinishedBytes()
+
+	var outBuffer *C.uint8_t
+	var outBufferSize C.uintptr_t
+	var outError *C.char
+
+	code := C.excel_save_as(
+		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
+		C.uintptr_t(len(buffer)),
+		&outBuffer,
+		&outBufferSize,
+		&outError,
+	)
+	if code != 0 {
+		return ffiError(outError)
+	}
+	if outBuffer != nil {
+		C.free_buffer(outBuffer, outBufferSize)
+	}
+	return nil
+}
+
+func readExcelPtr(outBuffer *C.uint8_t, outBufferSize C.uintptr_t) uint64 {
+	if outBuffer == nil {
+		return 0
+	}
+	data := C.GoBytes(unsafe.Pointer(outBuffer), C.int(outBufferSize))
+	C.free_buffer(outBuffer, outBufferSize)
+
+	rootOffset := flatbuffers.GetUOffsetT(data)
+	table := &flatbuffers.Table{Bytes: data, Pos: rootOffset}
+	if fieldOffset := flatbuffers.UOffsetT(table.Offset(4)); fieldOffset != 0 {
+		return table.GetUint64(fieldOffset + table.Pos)
+	}
+	return 0
+}
+
+// ffiError converts a C error string returned by the FFI into a Go error.
+func ffiError(outError *C.char) error {
+	if outError != nil {
+		return errors.New(C.GoString(outError))
+	}
+	return errors.New("openxml-office ffi: unknown error")
 }

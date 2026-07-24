@@ -66,8 +66,14 @@ rm -rf go/lib && mkdir -p go/lib
 # Clear build history
 cargo clean
 
-# Windows
+# Windows GNU
 cargo build $release_flag --target x86_64-pc-windows-gnu
+
+# Optional Windows MSVC
+# Enable with BUILD_WINDOWS_MSVC=1 and a Windows MSVC toolchain available.
+if [ "${BUILD_WINDOWS_MSVC:-}" = "1" ]; then
+  cargo build $release_flag --target x86_64-pc-windows-msvc
+fi
 
 # Linux
 cargo build $release_flag --target x86_64-unknown-linux-gnu
@@ -89,9 +95,14 @@ cp $target_dir/methods.h python/lib/methods.h
 cp $win_binary_dir/draviavemal_openxml_office_ffi.dll java/draviavemal_openxml_office/src/main/resources/lib/draviavemal_openxml_office_ffi.dll
 cp $linux_binary_dir/libdraviavemal_openxml_office_ffi.so java/draviavemal_openxml_office/src/main/resources/lib/libdraviavemal_openxml_office_ffi.so
 
-# Copy Result binary to Go targets
-cp $win_binary_dir/draviavemal_openxml_office_ffi.dll go/lib/draviavemal_openxml_office_ffi.dll
-cp $linux_binary_dir/libdraviavemal_openxml_office_ffi.so go/lib/libdraviavemal_openxml_office_ffi.so
+# Copy Result binary to Go target (static lib -> self-contained consumer binary)
+# Local dev links the freshly built library directly for live changes.
+# Release consumers instead pull the tagged .a or .lib via `go generate` (tools/fetchlib).
+cp $linux_binary_dir/libdraviavemal_openxml_office_ffi.a go/lib/libdraviavemal_openxml_office_ffi.a
+cp $win_binary_dir/libdraviavemal_openxml_office_ffi.a go/lib/libdraviavemal_openxml_office_ffi.a 2>/dev/null || true
+if [ -f "$target_dir/x86_64-pc-windows-msvc/debug/draviavemal_openxml_office_ffi.lib" ]; then
+  cp "$target_dir/x86_64-pc-windows-msvc/debug/draviavemal_openxml_office_ffi.lib" go/lib/draviavemal_openxml_office_ffi.lib
+fi
 cp $target_dir/headers.h go/lib/headers.h
 
 # Build wrapper library using link files
@@ -114,6 +125,13 @@ cd python
 python3 setup.py bdist_wheel
 
 cd ..
+
+# Go Test (runs against the locally built static lib in go/lib)
+cd test/go
+
+CGO_ENABLED=1 go test ./...
+
+cd ../..
 
 # cd python
 
