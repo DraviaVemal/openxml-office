@@ -205,3 +205,66 @@ table excel_save_as_return {
 }
 
 // excel_save_as - End
+
+// excel_set_active_sheet - Start
+
+table excel_set_active_sheet {
+    excel_ptr: uint64;
+    sheet_name: string;
+}
+
+// excel_set_active_sheet - End
+
+// excel_set_visibility - Start
+
+table excel_set_visibility {
+    excel_ptr: uint64;
+    is_visible: bool;
+}
+
+// excel_set_visibility - End
+
+// excel_minimize_workbook - Start
+
+table excel_minimize_workbook {
+    excel_ptr: uint64;
+    is_minimized: bool;
+}
+
+// excel_minimize_workbook - End
+
+// excel_hide_sheet_tabs - Start
+
+table excel_hide_sheet_tabs {
+    excel_ptr: uint64;
+    hide_tab: bool;
+}
+
+// excel_hide_sheet_tabs - End
+
+// excel_hide_vertical_scroll - Start
+
+table excel_hide_vertical_scroll {
+    excel_ptr: uint64;
+    hide_vertical_scroll: bool;
+}
+
+// excel_hide_vertical_scroll - End
+
+// excel_hide_horizontal_scroll - Start
+
+table excel_hide_horizontal_scroll {
+    excel_ptr: uint64;
+    hide_horizontal_scroll: bool;
+}
+
+// excel_hide_horizontal_scroll - End
+
+// excel_hide_sheet - Start
+
+table excel_hide_sheet {
+    excel_ptr: uint64;
+    sheet_name: string;
+}
+
+// excel_hide_sheet - End

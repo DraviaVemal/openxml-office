@@ -84,6 +84,55 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             out IntPtr error_msg
         );
 
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_set_active_sheet", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_excel_set_active_sheet(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr error_msg
+        );
+
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_set_visibility", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_excel_set_visibility(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr error_msg
+        );
+
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_minimize_workbook", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_excel_minimize_workbook(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr error_msg
+        );
+
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_sheet_tabs", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_excel_hide_sheet_tabs(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr error_msg
+        );
+
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_vertical_scroll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_excel_hide_vertical_scroll(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr error_msg
+        );
+
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_horizontal_scroll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_excel_hide_horizontal_scroll(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr error_msg
+        );
+
+        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_sheet", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_excel_hide_sheet(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr error_msg
+        );
+
         /// <summary>
         /// Create New file in the system
         /// Read Privacy Details document at https://openxml-office.draviavemal.com/privacy-policy
@@ -261,6 +310,85 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             Offset<excel_save_as> saveAsOffset = excel_save_as.Createexcel_save_as(builder, ffiExcelPtr, filePathOffset);
             builder.Finish(saveAsOffset.Value);
             FfiInterop.InvokeBufferFfi(ffi_excel_save_as, builder);
+        }
+
+        /// <summary>
+        /// Set the active sheet that opens by default when the workbook is opened.
+        /// </summary>
+        public void SetActiveSheet(string sheetName)
+        {
+            FlatBufferBuilder builder = new(256);
+            StringOffset sheetNameOffset = builder.CreateString(sheetName);
+            Offset<excel_set_active_sheet> offset = excel_set_active_sheet.Createexcel_set_active_sheet(builder, ffiExcelPtr, sheetNameOffset);
+            builder.Finish(offset.Value);
+            FfiInterop.InvokeVoidFfi(ffi_excel_set_active_sheet, builder);
+        }
+
+        /// <summary>
+        /// Set the visibility of the workbook window.
+        /// </summary>
+        public void SetVisibility(bool isVisible)
+        {
+            FlatBufferBuilder builder = new(256);
+            Offset<excel_set_visibility> offset = excel_set_visibility.Createexcel_set_visibility(builder, ffiExcelPtr, isVisible);
+            builder.Finish(offset.Value);
+            FfiInterop.InvokeVoidFfi(ffi_excel_set_visibility, builder);
+        }
+
+        /// <summary>
+        /// Minimize or restore the workbook window.
+        /// </summary>
+        public void MinimizeWorkbook(bool isMinimized)
+        {
+            FlatBufferBuilder builder = new(256);
+            Offset<excel_minimize_workbook> offset = excel_minimize_workbook.Createexcel_minimize_workbook(builder, ffiExcelPtr, isMinimized);
+            builder.Finish(offset.Value);
+            FfiInterop.InvokeVoidFfi(ffi_excel_minimize_workbook, builder);
+        }
+
+        /// <summary>
+        /// Show or hide the sheet tab bar.
+        /// </summary>
+        public void HideSheetTabs(bool hideTab)
+        {
+            FlatBufferBuilder builder = new(256);
+            Offset<excel_hide_sheet_tabs> offset = excel_hide_sheet_tabs.Createexcel_hide_sheet_tabs(builder, ffiExcelPtr, hideTab);
+            builder.Finish(offset.Value);
+            FfiInterop.InvokeVoidFfi(ffi_excel_hide_sheet_tabs, builder);
+        }
+
+        /// <summary>
+        /// Show or hide the vertical scroll bar.
+        /// </summary>
+        public void HideVerticalScroll(bool hide)
+        {
+            FlatBufferBuilder builder = new(256);
+            Offset<excel_hide_vertical_scroll> offset = excel_hide_vertical_scroll.Createexcel_hide_vertical_scroll(builder, ffiExcelPtr, hide);
+            builder.Finish(offset.Value);
+            FfiInterop.InvokeVoidFfi(ffi_excel_hide_vertical_scroll, builder);
+        }
+
+        /// <summary>
+        /// Show or hide the horizontal scroll bar.
+        /// </summary>
+        public void HideHorizontalScroll(bool hide)
+        {
+            FlatBufferBuilder builder = new(256);
+            Offset<excel_hide_horizontal_scroll> offset = excel_hide_horizontal_scroll.Createexcel_hide_horizontal_scroll(builder, ffiExcelPtr, hide);
+            builder.Finish(offset.Value);
+            FfiInterop.InvokeVoidFfi(ffi_excel_hide_horizontal_scroll, builder);
+        }
+
+        /// <summary>
+        /// Hide a specific sheet in the workbook.
+        /// </summary>
+        public void HideSheet(string sheetName)
+        {
+            FlatBufferBuilder builder = new(256);
+            StringOffset sheetNameOffset = builder.CreateString(sheetName);
+            Offset<excel_hide_sheet> offset = excel_hide_sheet.Createexcel_hide_sheet(builder, ffiExcelPtr, sheetNameOffset);
+            builder.Finish(offset.Value);
+            FfiInterop.InvokeVoidFfi(ffi_excel_hide_sheet, builder);
         }
     }
 }

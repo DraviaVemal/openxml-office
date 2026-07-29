@@ -6,7 +6,9 @@ use crate::{
         excel_get_style_id_return, excel_get_style_id_returnArgs, excel_list_sheet,
         excel_list_sheet_return, excel_list_sheet_returnArgs, excel_rename_sheet, excel_save_as,
         excel_save_as_return, excel_save_as_returnArgs, horizontal_alignment_values,
-        number_format_values, vertical_alignment_values,
+        number_format_values, vertical_alignment_values, excel_set_active_sheet,
+        excel_set_visibility, excel_minimize_workbook, excel_hide_sheet_tabs,
+        excel_hide_vertical_scroll, excel_hide_horizontal_scroll, excel_hide_sheet,
     },
     root_from_raw, set_error, write_buffer, StatusCode,
 };
@@ -482,5 +484,152 @@ pub extern "C" fn excel_save_as(
             StatusCode::Success as i8
         }
         Err(err) => unsafe { set_error(out_error, &err, StatusCode::IoError) },
+    }
+}
+
+#[no_mangle]
+/// Set the active sheet that opens by default when the workbook is opened
+pub extern "C" fn excel_set_active_sheet(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<excel_set_active_sheet>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let excel_ptr = fbs.excel_ptr() as *mut Excel;
+    let mut excel = unsafe { ManuallyDrop::new(Box::from_raw(excel_ptr)) };
+    match excel.set_active_sheet_mut(fbs.sheet_name().map(|s| s.to_string()).unwrap_or_default()) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::IoError) },
+    }
+}
+
+#[no_mangle]
+/// Set the visibility of the workbook window
+pub extern "C" fn excel_set_visibility(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<excel_set_visibility>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let excel_ptr = fbs.excel_ptr() as *mut Excel;
+    let mut excel = unsafe { ManuallyDrop::new(Box::from_raw(excel_ptr)) };
+    match excel.set_visibility_mut(fbs.is_visible()) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::IoError) },
+    }
+}
+
+#[no_mangle]
+/// Minimize or restore the workbook window
+pub extern "C" fn excel_minimize_workbook(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<excel_minimize_workbook>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let excel_ptr = fbs.excel_ptr() as *mut Excel;
+    let mut excel = unsafe { ManuallyDrop::new(Box::from_raw(excel_ptr)) };
+    match excel.minimize_workbook_mut(fbs.is_minimized()) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::IoError) },
+    }
+}
+
+#[no_mangle]
+/// Show or hide the sheet tab bar
+pub extern "C" fn excel_hide_sheet_tabs(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<excel_hide_sheet_tabs>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let excel_ptr = fbs.excel_ptr() as *mut Excel;
+    let mut excel = unsafe { ManuallyDrop::new(Box::from_raw(excel_ptr)) };
+    match excel.hide_sheet_tabs_mut(fbs.hide_tab()) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::IoError) },
+    }
+}
+
+#[no_mangle]
+/// Show or hide the vertical scroll bar
+pub extern "C" fn excel_hide_vertical_scroll(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<excel_hide_vertical_scroll>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let excel_ptr = fbs.excel_ptr() as *mut Excel;
+    let mut excel = unsafe { ManuallyDrop::new(Box::from_raw(excel_ptr)) };
+    match excel.hide_vertical_scroll_mut(fbs.hide_vertical_scroll()) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::IoError) },
+    }
+}
+
+#[no_mangle]
+/// Show or hide the horizontal scroll bar
+pub extern "C" fn excel_hide_horizontal_scroll(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<excel_hide_horizontal_scroll>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let excel_ptr = fbs.excel_ptr() as *mut Excel;
+    let mut excel = unsafe { ManuallyDrop::new(Box::from_raw(excel_ptr)) };
+    match excel.hide_horizontal_scroll_mut(fbs.hide_horizontal_scroll()) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::IoError) },
+    }
+}
+
+#[no_mangle]
+/// Hide a specific sheet in the workbook
+pub extern "C" fn excel_hide_sheet(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<excel_hide_sheet>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let excel_ptr = fbs.excel_ptr() as *mut Excel;
+    let mut excel = unsafe { ManuallyDrop::new(Box::from_raw(excel_ptr)) };
+    match excel.hide_sheet_mut(fbs.sheet_name().map(|s| s.to_string()).unwrap_or_default()) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::IoError) },
     }
 }
