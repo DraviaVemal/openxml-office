@@ -7,7 +7,7 @@ pub(crate) struct GraphPosition {
 }
 
 #[derive(Debug)]
-pub(crate) struct AnchorPosition {
+pub struct AnchorPosition {
     pub column: u16,
     pub column_offset: u16,
     pub row: u32,

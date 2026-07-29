@@ -173,4 +173,66 @@ namespace draviavemal.openxml_office.spreadsheet_2007
 			this.ffiStyleIdPtr = ffiStyleIdPtr;
 		}
 	}
+
+	public class ReferenceRange
+	{
+		public ushort ColumnStart { get; set; } = 1;
+		public ushort ColumnEnd { get; set; } = 1;
+		public uint RowStart { get; set; } = 1;
+		public uint RowEnd { get; set; } = 1;
+	}
+
+	public class CellPackage
+	{
+		public string CellRef { get; set; }
+		public uint RowIndex { get; set; }
+		public ushort ColumnIndex { get; set; }
+		public CellProperty CellProperty { get; set; }
+	}
+
+	public class HyperlinkInfo
+	{
+		public string Display { get; set; }
+		public string Link { get; set; }
+		public ReferenceRange Range { get; set; }
+	}
+
+	public class AnchorPosition
+	{
+		public ushort Column { get; set; } = 1;
+		public ushort ColumnOffset { get; set; } = 0;
+		public uint Row { get; set; } = 1;
+		public uint RowOffset { get; set; } = 0;
+	}
+
+	public enum ImageType
+	{
+		JPEG = 0,
+		PNG = 1,
+		GIF = 2,
+		BMP = 3,
+		TIFF = 4,
+	}
+
+	public enum ExcelHyperlinkType
+	{
+		ExistingFile = 0,
+		WebUrl = 1,
+		TargetSheet = 2,
+	}
+
+	public class ExcelHyperlinkProperties
+	{
+		public string Display { get; set; }
+		public ExcelHyperlinkType LinkType { get; set; } = ExcelHyperlinkType.WebUrl;
+		public string Link { get; set; }
+	}
+
+	public class ExcelPictureSetting
+	{
+		public ImageType ImageType { get; set; } = ImageType.JPEG;
+		public AnchorPosition From { get; set; } = new AnchorPosition();
+		public AnchorPosition To { get; set; } = new AnchorPosition();
+		public ExcelHyperlinkProperties HyperlinkProperties { get; set; }
+	}
 }

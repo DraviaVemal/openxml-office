@@ -95,3 +95,154 @@ table worksheet_flush{
 }
 
 // Worksheet flush - End
+
+// Common reference range - Start
+
+table worksheet_reference_range {
+    column_start: uint16;
+    column_end: uint16;
+    row_start: uint32;
+    row_end: uint32;
+}
+
+// Common reference range - End
+
+// worksheet_set_merge_cell - Start
+
+table worksheet_set_merge_cell {
+    worksheet_ptr: uint64;
+    ref_range: worksheet_reference_range(required);
+}
+
+// worksheet_set_merge_cell - End
+
+// worksheet_remove_merge_cell - Start
+
+table worksheet_remove_merge_cell {
+    worksheet_ptr: uint64;
+    ref_range: worksheet_reference_range(required);
+}
+
+// worksheet_remove_merge_cell - End
+
+// worksheet_set_hyperlink - Start
+
+table worksheet_set_hyperlink {
+    worksheet_ptr: uint64;
+    display: string;
+    link: string;
+    ref_range: worksheet_reference_range(required);
+}
+
+// worksheet_set_hyperlink - End
+
+// worksheet_remove_hyperlink - Start
+
+table worksheet_remove_hyperlink {
+    worksheet_ptr: uint64;
+    ref_range: worksheet_reference_range(required);
+}
+
+// worksheet_remove_hyperlink - End
+
+// worksheet_delete_sheet - Start
+
+table worksheet_delete_sheet {
+    worksheet_ptr: uint64;
+}
+
+// worksheet_delete_sheet - End
+
+// worksheet_get_range_cell_properties - Start
+
+table worksheet_get_range_cell_properties {
+    worksheet_ptr: uint64;
+    ref_range: worksheet_reference_range(required);
+}
+
+table worksheet_cell_package {
+    cell_ref: string;
+    row_index: uint32;
+    column_index: uint16;
+    cell_property: worksheet_cell_property;
+}
+
+table worksheet_get_range_cell_properties_return {
+    cell_packages: [worksheet_cell_package];
+}
+
+// worksheet_get_range_cell_properties - End
+
+// worksheet_list_merge_cell - Start
+
+table worksheet_list_merge_cell {
+    worksheet_ptr: uint64;
+}
+
+table worksheet_list_merge_cell_return {
+    ranges: [worksheet_reference_range];
+}
+
+// worksheet_list_merge_cell - End
+
+// worksheet_list_hyperlinks - Start
+
+table worksheet_list_hyperlinks {
+    worksheet_ptr: uint64;
+}
+
+table worksheet_hyperlink {
+    display: string;
+    link: string;
+    ref_range: worksheet_reference_range;
+}
+
+table worksheet_list_hyperlinks_return {
+    hyperlinks: [worksheet_hyperlink];
+}
+
+// worksheet_list_hyperlinks - End
+
+// worksheet_add_picture - Start
+
+enum worksheet_image_type: byte {
+    jpeg = 0,
+    png = 1,
+    gif = 2,
+    bmp = 3,
+    tiff = 4,
+}
+
+table worksheet_anchor_position {
+    column: uint16;
+    column_offset: uint16;
+    row: uint32;
+    row_offset: uint32;
+}
+
+enum worksheet_excel_hyperlink_type: byte {
+    existing_file = 0,
+    web_url = 1,
+    target_sheet = 2,
+}
+
+table worksheet_excel_hyperlink {
+    display: string;
+    link_type: worksheet_excel_hyperlink_type;
+    link: string;
+}
+
+table worksheet_picture_setting {
+    image_type: worksheet_image_type;
+    from: worksheet_anchor_position(required);
+    to: worksheet_anchor_position(required);
+    hyperlink: worksheet_excel_hyperlink;
+}
+
+table worksheet_add_picture {
+    worksheet_ptr: uint64;
+    image_path: string;
+    picture_setting: worksheet_picture_setting(required);
+}
+
+// worksheet_add_picture - End

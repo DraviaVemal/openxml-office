@@ -1,5 +1,5 @@
 pub(crate) mod charts;
-pub(crate) mod models;
+pub mod models;
 pub(crate) mod parts;
 pub mod traits;
 pub mod service;

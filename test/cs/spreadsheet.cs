@@ -1185,5 +1185,151 @@ namespace openxmloffice.tests
             excel1.SaveAs(string.Format("{1}/EditStyle-{0}.xlsx", DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss"), resultPath));
             Assert.IsTrue(true);
         }
+
+        // ── Excel workbook-level methods ──────────────────────────────────────
+
+        [TestMethod]
+        public void SetActiveSheet()
+        {
+            using Worksheet ws = excel.AddSheet("ActiveSheetTarget");
+            excel.SetActiveSheet("ActiveSheetTarget");
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void SetVisibility()
+        {
+            excel.SetVisibility(true);
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void MinimizeWorkbook()
+        {
+            excel.MinimizeWorkbook(true);
+            excel.MinimizeWorkbook(false);
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void HideSheetTabs()
+        {
+            excel.HideSheetTabs(true);
+            excel.HideSheetTabs(false);
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void HideVerticalScroll()
+        {
+            excel.HideVerticalScroll(true);
+            excel.HideVerticalScroll(false);
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void HideHorizontalScroll()
+        {
+            excel.HideHorizontalScroll(true);
+            excel.HideHorizontalScroll(false);
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void HideSheet()
+        {
+            using Worksheet ws = excel.AddSheet("HiddenSheet");
+            excel.HideSheet("HiddenSheet");
+            Assert.IsTrue(true);
+        }
+
+        // ── Worksheet-level methods ───────────────────────────────────────────
+
+        [TestMethod]
+        public void SetAndListMergeCell()
+        {
+            using Worksheet ws = excel.AddSheet("MergeCell");
+            ws.SetMergeCell(new ReferenceRange { ColumnStart = 1, ColumnEnd = 3, RowStart = 1, RowEnd = 2 });
+            ws.SetMergeCell(new ReferenceRange { ColumnStart = 5, ColumnEnd = 7, RowStart = 5, RowEnd = 6 });
+            ReferenceRange[] merged = ws.ListMergeCell();
+            Assert.IsNotNull(merged);
+            Assert.IsTrue(merged.Length >= 2);
+        }
+
+        [TestMethod]
+        public void RemoveMergeCell()
+        {
+            using Worksheet ws = excel.AddSheet("RemoveMerge");
+            ReferenceRange range = new() { ColumnStart = 1, ColumnEnd = 3, RowStart = 1, RowEnd = 2 };
+            ws.SetMergeCell(range);
+            ws.RemoveMergeCell(range);
+            ReferenceRange[] merged = ws.ListMergeCell();
+            Assert.IsNotNull(merged);
+            Assert.AreEqual(0, merged.Length);
+        }
+
+        [TestMethod]
+        public void SetAndListHyperlinks()
+        {
+            using Worksheet ws = excel.AddSheet("Hyperlinks");
+            ws.SetHyperlink("https://openxml-office.draviavemal.com/", new ReferenceRange { ColumnStart = 1, ColumnEnd = 1, RowStart = 1, RowEnd = 1 }, "OpenXML-Office");
+            ws.SetHyperlink("https://github.com/DraviaVemal/openxml-office", new ReferenceRange { ColumnStart = 2, ColumnEnd = 2, RowStart = 1, RowEnd = 1 });
+            HyperlinkInfo[] links = ws.ListHyperlinks();
+            Assert.IsNotNull(links);
+            Assert.IsTrue(links.Length >= 2);
+            Assert.AreEqual("OpenXML-Office", links[0].Display);
+        }
+
+        [TestMethod]
+        public void RemoveHyperlink()
+        {
+            using Worksheet ws = excel.AddSheet("RemoveHyperlink");
+            ReferenceRange range = new() { ColumnStart = 1, ColumnEnd = 1, RowStart = 1, RowEnd = 1 };
+            ws.SetHyperlink("https://openxml-office.draviavemal.com/", range, "Test");
+            ws.RemoveHyperlink(range);
+            HyperlinkInfo[] links = ws.ListHyperlinks();
+            Assert.IsNotNull(links);
+            Assert.AreEqual(0, links.Length);
+        }
+
+        [TestMethod]
+        public void GetRangeCellProperties()
+        {
+            using Worksheet ws = excel.AddSheet("ReadCells");
+            ws.SetCellRefValues("A1", new CellProperty[]
+            {
+                new() { Value = "Alpha", DataType = CellDataType.String },
+                new() { Value = "Beta",  DataType = CellDataType.String },
+                new() { Value = "42",    DataType = CellDataType.Number },
+            });
+            CellPackage[] packages = ws.GetRangeCellProperties(new ReferenceRange
+            {
+                ColumnStart = 1, ColumnEnd = 3,
+                RowStart    = 1, RowEnd    = 1,
+            });
+            Assert.IsNotNull(packages);
+            Assert.IsTrue(packages.Length >= 3);
+        }
+
+        [TestMethod]
+        public void AddPicture()
+        {
+            using Worksheet ws = excel.AddSheet("PictureSheet");
+            ws.AddPicture("./test_files/tom_and_jerry.jpg", new ExcelPictureSetting
+            {
+                ImageType = ImageType.JPEG,
+                From = new AnchorPosition { Column = 2, Row = 2 },
+                To   = new AnchorPosition { Column = 5, Row = 8 },
+            });
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void DeleteSheet()
+        {
+            Worksheet ws = excel.AddSheet("ToDelete");
+            ws.DeleteSheet();
+            Assert.IsTrue(true);
+        }
     }
 }

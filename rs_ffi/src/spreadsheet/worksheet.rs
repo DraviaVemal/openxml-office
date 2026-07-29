@@ -5,14 +5,31 @@ use crate::{
         worksheet_cell_data_type, worksheet_flush, worksheet_set_cell_index_value,
         worksheet_set_cell_ref_value, worksheet_set_column_index_properties,
         worksheet_set_column_ref_properties, worksheet_set_row_index_properties,
+        worksheet_set_merge_cell, worksheet_remove_merge_cell, worksheet_set_hyperlink,
+        worksheet_remove_hyperlink, worksheet_delete_sheet, worksheet_get_range_cell_properties,
+        worksheet_get_range_cell_properties_return, worksheet_get_range_cell_properties_returnArgs,
+        worksheet_cell_package, worksheet_cell_packageArgs,
+        worksheet_cell_property as fbs_cell_property, worksheet_cell_propertyArgs,
+        worksheet_list_merge_cell,
+        worksheet_list_merge_cell_return, worksheet_list_merge_cell_returnArgs,
+        worksheet_reference_range as fbs_reference_range, worksheet_reference_rangeArgs,
+        worksheet_list_hyperlinks, worksheet_list_hyperlinks_return,
+        worksheet_list_hyperlinks_returnArgs, worksheet_hyperlink as fbs_hyperlink,
+        worksheet_hyperlinkArgs, worksheet_add_picture, worksheet_image_type,
+        worksheet_excel_hyperlink_type,
     },
-    root_from_raw, set_error, StatusCode,
+    root_from_raw, set_error, write_buffer, StatusCode,
 };
 use anyhow::anyhow;
 use draviavemal_openxml_office::{
-    global_2007::traits::XmlDocumentPartFlush,
+    global_2007::{
+        models::{AnchorPosition, ExcelHyperlinkProperties, ExcelHyperlinkPropertyTypeValues},
+        traits::XmlDocumentPartFlush,
+    },
     spreadsheet_2007::{
-        models::{CellDataType, CellProperty, ColumnProperties, RowProperties, StyleId},
+        models::{
+            CellDataType, CellProperty, ColumnProperties, ReferenceRange, RowProperties, StyleId,
+        },
         WorkSheet,
     },
 };
@@ -266,6 +283,393 @@ pub extern "C" fn worksheet_flush(
     let worksheet_ptr = fbs_set_cell_index_value.worksheet_ptr() as *mut WorkSheet;
     let worksheet = unsafe { *Box::from_raw(worksheet_ptr) };
     match worksheet.flush() {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
+    }
+}
+
+fn fbs_to_reference_range(fbs: &fbs_reference_range) -> ReferenceRange {
+    ReferenceRange {
+        column_start: fbs.column_start(),
+        column_end: fbs.column_end(),
+        row_start: fbs.row_start(),
+        row_end: fbs.row_end(),
+    }
+}
+
+#[no_mangle]
+/// Merge a range of cells in the worksheet
+pub extern "C" fn worksheet_set_merge_cell(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<worksheet_set_merge_cell>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let worksheet_ptr = fbs.worksheet_ptr() as *mut WorkSheet;
+    let mut worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
+    let ref_range = fbs_to_reference_range(&fbs.ref_range());
+    match worksheet.set_merge_cell_mut(ref_range) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
+    }
+}
+
+#[no_mangle]
+/// Remove a merged cell range from the worksheet
+pub extern "C" fn worksheet_remove_merge_cell(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<worksheet_remove_merge_cell>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let worksheet_ptr = fbs.worksheet_ptr() as *mut WorkSheet;
+    let mut worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
+    let ref_range = fbs_to_reference_range(&fbs.ref_range());
+    match worksheet.remove_merge_cell_mut(ref_range) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
+    }
+}
+
+#[no_mangle]
+/// Add a hyperlink to a range of cells
+pub extern "C" fn worksheet_set_hyperlink(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<worksheet_set_hyperlink>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let link = match fbs.link() {
+        Some(l) => l.to_string(),
+        None => {
+            return unsafe {
+                set_error(
+                    out_error,
+                    &anyhow!("link is required"),
+                    StatusCode::InvalidArgument,
+                )
+            }
+        }
+    };
+    let worksheet_ptr = fbs.worksheet_ptr() as *mut WorkSheet;
+    let mut worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
+    let display = fbs.display().map(|s| s.to_string());
+    let ref_range = fbs_to_reference_range(&fbs.ref_range());
+    match worksheet.set_hyperlink_mut(display, link, ref_range) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
+    }
+}
+
+#[no_mangle]
+/// Remove a hyperlink from a cell range
+pub extern "C" fn worksheet_remove_hyperlink(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<worksheet_remove_hyperlink>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let worksheet_ptr = fbs.worksheet_ptr() as *mut WorkSheet;
+    let mut worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
+    let ref_range = fbs_to_reference_range(&fbs.ref_range());
+    match worksheet.remove_hyperlink_mut(ref_range) {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
+    }
+}
+
+#[no_mangle]
+/// Delete the worksheet and all its components
+pub extern "C" fn worksheet_delete_sheet(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<worksheet_delete_sheet>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let worksheet_ptr = fbs.worksheet_ptr() as *mut WorkSheet;
+    let worksheet = unsafe { *Box::from_raw(worksheet_ptr) };
+    match worksheet.delete_sheet_mut() {
+        Ok(()) => StatusCode::Success as i8,
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
+    }
+}
+
+#[no_mangle]
+/// Get cell properties for a range of cells
+pub extern "C" fn worksheet_get_range_cell_properties(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_buffer: *mut *mut u8,
+    out_buffer_size: *mut usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<worksheet_get_range_cell_properties>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let worksheet_ptr = fbs.worksheet_ptr() as *mut WorkSheet;
+    let worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
+    let ref_range = fbs_to_reference_range(&fbs.ref_range());
+    match worksheet.get_range_cell_properties(ref_range) {
+        Ok(cell_packages) => {
+            let mut builder = flatbuffers::FlatBufferBuilder::new();
+            let pkg_offsets: Vec<_> = cell_packages
+                .iter()
+                .map(|pkg| {
+                    let cell_ref_offset = builder.create_string(&pkg.cell_ref);
+                    let value_offset = pkg
+                        .cell_property
+                        .value
+                        .as_deref()
+                        .map(|v| builder.create_string(v));
+                    let formula_offset = pkg
+                        .cell_property
+                        .formula
+                        .as_deref()
+                        .map(|f| builder.create_string(f));
+                    let cell_prop = fbs_cell_property::create(
+                        &mut builder,
+                        &worksheet_cell_propertyArgs {
+                            value: value_offset,
+                            formula: formula_offset,
+                            data_type: match pkg.cell_property.data_type {
+                                CellDataType::Number => worksheet_cell_data_type::number,
+                                CellDataType::Boolean => worksheet_cell_data_type::boolean,
+                                CellDataType::String => worksheet_cell_data_type::string,
+                                CellDataType::ShareString => {
+                                    worksheet_cell_data_type::shared_string
+                                }
+                                CellDataType::InlineString => {
+                                    worksheet_cell_data_type::inline_string
+                                }
+                                CellDataType::Error => worksheet_cell_data_type::error,
+                                _ => worksheet_cell_data_type::auto,
+                            },
+                            style_id_ptr: pkg
+                                .cell_property
+                                .style_id
+                                .as_ref()
+                                .map(|s| Box::into_raw(Box::new(*s)) as u64),
+                        },
+                    );
+                    worksheet_cell_package::create(
+                        &mut builder,
+                        &worksheet_cell_packageArgs {
+                            cell_ref: Some(cell_ref_offset),
+                            row_index: pkg.row_index,
+                            column_index: pkg.column_index,
+                            cell_property: Some(cell_prop),
+                        },
+                    )
+                })
+                .collect();
+            let packages_vector = builder.create_vector(&pkg_offsets);
+            let result = worksheet_get_range_cell_properties_return::create(
+                &mut builder,
+                &worksheet_get_range_cell_properties_returnArgs {
+                    cell_packages: Some(packages_vector),
+                },
+            );
+            builder.finish(result, None);
+            unsafe { write_buffer(builder.finished_data(), out_buffer, out_buffer_size) };
+            StatusCode::Success as i8
+        }
+        Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
+    }
+}
+
+#[no_mangle]
+/// List all merged cell ranges in the worksheet
+pub extern "C" fn worksheet_list_merge_cell(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_buffer: *mut *mut u8,
+    out_buffer_size: *mut usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<worksheet_list_merge_cell>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let worksheet_ptr = fbs.worksheet_ptr() as *mut WorkSheet;
+    let worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
+    let ranges = worksheet.list_merge_cell_().unwrap_or_default();
+    let mut builder = flatbuffers::FlatBufferBuilder::new();
+    let range_offsets: Vec<_> = ranges
+        .iter()
+        .map(|r| {
+            fbs_reference_range::create(
+                &mut builder,
+                &worksheet_reference_rangeArgs {
+                    column_start: r.column_start,
+                    column_end: r.column_end,
+                    row_start: r.row_start,
+                    row_end: r.row_end,
+                },
+            )
+        })
+        .collect();
+    let ranges_vector = builder.create_vector(&range_offsets);
+    let result = worksheet_list_merge_cell_return::create(
+        &mut builder,
+        &worksheet_list_merge_cell_returnArgs {
+            ranges: Some(ranges_vector),
+        },
+    );
+    builder.finish(result, None);
+    unsafe { write_buffer(builder.finished_data(), out_buffer, out_buffer_size) };
+    StatusCode::Success as i8
+}
+
+#[no_mangle]
+/// List all hyperlinks in the worksheet
+pub extern "C" fn worksheet_list_hyperlinks(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_buffer: *mut *mut u8,
+    out_buffer_size: *mut usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    let fbs = match unsafe {
+        root_from_raw::<worksheet_list_hyperlinks>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let worksheet_ptr = fbs.worksheet_ptr() as *mut WorkSheet;
+    let worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
+    let hyperlinks = worksheet.list_hyperlinks().unwrap_or_default();
+    let mut builder = flatbuffers::FlatBufferBuilder::new();
+    let link_offsets: Vec<_> = hyperlinks
+        .iter()
+        .map(|(display, link, range)| {
+            let display_offset = display.as_deref().map(|d| builder.create_string(d));
+            let link_offset = builder.create_string(link);
+            let range_offset = fbs_reference_range::create(
+                &mut builder,
+                &worksheet_reference_rangeArgs {
+                    column_start: range.column_start,
+                    column_end: range.column_end,
+                    row_start: range.row_start,
+                    row_end: range.row_end,
+                },
+            );
+            fbs_hyperlink::create(
+                &mut builder,
+                &worksheet_hyperlinkArgs {
+                    display: display_offset,
+                    link: Some(link_offset),
+                    ref_range: Some(range_offset),
+                },
+            )
+        })
+        .collect();
+    let links_vector = builder.create_vector(&link_offsets);
+    let result = worksheet_list_hyperlinks_return::create(
+        &mut builder,
+        &worksheet_list_hyperlinks_returnArgs {
+            hyperlinks: Some(links_vector),
+        },
+    );
+    builder.finish(result, None);
+    unsafe { write_buffer(builder.finished_data(), out_buffer, out_buffer_size) };
+    StatusCode::Success as i8
+}
+
+#[no_mangle]
+/// Add a picture to the worksheet at the specified anchor positions
+pub extern "C" fn worksheet_add_picture(
+    in_buffer: *const u8,
+    in_buffer_size: usize,
+    out_error: *mut *const c_char,
+) -> i8 {
+    use draviavemal_openxml_office::{global_2007::models::ImageType, spreadsheet_2007::models::ExcelPictureSetting};
+    let fbs = match unsafe {
+        root_from_raw::<worksheet_add_picture>(in_buffer, in_buffer_size, out_error)
+    } {
+        Ok(root) => root,
+        Err(status) => return status,
+    };
+    let image_path = match fbs.image_path() {
+        Some(p) => p,
+        None => {
+            return unsafe {
+                set_error(
+                    out_error,
+                    &anyhow!("image_path is required"),
+                    StatusCode::InvalidArgument,
+                )
+            }
+        }
+    };
+    let worksheet_ptr = fbs.worksheet_ptr() as *mut WorkSheet;
+    let mut worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
+    let setting = fbs.picture_setting();
+    let from_fbs = setting.from();
+    let to_fbs = setting.to();
+    let hyperlink_properties = setting.hyperlink().map(|h| ExcelHyperlinkProperties {
+        display: h.display().map(|s| s.to_string()),
+        link_type: match h.link_type() {
+            worksheet_excel_hyperlink_type::web_url => ExcelHyperlinkPropertyTypeValues::WEB_URL,
+            worksheet_excel_hyperlink_type::target_sheet => {
+                ExcelHyperlinkPropertyTypeValues::TARGET_SHEET
+            }
+            _ => ExcelHyperlinkPropertyTypeValues::EXISTING_FILE,
+        },
+        link: h.link().unwrap_or("").to_string(),
+    });
+    let picture_setting = ExcelPictureSetting {
+        hyperlink_properties,
+        image_type: match setting.image_type() {
+            worksheet_image_type::png => ImageType::PNG,
+            worksheet_image_type::gif => ImageType::GIF,
+            worksheet_image_type::bmp => ImageType::BMP,
+            worksheet_image_type::tiff => ImageType::TIFF,
+            _ => ImageType::JPEG,
+        },
+        from: AnchorPosition {
+            column: from_fbs.column(),
+            column_offset: from_fbs.column_offset(),
+            row: from_fbs.row(),
+            row_offset: from_fbs.row_offset(),
+        },
+        to: AnchorPosition {
+            column: to_fbs.column(),
+            column_offset: to_fbs.column_offset(),
+            row: to_fbs.row(),
+            row_offset: to_fbs.row_offset(),
+        },
+    };
+    match worksheet.add_picture(image_path, picture_setting) {
         Ok(()) => StatusCode::Success as i8,
         Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
     }
