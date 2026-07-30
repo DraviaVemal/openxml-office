@@ -40,9 +40,9 @@ namespace openxmloffice.tests
         }
 
         /// <summary>
-        /// 
+        /// Create a new blank document
         /// </summary>
-        // [TestMethod]
+        [TestMethod]
         public void BlankFile()
         {
             Word word2 = new(new()
@@ -58,7 +58,7 @@ namespace openxmloffice.tests
         [TestMethod]
         public void OpenExistingWord()
         {
-            Word word1 = new("test_files/basic_test.docx", new()
+            Word word1 = new("edit_test_files/basic_test.docx", new()
             {
                 IsInMemory = false
             });

@@ -172,7 +172,7 @@ mod spreadsheet_test {
     #[test]
     fn set_row_property() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/TestFiles/basic_test.xlsx".to_string()),
+            Some("../edit_test_files/basic_test.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -220,7 +220,7 @@ mod spreadsheet_test {
     #[test]
     fn merge_cell_property() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/TestFiles/merge_links.xlsx".to_string()),
+            Some("../edit_test_files/merge_links.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -263,7 +263,7 @@ mod spreadsheet_test {
     #[test]
     fn hyperlink_cell_property() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/TestFiles/merge_links.xlsx".to_string()),
+            Some("../edit_test_files/merge_links.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -311,9 +311,109 @@ mod spreadsheet_test {
     }
 
     #[test]
+    fn merge_cell_new() {
+        let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
+            None,
+            draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
+                is_editable: true,
+                ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
+            },
+        )
+        .expect("Create New File Failed");
+        {
+            let mut worksheet = file
+                .add_sheet_mut(Some("merge".to_string()))
+                .expect("Failed to add Sheet");
+            worksheet
+                .set_merge_cell_mut(ReferenceRange {
+                    column_start: 1,
+                    column_end: 3,
+                    row_start: 1,
+                    row_end: 2,
+                })
+                .expect("Failed to set merge range");
+            worksheet
+                .set_merge_cell_mut(ReferenceRange {
+                    column_start: 5,
+                    column_end: 7,
+                    row_start: 5,
+                    row_end: 6,
+                })
+                .expect("Failed to set merge range");
+            let merges = worksheet.list_merge_cell_();
+            assert!(merges.is_some());
+            worksheet
+                .remove_merge_cell_mut(ReferenceRange {
+                    column_start: 1,
+                    column_end: 3,
+                    row_start: 1,
+                    row_end: 2,
+                })
+                .expect("Failed to remove merge range");
+        }
+        file.save_as(&get_save_file(None))
+            .expect("Save File Failed");
+        assert_eq!(true, true);
+    }
+
+    #[test]
+    fn hyperlink_new() {
+        let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
+            None,
+            draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
+                is_editable: true,
+                ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
+            },
+        )
+        .expect("Create New File Failed");
+        {
+            let mut worksheet = file
+                .add_sheet_mut(Some("links".to_string()))
+                .expect("Failed to add Sheet");
+            worksheet
+                .set_hyperlink_mut(
+                    Some("OpenXML-Office".to_string()),
+                    "https://openxml-office.draviavemal.com/".to_string(),
+                    ReferenceRange {
+                        column_start: 1,
+                        column_end: 1,
+                        row_start: 1,
+                        row_end: 1,
+                    },
+                )
+                .expect("Failed to set hyperlink");
+            worksheet
+                .set_hyperlink_mut(
+                    None,
+                    "https://github.com/DraviaVemal/openxml-office".to_string(),
+                    ReferenceRange {
+                        column_start: 2,
+                        column_end: 2,
+                        row_start: 1,
+                        row_end: 1,
+                    },
+                )
+                .expect("Failed to set hyperlink");
+            let links = worksheet.list_hyperlinks();
+            assert!(links.is_some());
+            worksheet
+                .remove_hyperlink_mut(ReferenceRange {
+                    column_start: 1,
+                    column_end: 1,
+                    row_start: 1,
+                    row_end: 1,
+                })
+                .expect("Failed to remove hyperlink");
+        }
+        file.save_as(&get_save_file(None))
+            .expect("Save File Failed");
+        assert_eq!(true, true);
+    }
+
+    #[test]
     fn get_range_data() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/TestFiles/basic_test.xlsx".to_string()),
+            Some("../edit_test_files/basic_test.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -414,7 +514,7 @@ mod spreadsheet_test {
     #[test]
     fn set_column_property_edit() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/TestFiles/basic_test.xlsx".to_string()),
+            Some("../edit_test_files/basic_test.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -460,7 +560,7 @@ mod spreadsheet_test {
     #[test]
     fn set_cell_style() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/TestFiles/basic_test.xlsx".to_string()),
+            Some("../edit_test_files/basic_test.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -563,7 +663,7 @@ mod spreadsheet_test {
     #[test]
     fn edit_excel() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/TestFiles/basic_test.xlsx".to_string()),
+            Some("../edit_test_files/basic_test.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -631,7 +731,7 @@ mod spreadsheet_test {
     #[test]
     fn add_picture() {
         let mut excel = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/TestFiles/basic_test.xlsx".to_string()),
+            Some("../edit_test_files/basic_test.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()
@@ -643,7 +743,7 @@ mod spreadsheet_test {
             .expect("Failed to get sheet");
         sheet
             .add_picture(
-                "src/TestFiles/tom_and_jerry.jpg",
+                "../edit_test_files/tom_and_jerry.jpg",
                 ExcelPictureSetting::default(),
             )
             .expect("Failed to add image");
@@ -658,7 +758,7 @@ mod spreadsheet_test {
     #[ignore]
     fn edit_large_excel() {
         let mut file = draviavemal_openxml_office::spreadsheet_2007::Excel::new(
-            Some("src/TestFiles/large_file.xlsx".to_string()),
+            Some("../edit_test_files/large_file.xlsx".to_string()),
             draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel {
                 is_editable: true,
                 ..draviavemal_openxml_office::spreadsheet_2007::ExcelPropertiesModel::default()

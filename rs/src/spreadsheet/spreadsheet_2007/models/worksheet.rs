@@ -223,6 +223,15 @@ pub struct ReferenceRange {
     pub row_end: RowIndex,
 }
 
+impl ReferenceRange {
+    pub fn overlaps(&self, other: &ReferenceRange) -> bool {
+        self.column_start <= other.column_end
+            && self.column_end >= other.column_start
+            && self.row_start <= other.row_end
+            && self.row_end >= other.row_start
+    }
+}
+
 impl Default for ReferenceRange {
     fn default() -> Self {
         Self {

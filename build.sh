@@ -98,8 +98,12 @@ cp $linux_binary_dir/libdraviavemal_openxml_office_ffi.so java/draviavemal_openx
 # Copy Result binary to Go target (static lib -> self-contained consumer binary)
 # Local dev links the freshly built library directly for live changes.
 # Release consumers instead pull the tagged .a or .lib via `go generate` (tools/fetchlib).
+# The host (Linux) library must keep the plain name expected by the cgo LDFLAGS
+# (-ldraviavemal_openxml_office_ffi) so `go test` below links against it.
 cp $linux_binary_dir/libdraviavemal_openxml_office_ffi.a go/lib/libdraviavemal_openxml_office_ffi.a
-cp $win_binary_dir/libdraviavemal_openxml_office_ffi.a go/lib/libdraviavemal_openxml_office_ffi.a 2>/dev/null || true
+# Keep the cross-compiled Windows archive available under a platform-suffixed name so it
+# does not clobber the host library used by `go test`.
+cp $win_binary_dir/libdraviavemal_openxml_office_ffi.a go/lib/libdraviavemal_openxml_office_ffi-windows-amd64.a 2>/dev/null || true
 if [ -f "$target_dir/x86_64-pc-windows-msvc/debug/draviavemal_openxml_office_ffi.lib" ]; then
   cp "$target_dir/x86_64-pc-windows-msvc/debug/draviavemal_openxml_office_ffi.lib" go/lib/draviavemal_openxml_office_ffi.lib
 fi

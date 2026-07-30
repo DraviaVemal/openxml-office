@@ -43,18 +43,17 @@
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
 		<PackageReference Include="MSTest.TestAdapter" Version="3.5.0" />
 		<PackageReference Include="MSTest.TestFramework" Version="3.5.0" />
+		<!-- Legacy package used only by the standalone benchmark (Benchmark.cs) for comparison -->
+		<PackageReference Include="OpenXMLOffice.Spreadsheet" Version="2.9.0" />
 		<ProjectReference Include="..\..\cs\openxml_office.csproj" />
 		<Content Include="assets\**">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
-			<CopyCommand>xcopy /E /I /Y /S</CopyCommand>
-		</PropertyGroup>
-		<PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
-			<CopyCommand>cp -r </CopyCommand>
-		</PropertyGroup>
-		<Exec Command="$(CopyCommand) &quot;$(ProjectDir)test_files&quot; &quot;$(TargetDir)test_files&quot;" />
+	<Target Name="CopyEditTestFiles" AfterTargets="Build">
+		<ItemGroup>
+			<EditTestFiles Include="$(ProjectDir)..\edit_test_files\**\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(EditTestFiles)" DestinationFolder="$(TargetDir)edit_test_files\%(RecursiveDir)" SkipUnchangedFiles="true" />
 	</Target>
 </Project>

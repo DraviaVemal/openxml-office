@@ -1181,7 +1181,7 @@ namespace openxmloffice.tests
         [TestMethod]
         public void OpenExistingExcelStyleString()
         {
-            Excel excel1 = new("./test_files/basic_test.xlsx");
+            Excel excel1 = new("./edit_test_files/basic_test.xlsx");
             excel1.SaveAs(string.Format("{1}/EditStyle-{0}.xlsx", DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss"), resultPath));
             Assert.IsTrue(true);
         }
@@ -1315,7 +1315,7 @@ namespace openxmloffice.tests
         public void AddPicture()
         {
             using Worksheet ws = excel.AddSheet("PictureSheet");
-            ws.AddPicture("./test_files/tom_and_jerry.jpg", new ExcelPictureSetting
+            ws.AddPicture("./edit_test_files/tom_and_jerry.jpg", new ExcelPictureSetting
             {
                 ImageType = ImageType.JPEG,
                 From = new AnchorPosition { Column = 2, Row = 2 },
@@ -1330,6 +1330,53 @@ namespace openxmloffice.tests
             Worksheet ws = excel.AddSheet("ToDelete");
             ws.DeleteSheet();
             Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public void SetRowProperties()
+        {
+            using Worksheet worksheet = excel.AddSheet("RowProperties");
+            worksheet.SetRowindexProperties(1, new RowProperties { Height = 100 });
+            worksheet.SetRowindexProperties(3, new RowProperties { Hidden = true });
+            worksheet.SetRowindexProperties(5, new RowProperties { TickTop = true });
+            worksheet.SetRowindexProperties(7, new RowProperties { ThickBottom = true });
+            Assert.IsNotNull(worksheet);
+        }
+
+        [TestMethod]
+        public void SetCellStyles()
+        {
+            using Worksheet worksheet = excel.AddSheet("CellStyles");
+            StyleId boldId = excel.GetStyleId(new CellStyleSetting { IsBold = true });
+            StyleId italicId = excel.GetStyleId(new CellStyleSetting { IsItalic = true });
+            StyleId underlineId = excel.GetStyleId(new CellStyleSetting { IsUnderline = true });
+            StyleId doubleUnderlineId = excel.GetStyleId(new CellStyleSetting { IsDoubleUnderline = true });
+            StyleId wrapTextId = excel.GetStyleId(new CellStyleSetting { IsWrapText = true });
+            worksheet.SetCellRefValues("A1", new CellProperty[]
+            {
+                new() { Value = "Bold", DataType = CellDataType.String, StyleId = boldId },
+                new() { Value = "Italic", DataType = CellDataType.String, StyleId = italicId },
+                new() { Value = "Underline", DataType = CellDataType.String, StyleId = underlineId },
+                new() { Value = "Double Underline", DataType = CellDataType.String, StyleId = doubleUnderlineId },
+                new() { Value = "This is a very long line to wrap the column. Test the wrap string", DataType = CellDataType.String, StyleId = wrapTextId },
+            });
+            Assert.IsNotNull(worksheet);
+        }
+
+        [TestMethod]
+        public void EditExistingMergeAndHyperlinks()
+        {
+            Excel editExcel = new("./edit_test_files/merge_links.xlsx", new ExcelProperties { isEditable = true });
+            Worksheet worksheet = editExcel.GetWorksheet("edit");
+            ReferenceRange[] merges = worksheet.ListMergeCell();
+            Assert.IsNotNull(merges);
+            Assert.IsTrue(merges.Length > 0);
+            HyperlinkInfo[] links = worksheet.ListHyperlinks();
+            Assert.IsNotNull(links);
+            Assert.IsTrue(links.Length > 0);
+            worksheet.RemoveMergeCell(merges[0]);
+            worksheet.Dispose();
+            editExcel.SaveAs(string.Format("{1}/EditMergeLinks-{0}.xlsx", DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss"), resultPath));
         }
     }
 }

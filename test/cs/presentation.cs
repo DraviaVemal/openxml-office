@@ -40,9 +40,9 @@ namespace openxmloffice.tests
         }
 
         /// <summary>
-        /// 
+        /// Create a new blank presentation
         /// </summary>
-        // [TestMethod]
+        [TestMethod]
         public void BlankFile()
         {
             PowerPoint powerPoint2 = new(new()
@@ -58,7 +58,7 @@ namespace openxmloffice.tests
         [TestMethod]
         public void OpenExistingPowerPoint()
         {
-            PowerPoint powerPoint1 = new("test_files/basic_test.pptx", new()
+            PowerPoint powerPoint1 = new("edit_test_files/basic_test.pptx", new()
             {
                 IsInMemory = false
             });

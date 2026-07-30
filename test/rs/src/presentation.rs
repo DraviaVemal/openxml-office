@@ -29,7 +29,7 @@ mod presentation_test {
     #[test]
     fn edit_power_point() {
         let file = PowerPoint::new(
-            Some("src/TestFiles/basic_test.pptx".to_string()),
+            Some("../edit_test_files/basic_test.pptx".to_string()),
             PowerPointPropertiesModel::default(),
         )
         .expect("Open Existing file failed");
