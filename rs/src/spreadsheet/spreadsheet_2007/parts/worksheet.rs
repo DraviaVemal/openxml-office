@@ -2007,16 +2007,10 @@ impl WorkSheet {
     /// - `ref_range` (`ReferenceRange`) - Pass the rect. Range to merge cells.
     pub fn set_merge_cell_mut(&mut self, ref_range: ReferenceRange) -> AnyResult<(), AnyError> {
         if let Some(merge_cells) = self.merge_cells.as_mut() {
-            if !merge_cells.iter().any(|range| {
-                ref_range.row_end <= range.row_start
-                    || ref_range.row_start >= range.row_end
-                    || ref_range.column_end >= range.column_start
-                    || ref_range.column_start >= range.column_end
-            }) {
-                return Err(anyhow!("Failed Range Overlap"));
-            } else {
-                merge_cells.push(ref_range);
+            if merge_cells.iter().any(|existing| ref_range.overlaps(existing)) {
+                return Err(anyhow!("New Record overlap with existing range"));
             }
+            merge_cells.push(ref_range);
         } else {
             self.merge_cells = Some(vec![ref_range]);
         }
@@ -2035,25 +2029,18 @@ impl WorkSheet {
         range: ReferenceRange,
     ) -> AnyResult<(), AnyError> {
         if let Some(hyperlinks) = self.hyperlinks.as_mut() {
-            if hyperlinks.iter().any(|link| {
-                (link.range.row_start >= range.row_start && link.range.row_end <= range.row_start)
-                    || (link.range.row_start >= range.row_end
-                        && link.range.row_end <= range.row_end)
-                    || (link.range.column_start >= range.column_start
-                        && link.range.column_end <= range.column_start)
-                    || (link.range.column_start >= range.column_end
-                        && link.range.column_end <= range.column_end)
-            }) {
-                // Error if existing any range overlap
+            if hyperlinks
+                .iter()
+                .any(|existing| range.overlaps(&existing.range))
+            {
                 return Err(anyhow!("New Record overlap with existing range"));
-            } else {
-                hyperlinks.push(HyperLinks {
-                    id: Some("New".to_string()),
-                    display,
-                    link,
-                    range,
-                });
             }
+            hyperlinks.push(HyperLinks {
+                id: Some("New".to_string()),
+                display,
+                link,
+                range,
+            });
         } else {
             self.hyperlinks = Some(vec![HyperLinks {
                 id: Some("New".to_string()),

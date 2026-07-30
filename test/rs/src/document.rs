@@ -28,7 +28,7 @@ mod document_test {
     #[test]
     fn edit_document() {
         let file = Word::new(
-            Some("src/TestFiles/basic_test.docx".to_string()),
+            Some("../edit_test_files/basic_test.docx".to_string()),
             WordPropertiesModel::default(),
         )
         .expect("Edit existing file failed");
