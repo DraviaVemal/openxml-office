@@ -114,12 +114,13 @@ impl XmlDocumentPart for CorePropertiesPart {
     fn new(
         office_document: Weak<RefCell<OfficeDocument>>,
         parent_relationship_part: Weak<RefCell<RelationsPart>>,
-    ) -> AnyResult<Self, AnyError> {
-        let file_name = Self::get_core_properties_file_name(&parent_relationship_part)
-            .context("Failed to pull Core Property file name")?
-            .to_string();
-        let xml_document = Self::get_xml_document(&office_document, &file_name)?;
-        Ok(Self {
+    ) -> AnyResult<CorePropertiesPart, AnyError> {
+        let file_name =
+            CorePropertiesPart::get_core_properties_file_name(&parent_relationship_part)
+                .context("Failed to pull Core Property file name")?
+                .to_string();
+        let xml_document = CorePropertiesPart::get_xml_document(&office_document, &file_name)?;
+        Ok(CorePropertiesPart {
             office_document,
             xml_document,
             file_path: file_name,

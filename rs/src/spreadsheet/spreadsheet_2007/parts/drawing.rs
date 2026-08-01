@@ -117,7 +117,7 @@ impl DrawingPart {
         common_service: Weak<RefCell<CommonServices>>,
         type_collection: &Map<&'static str, &'static Content>,
     ) -> AnyResult<DrawingPart, AnyError> {
-        let file_path = Self::get_drawing_file_name(&worksheet_relationship_part, type_collection)
+        let file_path = DrawingPart::get_drawing_file_name(&worksheet_relationship_part, type_collection)
             .context("Failed to pull worksheet file name")?;
         // Detect whether this drawing already exists (loaded) before the xml document
         // handle is created, since fetching the handle moves it out of the archive.
@@ -129,7 +129,7 @@ impl DrawingPart {
         } else {
             true
         };
-        let xml_document = Self::get_xml_document(&office_document, &file_path)?;
+        let xml_document = DrawingPart::get_xml_document(&office_document, &file_path)?;
         let drawing_relationship_part = Rc::new(RefCell::new(
             RelationsPart::new(
                 office_document.clone(),
@@ -141,14 +141,21 @@ impl DrawingPart {
             )
             .context("Creating Relation ship part for workbook failed.")?,
         ));
-        Ok(Self {
+        let anchor_collection = log_elapsed!(
+            || {
+                DrawingPart::deserialize_drawing(&xml_document)
+                    .context("Failed to open drawing part and deserialize anchors")
+            },
+            "drawing Initialize Time"
+        )?;
+        Ok(DrawingPart {
             drawing_global: DrawingPartGlobal::new(),
             office_document,
             xml_document,
             common_service,
             worksheet_relationship_part,
             drawing_relationship_part,
-            anchor_collection: None,
+            anchor_collection,
             is_new,
             file_path: file_path.to_string(),
         })

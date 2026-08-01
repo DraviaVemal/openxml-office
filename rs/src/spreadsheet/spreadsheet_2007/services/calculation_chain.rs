@@ -145,14 +145,16 @@ impl XmlDocumentPart for CalculationChainPart {
     fn new(
         office_document: Weak<RefCell<OfficeDocument>>,
         parent_relationship_part: Weak<RefCell<RelationsPart>>,
-    ) -> AnyResult<Self, AnyError> {
-        let file_name = Self::get_calc_chain_file_name(&parent_relationship_part)
+    ) -> AnyResult<CalculationChainPart, AnyError> {
+        let file_name = CalculationChainPart::get_calc_chain_file_name(&parent_relationship_part)
             .context("Failed to pull calc chain file name")?
             .to_string();
-        let mut xml_document = Self::get_xml_document(&office_document, &file_name)?;
-        let calculation_collection = Self::deserialise_calc_chain(&mut xml_document)
-            .context("Load Calculation Chain To DB Failed")?;
-        Ok(Self {
+        let mut xml_document =
+            CalculationChainPart::get_xml_document(&office_document, &file_name)?;
+        let calculation_collection =
+            CalculationChainPart::deserialise_calc_chain(&mut xml_document)
+                .context("Load Calculation Chain To DB Failed")?;
+        Ok(CalculationChainPart {
             office_document,
             parent_relationship_part,
             calculation_collection,

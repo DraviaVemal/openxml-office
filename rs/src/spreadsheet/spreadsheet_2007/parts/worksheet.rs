@@ -270,14 +270,14 @@ impl WorkSheet {
         common_service: Weak<RefCell<CommonServices>>,
         display_sheet_name: Option<String>,
     ) -> AnyResult<WorkSheet, AnyError> {
-        let (file_path, display_sheet_name) = Self::get_sheet_file_name(
+        let (file_path, display_sheet_name) = WorkSheet::get_sheet_file_name(
             display_sheet_name,
             &office_document,
             &sheet_collection,
             &workbook_relationship_part,
         )
         .context("Failed to pull worksheet file name")?;
-        let xml_document = Self::get_xml_document(&office_document, &file_path)?;
+        let xml_document = WorkSheet::get_xml_document(&office_document, &file_path)?;
         let sheet_relationship_part = Rc::new(RefCell::new(
             RelationsPart::new(
                 office_document.clone(),
@@ -291,7 +291,7 @@ impl WorkSheet {
         ));
         let (column_collection, sheet_data, merge_cells, hyperlinks, sheet_views, dimension) = log_elapsed!(
             || {
-                Self::initialize_worksheet(&xml_document, Rc::clone(&sheet_relationship_part))
+                WorkSheet::initialize_worksheet(&xml_document, Rc::clone(&sheet_relationship_part))
                     .context("Failed to open Worksheet")
             },
             "Worksheet Initialize Time"
@@ -305,7 +305,7 @@ impl WorkSheet {
             )
             .context("Failed to create/load drawing part of the sheet")?,
         ));
-        Ok(Self {
+        Ok(WorkSheet {
             office_document,
             xml_document,
             common_service,
@@ -2007,7 +2007,10 @@ impl WorkSheet {
     /// - `ref_range` (`ReferenceRange`) - Pass the rect. Range to merge cells.
     pub fn set_merge_cell_mut(&mut self, ref_range: ReferenceRange) -> AnyResult<(), AnyError> {
         if let Some(merge_cells) = self.merge_cells.as_mut() {
-            if merge_cells.iter().any(|existing| ref_range.overlaps(existing)) {
+            if merge_cells
+                .iter()
+                .any(|existing| ref_range.overlaps(existing))
+            {
                 return Err(anyhow!("New Record overlap with existing range"));
             }
             merge_cells.push(ref_range);

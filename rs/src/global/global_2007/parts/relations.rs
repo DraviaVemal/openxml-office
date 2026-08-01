@@ -81,11 +81,11 @@ impl RelationsPart {
     pub(crate) fn new(
         office_document: Weak<RefCell<OfficeDocument>>,
         file_name: &str,
-    ) -> AnyResult<Self, AnyError> {
-        let mut xml_document = Self::get_xml_document(&office_document, &file_name)?;
-        let relationships =
-            Self::load_relations(&mut xml_document).context("Failed to decode Relations")?;
-        Ok(Self {
+    ) -> AnyResult<RelationsPart, AnyError> {
+        let mut xml_document = RelationsPart::get_xml_document(&office_document, &file_name)?;
+        let relationships = RelationsPart::load_relations(&mut xml_document)
+            .context("Failed to decode Relations")?;
+        Ok(RelationsPart {
             office_document,
             xml_document,
             relationships,
