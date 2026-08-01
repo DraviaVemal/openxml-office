@@ -137,14 +137,14 @@ impl XmlDocumentPart for ShareStringPart {
     fn new(
         office_document: Weak<RefCell<OfficeDocument>>,
         parent_relationship_part: Weak<RefCell<RelationsPart>>,
-    ) -> AnyResult<Self, AnyError> {
-        let file_name = Self::get_share_string_file_name(&parent_relationship_part)
+    ) -> AnyResult<ShareStringPart, AnyError> {
+        let file_name = ShareStringPart::get_share_string_file_name(&parent_relationship_part)
             .context("Failed to pull share string file name")?
             .to_string();
-        let mut xml_document = Self::get_xml_document(&office_document, &file_name)?;
-        let share_string_collection = Self::deserialize_share_string(&mut xml_document)
+        let mut xml_document = ShareStringPart::get_xml_document(&office_document, &file_name)?;
+        let share_string_collection = ShareStringPart::deserialize_share_string(&mut xml_document)
             .context("Load Share String To DB Failed")?;
-        Ok(Self {
+        Ok(ShareStringPart {
             office_document,
             parent_relationship_part,
             xml_document,

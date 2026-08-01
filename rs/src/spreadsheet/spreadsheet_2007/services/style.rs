@@ -11,10 +11,9 @@ use crate::{
     },
     log_elapsed,
     spreadsheet_2007::models::{
-        BorderSetting, BorderStyle, BorderStyleValues, CellXfs, ColorSetting,
+        BorderSetting, BorderStyle, BorderStyleValues, CellStyleSetting, CellXfs, ColorSetting,
         ColorSettingTypeValues, FillStyle, FontSchemeValues, FontStyle, HorizontalAlignmentValues,
-        NumberFormat, NumberFormatValues, PatternTypeValues, StyleId, CellStyleSetting,
-        VerticalAlignmentValues,
+        NumberFormat, NumberFormatValues, PatternTypeValues, StyleId, VerticalAlignmentValues,
     },
 };
 use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
@@ -92,10 +91,8 @@ impl XmlDocumentPartInitializing for StylePart {
     {
         let content = EXCEL_TYPE_COLLECTION.get("style").unwrap();
         Ok((
-            XmlDeserializer::vec_to_xml_doc_tree(
-                include_str!("style.xml").as_bytes().to_vec(),
-            )
-            .context("Initializing Theme Failed")?,
+            XmlDeserializer::vec_to_xml_doc_tree(include_str!("style.xml").as_bytes().to_vec())
+                .context("Initializing Theme Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -107,11 +104,11 @@ impl XmlDocumentPart for StylePart {
     fn new(
         office_document: Weak<RefCell<OfficeDocument>>,
         parent_relationship_part: Weak<RefCell<RelationsPart>>,
-    ) -> AnyResult<Self, AnyError> {
-        let file_name = Self::get_style_file_name(&parent_relationship_part)
+    ) -> AnyResult<StylePart, AnyError> {
+        let file_name = StylePart::get_style_file_name(&parent_relationship_part)
             .context("Failed to pull style file name")?
             .to_string();
-        let mut xml_document = Self::get_xml_document(&office_document, &file_name)?;
+        let mut xml_document = StylePart::get_xml_document(&office_document, &file_name)?;
         let (
             number_format_collection,
             font_collection,
@@ -119,9 +116,9 @@ impl XmlDocumentPart for StylePart {
             border_collection,
             cell_style_collection,
             cell_collection,
-        ) = Self::deserialize_content(&mut xml_document)
+        ) = StylePart::deserialize_content(&mut xml_document)
             .context("Load Share String To Object Failed")?;
-        Ok(Self {
+        Ok(StylePart {
             office_document,
             xml_document,
             file_path: file_name,
@@ -638,7 +635,11 @@ impl StylePart {
             // Cell Style Xfs
             StylePart::add_cell_style(&mut xml_doc_mut, &mut self.cell_xfs_collection, true)?;
             // Cell Styles Xfs
-            StylePart::add_cell_style(&mut xml_doc_mut, &mut self.cell_style_xfs_collection, false)?;
+            StylePart::add_cell_style(
+                &mut xml_doc_mut,
+                &mut self.cell_style_xfs_collection,
+                false,
+            )?;
         }
         Ok(())
     }
@@ -660,8 +661,9 @@ impl StylePart {
                         .map(|attribute| attribute.get_value())
                 };
                 if let Some(value) = attribute_value("numFmtId") {
-                    cell_xf.number_format_id =
-                        value.parse().context("Cell Number Format Id Parse Failed")?;
+                    cell_xf.number_format_id = value
+                        .parse()
+                        .context("Cell Number Format Id Parse Failed")?;
                 }
                 if let Some(value) = attribute_value("fontId") {
                     cell_xf.font_id = value.parse().context("Cell Font Id Parse Failed")?;
@@ -798,9 +800,7 @@ impl StylePart {
                     parent_id,
                     "color",
                     Some(vec![XmlAttribute::new(
-                        ColorSettingTypeValues::get_string(
-                            border_color_setting.color_setting_type,
-                        ),
+                        ColorSettingTypeValues::get_string(border_color_setting.color_setting_type),
                         border_color_setting.value,
                     )]),
                 )

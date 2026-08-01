@@ -15,7 +15,7 @@ use crate::{
     log_elapsed,
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
-        models::{StyleId, CellStyleSetting},
+        models::{CellStyleSetting, StyleId},
         parts::WorkSheet,
         services::{CalculationChainPart, CommonServices, ShareStringPart, StylePart},
     },
@@ -281,13 +281,13 @@ impl XmlDocumentPart for WorkbookPart {
     fn new(
         office_document: Weak<RefCell<OfficeDocument>>,
         parent_relationship_part: Weak<RefCell<RelationsPart>>,
-    ) -> AnyResult<Self, AnyError> {
+    ) -> AnyResult<WorkbookPart, AnyError> {
         log_elapsed!(
             || {
-                let file_name = Self::get_workbook_file_name(&parent_relationship_part)
+                let file_name = WorkbookPart::get_workbook_file_name(&parent_relationship_part)
                     .context("Failed to pull workbook file name")?
                     .to_string();
-                let mut file_tree = Self::get_xml_document(&office_document, &file_name)?;
+                let mut file_tree = WorkbookPart::get_xml_document(&office_document, &file_name)?;
                 let workbook_relationship_part = Rc::new(RefCell::new(
                     RelationsPart::new(
                         office_document.clone(),
@@ -331,8 +331,9 @@ impl XmlDocumentPart for WorkbookPart {
                     style,
                 )));
                 let (sheet_collection, workbook_view) =
-                    Self::load_sheet_names(&mut file_tree).context("Loading Sheet Names Failed")?;
-                Ok(Self {
+                    WorkbookPart::load_sheet_names(&mut file_tree)
+                        .context("Loading Sheet Names Failed")?;
+                Ok(WorkbookPart {
                     office_document,
                     xml_document: file_tree,
                     file_path: file_name,

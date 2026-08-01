@@ -57,8 +57,8 @@ impl ConverterUtil {
     /// - `cell_ref` (`&str`) - Cell Ref "A1" to convert.
     pub fn get_cell_index(cell_ref: &str) -> AnyResult<(RowIndex, ColumnIndex), AnyError> {
         Ok((
-            Self::extract_digits(cell_ref).context("Failed to extract int key")?,
-            Self::get_column_index(cell_ref).context("Failed to Convert to int key")?,
+            ConverterUtil::extract_digits(cell_ref).context("Failed to extract int key")?,
+            ConverterUtil::get_column_index(cell_ref).context("Failed to Convert to int key")?,
         ))
     }
 

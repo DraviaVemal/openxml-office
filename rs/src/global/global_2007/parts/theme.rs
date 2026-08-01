@@ -47,10 +47,8 @@ impl XmlDocumentPartInitializing for ThemePart {
     {
         let content = COMMON_TYPE_COLLECTION.get("theme").unwrap();
         Ok((
-            XmlDeserializer::vec_to_xml_doc_tree(
-                include_str!("theme.xml").as_bytes().to_vec(),
-            )
-            .context("Initializing Theme Failed")?,
+            XmlDeserializer::vec_to_xml_doc_tree(include_str!("theme.xml").as_bytes().to_vec())
+                .context("Initializing Theme Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -63,12 +61,12 @@ impl XmlDocumentPart for ThemePart {
     fn new(
         office_document: Weak<RefCell<OfficeDocument>>,
         parent_relationship_part: Weak<RefCell<RelationsPart>>,
-    ) -> AnyResult<Self, AnyError> {
-        let file_name = Self::get_theme_file_name(&parent_relationship_part)
+    ) -> AnyResult<ThemePart, AnyError> {
+        let file_name = ThemePart::get_theme_file_name(&parent_relationship_part)
             .context("Failed to pull theme file name")?
             .to_string();
-        let xml_document = Self::get_xml_document(&office_document, &file_name)?;
-        Ok(Self {
+        let xml_document = ThemePart::get_xml_document(&office_document, &file_name)?;
+        Ok(ThemePart {
             office_document,
             _xml_document: xml_document,
             file_path: file_name.to_string(),

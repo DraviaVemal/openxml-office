@@ -54,14 +54,14 @@ pub(crate) struct OfficeDocument {
 
 impl OfficeDocument {
     /// Create or Clone existing document to start with
-    pub(crate) fn new(file_path: Option<String>) -> AnyResult<Self, AnyError> {
+    pub(crate) fn new(file_path: Option<String>) -> AnyResult<OfficeDocument, AnyError> {
         let mut archive_collection = DashMap::new();
         if let Some(file_path) = file_path {
             // Load existing file to our system
-            archive_collection = Self::deserialise_office_document(&file_path)
+            archive_collection = OfficeDocument::deserialise_office_document(&file_path)
                 .context("Load OpenXML Archive Into deserializing Failed")?;
         }
-        Ok(Self {
+        Ok(OfficeDocument {
             xml_document_collection: DashMap::new(),
             archive_collection,
             part_counter: DashMap::new(),
