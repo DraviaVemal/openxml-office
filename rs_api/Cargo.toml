@@ -4,7 +4,7 @@ version = "4.0.0"
 edition = "2021"
 
 [dependencies]
-draviavemal-openxml_office = { path = "../rs", version = ">= 4.0.0-alpha.4" }
+draviavemal-openxml_office.workspace = true
 actix-web = "4.9.0"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135"
