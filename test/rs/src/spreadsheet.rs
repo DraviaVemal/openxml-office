@@ -738,16 +738,17 @@ mod spreadsheet_test {
             },
         )
         .expect("Open Existing File Failed");
-        let mut sheet = excel
-            .get_worksheet_mut("image".to_string())
-            .expect("Failed to get sheet");
-        sheet
-            .add_picture(
-                "../edit_test_files/tom_and_jerry.jpg",
-                ExcelPictureSetting::default(),
-            )
-            .expect("Failed to add image");
-        sheet.flush().expect("Failed to save sheet");
+        {
+            let mut sheet = excel
+                .get_worksheet_mut("image".to_string())
+                .expect("Failed to get sheet");
+            sheet
+                .add_picture(
+                    "../edit_test_files/tom_and_jerry.jpg",
+                    ExcelPictureSetting::default(),
+                )
+                .expect("Failed to add image");
+        }
         let path = excel
             .save_as(&get_save_file(None))
             .expect("Failed to save File");
