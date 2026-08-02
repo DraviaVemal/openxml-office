@@ -22,5 +22,5 @@ rand = "0.8.5"
 dashmap = "6.1.0"
 criterion = "0.7.0"
 log = "0.4.22"
-draviavemal-xml_rs = "1.0.3"
+draviavemal-xml_rs = "1.0.4-alpha.2"
 draviavemal-openxml_office = { version = "4.0.0-alpha.22", path = "rs" }
