@@ -9,9 +9,9 @@ pub(crate) struct GraphPosition {
 #[derive(Debug)]
 pub struct AnchorPosition {
     pub column: u16,
-    pub column_offset: u16,
+    pub column_offset: u64,
     pub row: u32,
-    pub row_offset: u32,
+    pub row_offset: u64,
 }
 
 impl Default for AnchorPosition {
