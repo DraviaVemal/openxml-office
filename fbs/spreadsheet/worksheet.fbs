@@ -215,9 +215,9 @@ enum worksheet_image_type: byte {
 
 table worksheet_anchor_position {
     column: uint16;
-    column_offset: uint16;
+    column_offset: uint64;
     row: uint32;
-    row_offset: uint32;
+    row_offset: uint64;
 }
 
 enum worksheet_excel_hyperlink_type: byte {
