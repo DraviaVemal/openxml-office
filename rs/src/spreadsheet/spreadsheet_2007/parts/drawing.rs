@@ -1,5 +1,4 @@
 use std::{
-    any::Any,
     cell::{RefCell, RefMut},
     collections::VecDeque,
     rc::{Rc, Weak},
@@ -857,8 +856,10 @@ impl DrawingPart {
                             .get_element_text_value()
                             .context("Failed to get child value of the node")?
                             .context("No Valid Value found for col element")?;
-                        anchor_position.column =
-                            value.parse().context("Failed to parse column value")?;
+                        anchor_position.column = value
+                            .trim()
+                            .parse::<u16>()
+                            .context("Failed to parse column value")?;
                     }
                     "colOff" => {
                         let col_offset_element = xml_doc_mut
@@ -867,9 +868,11 @@ impl DrawingPart {
                         let value = col_offset_element
                             .get_element_text_value()
                             .context("Failed to get child value of the node")?
-                            .context("No Valid Value found for col element")?;
-                        anchor_position.column_offset =
-                            value.parse().context("Failed to parse column value")?;
+                            .context("No Valid Value found for col offset element")?;
+                        anchor_position.column_offset = value
+                            .trim()
+                            .parse::<u64>()
+                            .context("Failed to parse column offset value")?;
                     }
                     "row" => {
                         let row_element = xml_doc_mut
@@ -878,9 +881,11 @@ impl DrawingPart {
                         let value = row_element
                             .get_element_text_value()
                             .context("Failed to get child value of the node")?
-                            .context("No Valid Value found for col element")?;
-                        anchor_position.row =
-                            value.parse().context("Failed to parse column value")?;
+                            .context("No Valid Value found for row element")?;
+                        anchor_position.row = value
+                            .trim()
+                            .parse::<u32>()
+                            .context("Failed to parse row value")?;
                     }
                     "rowOff" => {
                         let row_offset_element = xml_doc_mut
@@ -889,9 +894,11 @@ impl DrawingPart {
                         let value = row_offset_element
                             .get_element_text_value()
                             .context("Failed to get child value of the node")?
-                            .context("No Valid Value found for col element")?;
-                        anchor_position.row_offset =
-                            value.parse().context("Failed to parse column value")?;
+                            .context("No Valid Value found for row offset element")?;
+                        anchor_position.row_offset = value
+                            .trim()
+                            .parse::<u64>()
+                            .context("Failed to parse row offset value")?;
                     }
                     _ => {
                         log::error!("Unhandled Anchor position Component Detected. '{}'", tag);
@@ -955,10 +962,19 @@ impl DrawingPart {
             &two_cell_anchor.from,
         )
         .context("Failed to serialise from position")?;
-        DrawingPart::serialize_anchor_position(xml_doc_mut, anchor_id, "xdr:to", &two_cell_anchor.to)
-            .context("Failed to serialise to position")?;
-        DrawingPart::serialize_anchor_content(xml_doc_mut, anchor_id, two_cell_anchor.anchor_content)
-            .context("Failed to serialise anchor content")?;
+        DrawingPart::serialize_anchor_position(
+            xml_doc_mut,
+            anchor_id,
+            "xdr:to",
+            &two_cell_anchor.to,
+        )
+        .context("Failed to serialise to position")?;
+        DrawingPart::serialize_anchor_content(
+            xml_doc_mut,
+            anchor_id,
+            two_cell_anchor.anchor_content,
+        )
+        .context("Failed to serialise anchor content")?;
         xml_doc_mut
             .append_child_element_mut(anchor_id, "xdr:clientData", None)
             .context("Failed to add client data element")?;
@@ -980,8 +996,12 @@ impl DrawingPart {
             &one_cell_anchor.from,
         )
         .context("Failed to serialise from position")?;
-        DrawingPart::serialize_anchor_content(xml_doc_mut, anchor_id, one_cell_anchor.anchor_content)
-            .context("Failed to serialise anchor content")?;
+        DrawingPart::serialize_anchor_content(
+            xml_doc_mut,
+            anchor_id,
+            one_cell_anchor.anchor_content,
+        )
+        .context("Failed to serialise anchor content")?;
         xml_doc_mut
             .append_child_element_mut(anchor_id, "xdr:clientData", None)
             .context("Failed to add client data element")?;
