@@ -17,7 +17,7 @@ namespace draviavemal.openxml_office.document_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "word_create", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "word_create", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_word_create(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -29,7 +29,7 @@ namespace draviavemal.openxml_office.document_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "word_save_as", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "word_save_as", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_word_save_as(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,

@@ -34,7 +34,7 @@ namespace draviavemal.openxml_office.global_2007
             out IntPtr errorMsg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "free_buffer", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "free_buffer", CallingConvention = CallingConvention.Cdecl)]
         private static extern void ffi_free_buffer(
             IntPtr buffer,
             UIntPtr buffer_size

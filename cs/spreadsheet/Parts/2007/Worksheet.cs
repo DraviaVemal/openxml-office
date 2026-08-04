@@ -21,7 +21,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "set_column_ref_properties", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "set_column_ref_properties", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_set_column_ref_properties(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -31,7 +31,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "set_column_index_properties", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "set_column_index_properties", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_set_column_index_properties(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -41,7 +41,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "set_row_index_properties", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "set_row_index_properties", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_set_row_index_properties(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -51,7 +51,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "set_cell_ref_value", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "set_cell_ref_value", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_set_cell_ref_value(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -61,7 +61,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "set_cell_index_value", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "set_cell_index_value", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_set_cell_index_value(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -71,49 +71,49 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "worksheet_flush", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "worksheet_flush", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_worksheet_flush(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "worksheet_set_merge_cell", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "worksheet_set_merge_cell", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_worksheet_set_merge_cell(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "worksheet_remove_merge_cell", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "worksheet_remove_merge_cell", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_worksheet_remove_merge_cell(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "worksheet_set_hyperlink", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "worksheet_set_hyperlink", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_worksheet_set_hyperlink(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "worksheet_remove_hyperlink", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "worksheet_remove_hyperlink", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_worksheet_remove_hyperlink(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "worksheet_delete_sheet", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "worksheet_delete_sheet", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_worksheet_delete_sheet(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "worksheet_get_range_cell_properties", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "worksheet_get_range_cell_properties", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_worksheet_get_range_cell_properties(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -122,7 +122,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "worksheet_list_merge_cell", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "worksheet_list_merge_cell", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_worksheet_list_merge_cell(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -131,7 +131,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "worksheet_list_hyperlinks", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "worksheet_list_hyperlinks", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_worksheet_list_hyperlinks(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -140,7 +140,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "worksheet_add_picture", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "worksheet_add_picture", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_worksheet_add_picture(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,

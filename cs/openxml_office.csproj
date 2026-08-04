@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NativeHostRid Condition="'$(NativeHostRid)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</NativeHostRid>
+  </PropertyGroup>
   <ItemGroup>
-    <None Update="lib\draviavemal_openxml_office_ffi.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Pack>true</Pack>
-    </None>
-    <None Update="lib\draviavemal_openxml_office_ffi.so">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Pack>true</Pack>
-    </None>
+    <None Include="runtimes/**/*"
+          Exclude="runtimes/$(NativeHostRid)/native/*"
+          Pack="true"
+          PackagePath="runtimes/%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="runtimes/$(NativeHostRid)/native/*"
+          Link="%(Filename)%(Extension)"
+          Pack="true"
+          PackagePath="runtimes/$(NativeHostRid)/native/%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models/" />
