@@ -57,7 +57,7 @@ flatc -p --gen-all -o "$PYTHON_DIR" "fbs/consolidated.fbs"
 # Build Rust dynamic link file
 
 # Prepare Build Result Directory
-rm -rf cs/lib && mkdir -p cs/lib
+rm -rf cs/runtimes && mkdir -p cs/runtimes/win-x64/native cs/runtimes/linux-x64/native
 rm -rf python/lib && mkdir -p python/lib
 rm -rf java/draviavemal_openxml_office/src/lib && mkdir -p java/draviavemal_openxml_office/src/main/resources/lib
 rm -rf go/lib && mkdir -p go/lib
@@ -81,10 +81,9 @@ cargo build $release_flag --target x86_64-unknown-linux-gnu
 # Mac osX
 # cargo build --release --target x86_64-apple-darwin
 
-# Copy Result binary to CS targets
-cp $win_binary_dir/draviavemal_openxml_office_ffi.dll cs/lib/draviavemal_openxml_office_ffi.dll
-cp $linux_binary_dir/libdraviavemal_openxml_office_ffi.so cs/lib/draviavemal_openxml_office_ffi.so
-cp $target_dir/methods.h cs/lib/methods.h
+# Copy Result binary to CS targets (runtimes/<rid>/native so .NET resolves per RID)
+cp $win_binary_dir/draviavemal_openxml_office_ffi.dll cs/runtimes/win-x64/native/draviavemal_openxml_office_ffi.dll
+cp $linux_binary_dir/libdraviavemal_openxml_office_ffi.so cs/runtimes/linux-x64/native/libdraviavemal_openxml_office_ffi.so
 
 # Copy Result binary to Python targets
 cp $win_binary_dir/draviavemal_openxml_office_ffi.dll python/lib/draviavemal_openxml_office_ffi.dll

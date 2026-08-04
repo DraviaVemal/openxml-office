@@ -1,5 +1,6 @@
 !test/test_files/**
 **/test_results
 nupkgs
+runtimes/
 # Commons
 **/openxml_office_fbs

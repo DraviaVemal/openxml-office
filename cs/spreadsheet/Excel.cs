@@ -17,7 +17,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_create", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_create", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_create(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -29,7 +29,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_add_sheet", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_add_sheet", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_add_sheet(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -41,7 +41,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_get_sheet", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_get_sheet", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_get_sheet(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -53,7 +53,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_rename_sheet", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_rename_sheet", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_rename_sheet(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -63,7 +63,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_get_style_id", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_get_style_id", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_get_style_id(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -75,7 +75,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_save_as", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_save_as", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_save_as(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -84,49 +84,49 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_set_active_sheet", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_set_active_sheet", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_set_active_sheet(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_set_visibility", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_set_visibility", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_set_visibility(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_minimize_workbook", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_minimize_workbook", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_minimize_workbook(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_sheet_tabs", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_sheet_tabs", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_hide_sheet_tabs(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_vertical_scroll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_vertical_scroll", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_hide_vertical_scroll(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_horizontal_scroll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_horizontal_scroll", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_hide_horizontal_scroll(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
         );
 
-        [DllImport("lib/draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_sheet", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_hide_sheet", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_hide_sheet(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
