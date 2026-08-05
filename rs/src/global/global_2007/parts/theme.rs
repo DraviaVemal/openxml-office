@@ -34,7 +34,7 @@ impl XmlDocumentPartClose for ThemePart {
         if let Some(xml_tree) = self.office_document.upgrade() {
             xml_tree
                 .try_borrow_mut()
-                .context("Failed to pull XML Handle")?
+                .context("draviavemal-openxml_office::Failed to pull XML Handle")?
                 .close_xml_document(&self.file_path)?;
         }
         Ok(())
@@ -48,7 +48,7 @@ impl XmlDocumentPartInitializing for ThemePart {
         let content = COMMON_TYPE_COLLECTION.get("theme").unwrap();
         Ok((
             XmlDeserializer::vec_to_xml_doc_tree(include_str!("theme.xml").as_bytes().to_vec())
-                .context("Initializing Theme Failed")?,
+                .context("draviavemal-openxml_office::Initializing Theme Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -63,7 +63,7 @@ impl XmlDocumentPart for ThemePart {
         parent_relationship_part: Weak<RefCell<RelationsPart>>,
     ) -> AnyResult<ThemePart, AnyError> {
         let file_name = ThemePart::get_theme_file_name(&parent_relationship_part)
-            .context("Failed to pull theme file name")?
+            .context("draviavemal-openxml_office::Failed to pull theme file name")?
             .to_string();
         let xml_document = ThemePart::get_xml_document(&office_document, &file_name)?;
         Ok(ThemePart {
@@ -82,16 +82,16 @@ impl ThemePart {
         if let Some(relations_part) = relations_part.upgrade() {
             Ok(relations_part
                 .try_borrow_mut()
-                .context("Failed to pull relationship connection")?
+                .context("draviavemal-openxml_office::Failed to pull relationship connection")?
                 .get_relationship_target_path_by_type_mut(
                     &theme_content.schemas_type,
                     theme_content,
                     Some(format!("xl/{}", theme_content.default_path)),
                     None,
                 )
-                .context("Pull Path From Existing File Failed")?)
+                .context("draviavemal-openxml_office::Pull Path From Existing File Failed")?)
         } else {
-            Err(anyhow!("Failed to upgrade relation part"))
+            Err(AnyError::msg("draviavemal-openxml_office::Failed to upgrade relation part"))
         }
     }
 }

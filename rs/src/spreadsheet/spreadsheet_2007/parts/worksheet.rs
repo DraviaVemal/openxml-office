@@ -169,11 +169,11 @@ impl XmlDocumentPartClose for WorkSheet {
                 if let Some(office_document) = self.office_document.upgrade() {
                     let mut office_doc_mut = office_document
                         .try_borrow_mut()
-                        .context("Failed to pull office document")?;
+                        .context("draviavemal-openxml_office::Failed to pull office document")?;
                     if let Some(xml_document) = self.xml_document.upgrade() {
                         let mut xml_doc_mut = xml_document
                             .try_borrow_mut()
-                            .context("Failed to Pull XML Handle")?;
+                            .context("draviavemal-openxml_office::Failed to Pull XML Handle")?;
                         // Add dimension
                         log_elapsed!(self.serialize_dimension(&mut xml_doc_mut))?;
                         // Add Cols Record to Document
@@ -208,7 +208,7 @@ impl XmlDocumentPartClose for WorkSheet {
                         || {
                             office_doc_mut
                                 .close_xml_document(&self.file_path)
-                                .context("Failed to close the current tree document")
+                                .context("draviavemal-openxml_office::Failed to close the current tree document")
                         },
                         "Close worksheet document"
                     )?;
@@ -217,9 +217,9 @@ impl XmlDocumentPartClose for WorkSheet {
                     || {
                         self.sheet_relationship_part
                             .try_borrow_mut()
-                            .context("Failed to pull relationship handle")?
+                            .context("draviavemal-openxml_office::Failed to pull relationship handle")?
                             .close_document()
-                            .context("Failed to Close relationship part")
+                            .context("draviavemal-openxml_office::Failed to Close relationship part")
                     },
                     "Worksheet relation part closed"
                 )?;
@@ -227,9 +227,9 @@ impl XmlDocumentPartClose for WorkSheet {
                     || {
                         self.drawing_part
                             .try_borrow_mut()
-                            .context("Failed to pull Drawing handle")?
+                            .context("draviavemal-openxml_office::Failed to pull Drawing handle")?
                             .close_document()
-                            .context("Failed to Close Drawing part")
+                            .context("draviavemal-openxml_office::Failed to Close Drawing part")
                     },
                     "Worksheet Drawing part closed"
                 )?;
@@ -252,7 +252,7 @@ impl XmlDocumentPartInitializing for WorkSheet {
             </worksheet>"#;
         Ok((
             XmlDeserializer::vec_to_xml_doc_tree(template_core_properties.as_bytes().to_vec())
-                .context("Initializing Worksheet Failed")?,
+                .context("draviavemal-openxml_office::Initializing Worksheet Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -276,7 +276,7 @@ impl WorkSheet {
             &sheet_collection,
             &workbook_relationship_part,
         )
-        .context("Failed to pull worksheet file name")?;
+        .context("draviavemal-openxml_office::Failed to pull worksheet file name")?;
         let xml_document = WorkSheet::get_xml_document(&office_document, &file_path)?;
         let sheet_relationship_part = Rc::new(RefCell::new(
             RelationsPart::new(
@@ -287,12 +287,12 @@ impl WorkSheet {
                     file_path.rsplit('/').next().unwrap()
                 ),
             )
-            .context("Creating Relation ship part for workbook failed.")?,
+            .context("draviavemal-openxml_office::Creating Relation ship part for workbook failed.")?,
         ));
         let (column_collection, sheet_data, merge_cells, hyperlinks, sheet_views, dimension) = log_elapsed!(
             || {
                 WorkSheet::initialize_worksheet(&xml_document, Rc::clone(&sheet_relationship_part))
-                    .context("Failed to open Worksheet")
+                    .context("draviavemal-openxml_office::Failed to open Worksheet")
             },
             "Worksheet Initialize Time"
         )?;
@@ -303,7 +303,7 @@ impl WorkSheet {
                 common_service.clone(),
                 &EXCEL_TYPE_COLLECTION,
             )
-            .context("Failed to create/load drawing part of the sheet")?,
+            .context("draviavemal-openxml_office::Failed to create/load drawing part of the sheet")?,
         ));
         Ok(WorkSheet {
             office_document,
@@ -343,23 +343,23 @@ impl WorkSheet {
         if let Some(xml_document) = xml_document.upgrade() {
             let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
-                .context("Failed to get XML doc handle")?;
+                .context("draviavemal-openxml_office::Failed to get XML doc handle")?;
             // unwrap dimension
             let dimension_root_id = xml_doc_mut.get_root_id();
             if let Some(dimension_ids) = xml_doc_mut
                 .find_all_child(dimension_root_id, "dimension")
-                .context("Failed to find dimension elements")?
+                .context("draviavemal-openxml_office::Failed to find dimension elements")?
             {
                 for dimension_id in dimension_ids {
                     xml_doc_mut
                         .remove_element_mut(dimension_id)
-                        .context("Failed to remove dimension element")?;
+                        .context("draviavemal-openxml_office::Failed to remove dimension element")?;
                 }
             }
             let worksheet_views = log_elapsed!(
                 || {
                     WorkSheet::deserialize_worksheet_views(&mut xml_doc_mut)
-                        .context("Failed to deserialize Worksheet View")
+                        .context("draviavemal-openxml_office::Failed to deserialize Worksheet View")
                 },
                 "Worksheet View Deserialization"
             )?;
@@ -367,7 +367,7 @@ impl WorkSheet {
             let column_collection = log_elapsed!(
                 || {
                     WorkSheet::deserialize_cols(&mut xml_doc_mut)
-                        .context("Failed To Deserialize Cols")
+                        .context("draviavemal-openxml_office::Failed To Deserialize Cols")
                 },
                 "Column deserialize"
             )?;
@@ -375,21 +375,21 @@ impl WorkSheet {
             let (sheet_data, dimension) = log_elapsed!(
                 || {
                     WorkSheet::deserialize_sheet_data(&mut xml_doc_mut)
-                        .context("Failed To Deserialize Sheet Data")
+                        .context("draviavemal-openxml_office::Failed To Deserialize Sheet Data")
                 },
                 "Sheet Data Deserialize"
             )?;
             let merge_cells = log_elapsed!(
                 || {
                     WorkSheet::deserialize_merge_cells(&mut xml_doc_mut)
-                        .context("Failed To Deserialize Merge Cells")
+                        .context("draviavemal-openxml_office::Failed To Deserialize Merge Cells")
                 },
                 "Merge Cell Deserialize"
             )?;
             let hyperlinks = log_elapsed!(
                 || {
                     WorkSheet::deserialize_hyperlinks(&mut xml_doc_mut, &relationship_part)
-                        .context("Failed To Deserialize hyperlinks")
+                        .context("draviavemal-openxml_office::Failed To Deserialize hyperlinks")
                 },
                 "Hyperlink Deserialize"
             )?;
@@ -419,7 +419,7 @@ impl WorkSheet {
             let root_id = xml_doc_mut.get_root_id();
             xml_doc_mut
                 .append_child_element_mut(root_id, "dimension", Some(dimension_attribute))
-                .context("Failed to Add Dimension node to worksheet")?;
+                .context("draviavemal-openxml_office::Failed to Add Dimension node to worksheet")?;
             Ok(())
         }
         if let Some(sheet_data) = self.sheet_data.as_ref() {
@@ -429,10 +429,10 @@ impl WorkSheet {
                     format!(
                         "{}{}:{}{}",
                         ConverterUtil::get_column_ref(self.dimension.start_col)
-                            .context("Failed to convert dim col start")?,
+                            .context("draviavemal-openxml_office::Failed to convert dim col start")?,
                         first_item.0,
                         ConverterUtil::get_column_ref(self.dimension.end_col)
-                            .context("Failed to convert dim col end")?,
+                            .context("draviavemal-openxml_office::Failed to convert dim col end")?,
                         if let Some(row_end) = sheet_data.last_key_value() {
                             row_end.0
                         } else {
@@ -443,7 +443,7 @@ impl WorkSheet {
                 let root_id = xml_doc_mut.get_root_id();
                 xml_doc_mut
                     .append_child_element_mut(root_id, "dimension", Some(dimension_attribute))
-                    .context("Failed to Add Dimension node to worksheet")?;
+                    .context("draviavemal-openxml_office::Failed to Add Dimension node to worksheet")?;
             } else {
                 set_default(xml_doc_mut)?;
             }
@@ -459,7 +459,7 @@ impl WorkSheet {
                 let root_id = xml_doc_mut.get_root_id();
                 let cols_id = xml_doc_mut
                     .inser_child_element_after_last_tag_mut(root_id, "cols", "sheetFormatPr", None)
-                    .context("Failed to Insert Cols Element")?;
+                    .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
                 loop {
                     if let Some(item) = column_collection.pop_front() {
                         let mut attribute: Vec<XmlAttribute> = Vec::new();
@@ -489,7 +489,7 @@ impl WorkSheet {
                         }
                         xml_doc_mut
                             .append_child_element_mut(cols_id, "col", Some(attribute))
-                            .context("Failed to insert col record")?;
+                            .context("draviavemal-openxml_office::Failed to insert col record")?;
                     } else {
                         break;
                     }
@@ -503,7 +503,7 @@ impl WorkSheet {
         let root_id = xml_doc_mut.get_root_id();
         let sheet_views_id = xml_doc_mut
             .inser_child_element_after_last_tag_mut(root_id, "sheetViews", "dimension", None)
-            .context("Failed to Insert Sheet Views Element")?;
+            .context("draviavemal-openxml_office::Failed to Insert Sheet Views Element")?;
         loop {
             if let Some(sheet_view) = self.sheet_views.view_collection.pop() {
                 let mut attribute: HashMap<String, String> = HashMap::new();
@@ -609,7 +609,7 @@ impl WorkSheet {
                                 .collect(),
                         ),
                     )
-                    .context("Failed to insert sheetView record")?;
+                    .context("draviavemal-openxml_office::Failed to insert sheetView record")?;
             } else {
                 break;
             }
@@ -622,7 +622,7 @@ impl WorkSheet {
             let root_id = xml_doc_mut.get_root_id();
             let sheet_data_id = xml_doc_mut
                 .inser_child_element_after_last_tag_mut(root_id, "sheetData", "cols", None)
-                .context("Failed to Insert Cols Element")?;
+                .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
             for (row_index, db_row) in sheet_data {
                 let mut row_attribute = HashMap::new();
                 row_attribute.insert("r".to_string(), row_index.to_string());
@@ -666,7 +666,7 @@ impl WorkSheet {
                                 .collect(),
                         ),
                     )
-                    .context("Failed to insert row element")?;
+                    .context("draviavemal-openxml_office::Failed to insert row element")?;
                 if let Some(cols) = db_row.cell_records {
                     for (col_index, cell_record) in cols {
                         // Create cell element
@@ -676,7 +676,7 @@ impl WorkSheet {
                             format!(
                                 "{}{}",
                                 ConverterUtil::get_column_ref(col_index)
-                                    .context("Failed to get Char Id from Int")?,
+                                    .context("draviavemal-openxml_office::Failed to get Char Id from Int")?,
                                 row_index
                             ),
                         );
@@ -709,46 +709,46 @@ impl WorkSheet {
                                         .collect(),
                                 ),
                             )
-                            .context("Failed to insert row element")?;
+                            .context("draviavemal-openxml_office::Failed to insert row element")?;
                         // Create cell's child element
                         match cell_record.data_type {
                             CellDataType::InlineString => {
                                 let inline_string_id = xml_doc_mut
                                     .append_child_element_mut(cell_id, "is", None)
-                                    .context("Failed to insert Inline string element")?;
+                                    .context("draviavemal-openxml_office::Failed to insert Inline string element")?;
                                 let text_id = xml_doc_mut
                                     .append_child_element_mut(inline_string_id, "t", None)
-                                    .context("Failed To insert Text Value to inline string")?;
+                                    .context("draviavemal-openxml_office::Failed To insert Text Value to inline string")?;
                                 xml_doc_mut
                                     .get_element_mut(text_id)
-                                    .context("Failed to get text element")?
+                                    .context("draviavemal-openxml_office::Failed to get text element")?
                                     .add_text_mut(&if let Some(value) = cell_record.value {
                                         value
                                     } else {
                                         "".to_string()
                                     })
-                                    .context("Failed to add text to inline string")?;
+                                    .context("draviavemal-openxml_office::Failed to add text to inline string")?;
                             }
                             _ => {
                                 if let Some(formula) = cell_record.formula {
                                     let formula_id = xml_doc_mut
                                         .append_child_element_mut(cell_id, "f", None)
-                                        .context("Failed to insert Inline string element")?;
+                                        .context("draviavemal-openxml_office::Failed to insert Inline string element")?;
                                     xml_doc_mut
                                         .get_element_mut(formula_id)
-                                        .context("Failed to get formula element")?
+                                        .context("draviavemal-openxml_office::Failed to get formula element")?
                                         .add_text_mut(&formula)
-                                        .context("Failed to add formula text")?;
+                                        .context("draviavemal-openxml_office::Failed to add formula text")?;
                                 }
                                 if let Some(value) = cell_record.value {
                                     let value_id = xml_doc_mut
                                         .append_child_element_mut(cell_id, "v", None)
-                                        .context("Failed to insert Inline string element")?;
+                                        .context("draviavemal-openxml_office::Failed to insert Inline string element")?;
                                     xml_doc_mut
                                         .get_element_mut(value_id)
-                                        .context("Failed to get value element")?
+                                        .context("draviavemal-openxml_office::Failed to get value element")?
                                         .add_text_mut(&value)
-                                        .context("Failed to add value text")?;
+                                        .context("draviavemal-openxml_office::Failed to add value text")?;
                                 }
                             }
                         }
@@ -764,17 +764,17 @@ impl WorkSheet {
             let root_id = xml_doc_mut.get_root_id();
             let merge_cells_id = xml_doc_mut
                 .inser_child_element_after_last_tag_mut(root_id, "mergeCells", "sheetData", None)
-                .context("Failed to Insert Cols Element")?;
+                .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
             {
                 let merge_cells_element = xml_doc_mut
                     .get_element_mut(merge_cells_id)
-                    .context("Failed to get element")?;
+                    .context("draviavemal-openxml_office::Failed to get element")?;
                 merge_cells_element
                     .add_attribute_mut(XmlAttribute::new(
                         "count".to_string(),
                         merge_cells.len().to_string(),
                     ))
-                    .context("Failed to set Merge Cells Attribute")?;
+                    .context("draviavemal-openxml_office::Failed to set Merge Cells Attribute")?;
             }
             for merge_cell in merge_cells {
                 let mut attribute = HashMap::new();
@@ -809,7 +809,7 @@ impl WorkSheet {
                                 .collect(),
                         ),
                     )
-                    .context("Failed to add MergeCell Node")?;
+                    .context("draviavemal-openxml_office::Failed to add MergeCell Node")?;
             }
         }
         Ok(())
@@ -824,7 +824,7 @@ impl WorkSheet {
             let root_id = xml_doc_mut.get_root_id();
             let hyperlinks_id = xml_doc_mut
                 .inser_child_element_after_last_tag_mut(root_id, "hyperlinks", "mergeCells", None)
-                .context("Failed to Insert Cols Element")?;
+                .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
             for hyperlink in hyperlinks {
                 let mut attributes = HashMap::new();
                 if hyperlink.range.row_start == hyperlink.range.row_end
@@ -862,7 +862,7 @@ impl WorkSheet {
                     let r_id = relationship_part
                         .borrow_mut()
                         .set_new_relationship_mut(&content, hyperlink.link)
-                        .context("Failed to Create Hyperlink Relationship")?;
+                        .context("draviavemal-openxml_office::Failed to Create Hyperlink Relationship")?;
                     attributes.insert("r:id".to_string(), r_id);
                 } else {
                     attributes.insert("location".to_string(), hyperlink.link);
@@ -878,7 +878,7 @@ impl WorkSheet {
                                 .collect(),
                         ),
                     )
-                    .context("Failed tp Add element")?;
+                    .context("draviavemal-openxml_office::Failed tp Add element")?;
             }
         }
         Ok(())
@@ -890,11 +890,11 @@ impl WorkSheet {
         let root_id = xml_doc_mut.get_root_id();
         if let Some(cols_id) = xml_doc_mut
             .find_first_child(root_id, "cols")
-            .context("Failed to find cols element")?
+            .context("draviavemal-openxml_office::Failed to find cols element")?
         {
             let child_ids: Vec<NodeId> = xml_doc_mut
                 .get_element(cols_id)
-                .context("Failed to get cols element")?
+                .context("draviavemal-openxml_office::Failed to get cols element")?
                 .get_child_contents()
                 .as_ref()
                 .map(|contents| {
@@ -911,13 +911,13 @@ impl WorkSheet {
             for col_id in child_ids {
                 let col = xml_doc_mut
                     .get_element(col_id)
-                    .context("Failed to get col element")?;
+                    .context("draviavemal-openxml_office::Failed to get col element")?;
                 let mut column_properties = ColumnProperties::default();
                 if let Some(min) = col.get_attribute("min").map(|a| a.get_value()) {
-                    column_properties.min = min.parse().context("Failed to parse min value")?;
+                    column_properties.min = min.parse().context("draviavemal-openxml_office::Failed to parse min value")?;
                 }
                 if let Some(max) = col.get_attribute("max").map(|a| a.get_value()) {
-                    column_properties.max = max.parse().context("Failed to parse min value")?;
+                    column_properties.max = max.parse().context("draviavemal-openxml_office::Failed to parse min value")?;
                 }
                 if let Some(best_fit) = col.get_attribute("bestFit").map(|a| a.get_value()) {
                     column_properties.best_fit = if best_fit == "1" { Some(true) } else { None }
@@ -927,14 +927,14 @@ impl WorkSheet {
                 }
                 if let Some(style) = col.get_attribute("style").map(|a| a.get_value()) {
                     column_properties.style_id = Some(StyleId::new(
-                        style.parse().context("Failed to parse style ID")?,
+                        style.parse().context("draviavemal-openxml_office::Failed to parse style ID")?,
                     ));
                 }
                 if let Some(outline_level) =
                     col.get_attribute("outlineLevel").map(|a| a.get_value())
                 {
                     column_properties.group_level =
-                        outline_level.parse().context("Failed to parse style ID")?;
+                        outline_level.parse().context("draviavemal-openxml_office::Failed to parse style ID")?;
                 }
                 if let Some(custom_width) = col.get_attribute("customWidth").map(|a| a.get_value())
                 {
@@ -942,9 +942,9 @@ impl WorkSheet {
                         column_properties.width = Some(
                             col.get_attribute("width")
                                 .map(|a| a.get_value())
-                                .context("Failed to get custom width")?
+                                .context("draviavemal-openxml_office::Failed to get custom width")?
                                 .parse()
-                                .context("Failed to parse custom width")?,
+                                .context("draviavemal-openxml_office::Failed to parse custom width")?,
                         );
                     }
                 }
@@ -955,7 +955,7 @@ impl WorkSheet {
             }
             xml_doc_mut
                 .remove_element_mut(cols_id)
-                .context("Failed to remove cols element")?;
+                .context("draviavemal-openxml_office::Failed to remove cols element")?;
             return Ok(Some(column_collection));
         }
         Ok(None)
@@ -969,11 +969,11 @@ impl WorkSheet {
         let root_id = xml_doc_mut.get_root_id();
         if let Some(sheet_views_id) = xml_doc_mut
             .find_first_child(root_id, "sheetViews")
-            .context("Failed to find sheetViews element")?
+            .context("draviavemal-openxml_office::Failed to find sheetViews element")?
         {
             let child_records: Vec<(NodeId, String)> = xml_doc_mut
                 .get_element(sheet_views_id)
-                .context("Failed to get sheetViews element")?
+                .context("draviavemal-openxml_office::Failed to get sheetViews element")?
                 .get_child_contents()
                 .as_ref()
                 .map(|contents| {
@@ -991,16 +991,16 @@ impl WorkSheet {
             for (element_id, element_tag) in child_records {
                 // Validate element that are not accounted
                 if element_tag != "sheetView" {
-                    return Err(anyhow!("Failed to Process Sheet Views child"));
+                    return Err(AnyError::msg("draviavemal-openxml_office::Failed to Process Sheet Views child"));
                 }
                 let sheet_view_element = xml_doc_mut
                     .get_element(element_id)
-                    .context("Failed to get Sheet View Element")?;
+                    .context("draviavemal-openxml_office::Failed to get Sheet View Element")?;
                 let mut worksheet_view = WorkSheetView::default();
                 worksheet_view.workbook_view_id = sheet_view_element
                     .get_attribute("workbookViewId")
                     .map(|a| a.get_value())
-                    .context("Mandatory attribute \"workbookViewId\" is missing from sheetView")?
+                    .context("draviavemal-openxml_office::Mandatory attribute \"workbookViewId\" is missing from sheetView")?
                     .to_string();
                 // Windows protection
                 if let Some(window_protection) = sheet_view_element
@@ -1119,7 +1119,7 @@ impl WorkSheet {
                     worksheet_view.zoom_scale = Some(
                         zoom_scale
                             .parse()
-                            .context("Failed to Convert Zoom Normal to i16")?,
+                            .context("draviavemal-openxml_office::Failed to Convert Zoom Normal to i16")?,
                     );
                 }
                 // Zoom Scale Normal
@@ -1130,7 +1130,7 @@ impl WorkSheet {
                     worksheet_view.zoom_scale_normal = Some(
                         zoom_scale_normal
                             .parse()
-                            .context("Failed to Convert Zoom Normal to i16")?,
+                            .context("draviavemal-openxml_office::Failed to Convert Zoom Normal to i16")?,
                     );
                 }
                 // Zoom Scale Sheet Layout View
@@ -1141,7 +1141,7 @@ impl WorkSheet {
                     worksheet_view.zoom_scale_sheet_layout = Some(
                         zoom_scale_sheet_layout
                             .parse()
-                            .context("Failed to Convert Zoom Normal to i16")?,
+                            .context("draviavemal-openxml_office::Failed to Convert Zoom Normal to i16")?,
                     );
                 }
                 // Zoom Scale Page Layout View
@@ -1152,14 +1152,14 @@ impl WorkSheet {
                     worksheet_view.zoom_scale_page_layout = Some(
                         zoom_scale_page_layout
                             .parse()
-                            .context("Failed to Convert Zoom Normal to i16")?,
+                            .context("draviavemal-openxml_office::Failed to Convert Zoom Normal to i16")?,
                     );
                 }
                 worksheet_views.view_collection.push(worksheet_view);
             }
             xml_doc_mut
                 .remove_element_mut(sheet_views_id)
-                .context("Failed to remove sheetViews element")?;
+                .context("draviavemal-openxml_office::Failed to remove sheetViews element")?;
         }
         Ok(worksheet_views)
     }
@@ -1172,12 +1172,12 @@ impl WorkSheet {
         let root_id = xml_doc_mut.get_root_id();
         if let Some(sheet_data_id) = xml_doc_mut
             .find_first_child(root_id, "sheetData")
-            .context("Failed to find sheetData element")?
+            .context("draviavemal-openxml_office::Failed to find sheetData element")?
         {
             let mut sheet_data_collection: BTreeMap<u32, RowRecords> = BTreeMap::new();
             let row_ids: Vec<NodeId> = xml_doc_mut
                 .get_element(sheet_data_id)
-                .context("Failed to get sheetData element")?
+                .context("draviavemal-openxml_office::Failed to get sheetData element")?
                 .get_child_contents()
                 .as_ref()
                 .map(|contents| {
@@ -1195,14 +1195,14 @@ impl WorkSheet {
                 let mut row_record = RowProperties::default();
                 let row_element = xml_doc_mut
                     .get_element(row_id)
-                    .context("Failed to get row element")?;
+                    .context("draviavemal-openxml_office::Failed to get row element")?;
                 // Get Row Id
                 let row_index: u32 = row_element
                     .get_attribute("r")
                     .map(|a| a.get_value())
-                    .context("Missing mandatory row id attribute")?
+                    .context("draviavemal-openxml_office::Missing mandatory row id attribute")?
                     .parse()
-                    .context("Failed to parse row id")?;
+                    .context("draviavemal-openxml_office::Failed to parse row id")?;
                 if let Some(row_span) = row_element.get_attribute("spans").map(|a| a.get_value()) {
                     row_record.span = Some(row_span.to_string());
                 }
@@ -1215,7 +1215,7 @@ impl WorkSheet {
                             Some(StyleId::new(
                                 style_id
                                     .parse()
-                                    .context("Failed to parse the row style id")?,
+                                    .context("draviavemal-openxml_office::Failed to parse the row style id")?,
                             ))
                         } else {
                             None
@@ -1231,7 +1231,7 @@ impl WorkSheet {
                         .map(|a| a.get_value())
                     {
                         row_record.height = if custom_height == "1" {
-                            Some(height.parse().context("Failed to parse the row height")?)
+                            Some(height.parse().context("draviavemal-openxml_office::Failed to parse the row height")?)
                         } else {
                             None
                         };
@@ -1243,7 +1243,7 @@ impl WorkSheet {
                 {
                     let outline_level = row_group_level
                         .parse()
-                        .context("Failed to parse the row group level")?;
+                        .context("draviavemal-openxml_office::Failed to parse the row group level")?;
                     row_record.group_level = if outline_level > 0 {
                         Some(outline_level)
                     } else {
@@ -1280,7 +1280,7 @@ impl WorkSheet {
                 let mut cell_records: BTreeMap<ColumnIndex, CellProperty> = BTreeMap::new();
                 let col_ids: Vec<NodeId> = xml_doc_mut
                     .get_element(row_id)
-                    .context("Failed to get row element")?
+                    .context("draviavemal-openxml_office::Failed to get row element")?
                     .get_child_contents()
                     .as_ref()
                     .map(|contents| {
@@ -1298,20 +1298,20 @@ impl WorkSheet {
                     let mut cell_record = CellProperty::default();
                     let col_element = xml_doc_mut
                         .get_element(col_id)
-                        .context("Failed to get col element")?;
+                        .context("draviavemal-openxml_office::Failed to get col element")?;
                     // Get Col Id
                     let col_index = ConverterUtil::get_column_index(
                         col_element
                             .get_attribute("r")
                             .map(|a| a.get_value())
-                            .context("Missing mandatory col id attribute")?,
+                            .context("draviavemal-openxml_office::Missing mandatory col id attribute")?,
                     )
-                    .context("Failed to Convert col worksheet initialize")?;
+                    .context("draviavemal-openxml_office::Failed to Convert col worksheet initialize")?;
                     if let Some(style_id) = col_element.get_attribute("s").map(|a| a.get_value()) {
                         cell_record.style_id = Some(StyleId::new(
                             style_id
                                 .parse()
-                                .context("Failed to parse the col style id")?,
+                                .context("draviavemal-openxml_office::Failed to parse the col style id")?,
                         ));
                     }
                     if let Some(cell_type) = col_element.get_attribute("t").map(|a| a.get_value()) {
@@ -1324,7 +1324,7 @@ impl WorkSheet {
                         cell_record.comment_id = Some(
                             comment_id
                                 .parse()
-                                .context("Failed to parse the col comment id")?,
+                                .context("draviavemal-openxml_office::Failed to parse the col comment id")?,
                         );
                     };
                     if let Some(value_meta_id) =
@@ -1333,7 +1333,7 @@ impl WorkSheet {
                         cell_record.metadata = Some(
                             value_meta_id
                                 .parse()
-                                .context("Failed to parse the col value meta id")?,
+                                .context("draviavemal-openxml_office::Failed to parse the col value meta id")?,
                         );
                     };
                     if let Some(place_holder) =
@@ -1347,7 +1347,7 @@ impl WorkSheet {
                     };
                     let cell_child_records: Vec<(NodeId, String)> = xml_doc_mut
                         .get_element(col_id)
-                        .context("Failed to get col element")?
+                        .context("draviavemal-openxml_office::Failed to get col element")?
                         .get_child_contents()
                         .as_ref()
                         .map(|contents| {
@@ -1375,14 +1375,14 @@ impl WorkSheet {
                             "is" => {
                                 if let Some(text_id) = xml_doc_mut
                                     .find_first_child(cell_child_id, "t")
-                                    .context("Failed to find inline string text element")?
+                                    .context("draviavemal-openxml_office::Failed to find inline string text element")?
                                 {
                                     cell_record.value =
                                         WorkSheet::get_element_text(xml_doc_mut, text_id)?;
                                 }
                             }
                             _ => {
-                                return Err(anyhow!("Found un-know element cell child"));
+                                return Err(AnyError::msg("draviavemal-openxml_office::Found un-know element cell child"));
                             }
                         }
                     }
@@ -1404,7 +1404,7 @@ impl WorkSheet {
             }
             xml_doc_mut
                 .remove_element_mut(sheet_data_id)
-                .context("Failed to remove sheetData element")?;
+                .context("draviavemal-openxml_office::Failed to remove sheetData element")?;
             return Ok((Some(sheet_data_collection), dimension));
         }
         Ok((None, dimension))
@@ -1417,7 +1417,7 @@ impl WorkSheet {
     ) -> AnyResult<Option<String>, AnyError> {
         Ok(xml_doc_mut
             .get_element(element_id)
-            .context("Failed to get element for text read")?
+            .context("draviavemal-openxml_office::Failed to get element for text read")?
             .get_child_contents()
             .as_ref()
             .and_then(|contents| {
@@ -1435,12 +1435,12 @@ impl WorkSheet {
         let root_id = xml_doc_mut.get_root_id();
         if let Some(merge_cells_id) = xml_doc_mut
             .find_first_child(root_id, "mergeCells")
-            .context("Failed to find mergeCells element")?
+            .context("draviavemal-openxml_office::Failed to find mergeCells element")?
         {
             let mut merge_cell_collection = Vec::new();
             let merge_cell_ids: Vec<NodeId> = xml_doc_mut
                 .get_element(merge_cells_id)
-                .context("Failed to get mergeCells element")?
+                .context("draviavemal-openxml_office::Failed to get mergeCells element")?
                 .get_child_contents()
                 .as_ref()
                 .map(|contents| {
@@ -1456,17 +1456,17 @@ impl WorkSheet {
             for merge_cell_id in merge_cell_ids {
                 let merge_cell_element = xml_doc_mut
                     .get_element(merge_cell_id)
-                    .context("Failed to Get Element")?;
+                    .context("draviavemal-openxml_office::Failed to Get Element")?;
                 let merge_range = merge_cell_element
                     .get_attribute("ref")
                     .map(|a| a.get_value())
-                    .context("Failed to get merge ref")?;
+                    .context("draviavemal-openxml_office::Failed to get merge ref")?;
                 if merge_range.contains(':') {
                     let range: Vec<&str> = merge_range.split(':').collect();
                     let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
-                        .context("Failed to parse Cell Ref")?;
+                        .context("draviavemal-openxml_office::Failed to parse Cell Ref")?;
                     let (row_end, column_end) = ConverterUtil::get_cell_index(range[1])
-                        .context("Failed to parse Cell Ref")?;
+                        .context("draviavemal-openxml_office::Failed to parse Cell Ref")?;
                     merge_cell_collection.push(ReferenceRange {
                         column_start,
                         row_start,
@@ -1475,7 +1475,7 @@ impl WorkSheet {
                     });
                 } else {
                     let (row, col) = ConverterUtil::get_cell_index(merge_range)
-                        .context("Failed to parse Cell Ref")?;
+                        .context("draviavemal-openxml_office::Failed to parse Cell Ref")?;
                     merge_cell_collection.push(ReferenceRange {
                         column_start: col,
                         row_start: row,
@@ -1486,7 +1486,7 @@ impl WorkSheet {
             }
             xml_doc_mut
                 .remove_element_mut(merge_cells_id)
-                .context("Failed to remove mergeCells element")?;
+                .context("draviavemal-openxml_office::Failed to remove mergeCells element")?;
             if merge_cell_collection.len() > 0 {
                 Ok(Some(merge_cell_collection))
             } else {
@@ -1505,12 +1505,12 @@ impl WorkSheet {
         let root_id = xml_doc_mut.get_root_id();
         if let Some(hyperlinks_id) = xml_doc_mut
             .find_first_child(root_id, "hyperlinks")
-            .context("Failed to find hyperlinks element")?
+            .context("draviavemal-openxml_office::Failed to find hyperlinks element")?
         {
             let mut hyperlink_collection = Vec::new();
             let hyperlink_ids: Vec<NodeId> = xml_doc_mut
                 .get_element(hyperlinks_id)
-                .context("Failed to get hyperlinks element")?
+                .context("draviavemal-openxml_office::Failed to get hyperlinks element")?
                 .get_child_contents()
                 .as_ref()
                 .map(|contents| {
@@ -1526,23 +1526,23 @@ impl WorkSheet {
             for hyperlink_element_id in hyperlink_ids {
                 let hyperlink_element = xml_doc_mut
                     .get_element(hyperlink_element_id)
-                    .context("Failed to Get Element")?;
+                    .context("draviavemal-openxml_office::Failed to Get Element")?;
                 let display = hyperlink_element
                     .get_attribute("display")
                     .map(|a| a.get_value().to_string());
                 let hyperlink_ref = hyperlink_element
                     .get_attribute("ref")
                     .map(|a| a.get_value())
-                    .context("Failed to get hyperlink ref")?;
+                    .context("draviavemal-openxml_office::Failed to get hyperlink ref")?;
                 let hyperlink_id = hyperlink_element
                     .get_attribute_ns("r:id")
                     .map(|a| a.get_value().to_string());
                 let range_reference = if hyperlink_ref.contains(':') {
                     let range: Vec<&str> = hyperlink_ref.split(':').collect();
                     let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
-                        .context("Failed to parse Cell Ref")?;
+                        .context("draviavemal-openxml_office::Failed to parse Cell Ref")?;
                     let (row_end, column_end) = ConverterUtil::get_cell_index(range[1])
-                        .context("Failed to parse Cell Ref")?;
+                        .context("draviavemal-openxml_office::Failed to parse Cell Ref")?;
                     ReferenceRange {
                         column_start,
                         row_start,
@@ -1551,7 +1551,7 @@ impl WorkSheet {
                     }
                 } else {
                     let (row, col) = ConverterUtil::get_cell_index(hyperlink_ref)
-                        .context("Failed to parse Cell Ref")?;
+                        .context("draviavemal-openxml_office::Failed to parse Cell Ref")?;
                     ReferenceRange {
                         column_start: col,
                         row_start: row,
@@ -1564,8 +1564,8 @@ impl WorkSheet {
                     let link = relationship_part
                         .borrow()
                         .get_target_by_id(id)
-                        .context("Failed to Pull Target From Relationship file")?
-                        .context("No Target Found in the relationship")?;
+                        .context("draviavemal-openxml_office::Failed to Pull Target From Relationship file")?
+                        .context("draviavemal-openxml_office::No Target Found in the relationship")?;
                     relationship_part
                         .borrow_mut()
                         .delete_relationship_by_id_mut(&id);
@@ -1574,7 +1574,7 @@ impl WorkSheet {
                     hyperlink_element
                         .get_attribute("location")
                         .map(|a| a.get_value())
-                        .context("Failed to Get Internal Location")?
+                        .context("draviavemal-openxml_office::Failed to Get Internal Location")?
                         .to_string()
                 };
                 hyperlink_collection.push(HyperLinks {
@@ -1586,7 +1586,7 @@ impl WorkSheet {
             }
             xml_doc_mut
                 .remove_element_mut(hyperlinks_id)
-                .context("Failed to remove hyperlinks element")?;
+                .context("draviavemal-openxml_office::Failed to remove hyperlinks element")?;
             if hyperlink_collection.len() > 0 {
                 Ok(Some(hyperlink_collection))
             } else {
@@ -1610,31 +1610,31 @@ impl WorkSheet {
                     // If the Sheet name already exist get the path of sheet name
                     if let Some((_, rel_id, _)) = sheet_collection
                         .try_borrow()
-                        .context("Failed to Get Sheet Collection")?
+                        .context("draviavemal-openxml_office::Failed to Get Sheet Collection")?
                         .iter()
                         .find(|item| item.0 == sheet_name)
                     {
                         return Ok((
                             workbook_relationship_part
                                 .try_borrow()
-                                .context("Failed to Get Workbook relationship")?
+                                .context("draviavemal-openxml_office::Failed to Get Workbook relationship")?
                                 .get_target_path_by_id(&rel_id)
-                                .context("Failed to Get Target Path")?
-                                .context("Failed to Get Relationship path")?,
+                                .context("draviavemal-openxml_office::Failed to Get Target Path")?
+                                .context("draviavemal-openxml_office::Failed to Get Relationship path")?,
                             sheet_name,
                         ));
                     }
                 }
                 let relative_path = workbook_relationship_part
                     .try_borrow_mut()
-                    .context("Failed to pull relationship connection")?
+                    .context("draviavemal-openxml_office::Failed to pull relationship connection")?
                     .get_relative_path()
-                    .context("Get Relative Path for Part File")?;
+                    .context("draviavemal-openxml_office::Get Relative Path for Part File")?;
                 let file_path = format!("{}{}", relative_path, worksheet_content.default_path);
                 let file_number = if let Some(office_doc) = office_document.upgrade() {
                     office_doc
                         .try_borrow()
-                        .context("Failed to Borrow Document")?
+                        .context("draviavemal-openxml_office::Failed to Borrow Document")?
                         .get_next_part_number(
                             &file_path,
                             worksheet_content.default_name,
@@ -1643,23 +1643,23 @@ impl WorkSheet {
                 } else {
                     sheet_collection
                         .try_borrow()
-                        .context("Failed to pull Sheet Name Collection")?
+                        .context("draviavemal-openxml_office::Failed to pull Sheet Name Collection")?
                         .len()
                         + 1
                 };
                 let sheet_name = format!("{}{}", worksheet_content.default_name, &file_number);
                 let relationship_id = workbook_relationship_part
                     .try_borrow_mut()
-                    .context("Failed to Get Relationship Handle")?
+                    .context("draviavemal-openxml_office::Failed to Get Relationship Handle")?
                     .set_new_relationship_path_mut(
                         worksheet_content,
                         Some(file_path.clone()),
                         Some(sheet_name.clone()),
                     )
-                    .context("Setting New Worksheet Relationship Failed.")?;
+                    .context("draviavemal-openxml_office::Setting New Worksheet Relationship Failed.")?;
                 sheet_collection
                     .try_borrow_mut()
-                    .context("Failed To pull Sheet Collection Handle")?
+                    .context("draviavemal-openxml_office::Failed To pull Sheet Collection Handle")?
                     .push((
                         display_sheet_name.clone().unwrap_or(sheet_name.clone()),
                         relationship_id,
@@ -1674,18 +1674,18 @@ impl WorkSheet {
                 ));
             }
         }
-        Err(anyhow!("Failed to upgrade relation part"))
+        Err(AnyError::msg("draviavemal-openxml_office::Failed to upgrade relation part"))
     }
 
     fn update_share_string(&mut self, cell_value: &String) -> AnyResult<String, AnyError> {
         if let Some(common_service) = self.common_service.upgrade() {
             common_service
                 .try_borrow_mut()
-                .context("Failed to Get Share String Handle")?
+                .context("draviavemal-openxml_office::Failed to Get Share String Handle")?
                 .get_string_id_mut(cell_value.to_owned())
-                .context("Failed to get share string id")
+                .context("draviavemal-openxml_office::Failed to get share string id")
         } else {
-            Err(anyhow!("Failed to update Share String Record"))
+            Err(AnyError::msg("draviavemal-openxml_office::Failed to update Share String Record"))
         }
     }
 
@@ -1704,7 +1704,7 @@ impl WorkSheet {
                             row_index.clone(),
                             column_index.clone(),
                         )
-                        .context("Failed to parse Cell Ref")?,
+                        .context("draviavemal-openxml_office::Failed to parse Cell Ref")?,
                         row_index: row_index.clone(),
                         column_index: column_index.clone(),
                         cell_property: self.normalize_cell_property(cell_property)?,
@@ -1719,7 +1719,7 @@ impl WorkSheet {
                             row_index.clone(),
                             column_index.clone(),
                         )
-                        .context("Failed to parse Cell Ref")?,
+                        .context("draviavemal-openxml_office::Failed to parse Cell Ref")?,
                         row_index: row_index.clone(),
                         column_index: column_index.clone(),
                         cell_property: self.normalize_cell_property(cell_property)?,
@@ -1737,7 +1737,7 @@ impl WorkSheet {
                 let actual_value = cmn_service
                     .borrow()
                     .get_string_id_value(parsed_property.value.unwrap())
-                    .context("Failed to normalize share string")?;
+                    .context("draviavemal-openxml_office::Failed to normalize share string")?;
                 parsed_property.value = Some(actual_value);
             }
         }
@@ -1768,7 +1768,7 @@ impl WorkSheet {
         column_properties: Option<ColumnProperties>,
     ) -> AnyResult<(), AnyError> {
         let col_index = ConverterUtil::get_column_index(cell_ref)
-            .context("Failed to Get Column index from reference")?;
+            .context("draviavemal-openxml_office::Failed to Get Column index from reference")?;
         self.set_column_index_properties_mut(&col_index, column_properties)
     }
 
@@ -1869,7 +1869,7 @@ impl WorkSheet {
         column_cells: Vec<CellProperty>,
     ) -> AnyResult<(), AnyError> {
         let (row_index, col_index) =
-            ConverterUtil::get_cell_index(cell_ref).context("Failed to extract cell key")?;
+            ConverterUtil::get_cell_index(cell_ref).context("draviavemal-openxml_office::Failed to extract cell key")?;
         self.set_cell_index_value_mut(row_index, col_index, column_cells)
     }
 
@@ -1895,7 +1895,7 @@ impl WorkSheet {
                             cell_data.data_type = CellDataType::Number;
                         } else if cell_value.parse::<bool>().is_ok() {
                             cell_data.data_type = CellDataType::Boolean;
-                            if cell_value.parse::<bool>().context("Parse Fail")? {
+                            if cell_value.parse::<bool>().context("draviavemal-openxml_office::Parse Fail")? {
                                 cell_data.value = Some("1".to_string());
                             } else {
                                 cell_data.value = Some("0".to_string());
@@ -1936,20 +1936,20 @@ impl WorkSheet {
                                 .position(|(sheet_name, _, _)| {
                                     *sheet_name == self.display_sheet_name
                                 })
-                                .context("Sheet Not Found To ID")?
+                                .context("draviavemal-openxml_office::Sheet Not Found To ID")?
                                 + 1) as u32;
                             common_service
                                 .borrow_mut()
                                 .add_replace_calculation_chain(CalculationChain {
                                     cell_ref: ConverterUtil::get_cell_ref(row_index, col_index)
-                                        .context("Failed to convert Cell Ref")?,
+                                        .context("draviavemal-openxml_office::Failed to convert Cell Ref")?,
                                     sheet_id: sheet_id,
                                     level_calcualtion: None,
                                     formula_type: None,
                                     share_formula: None,
                                     array_formula: None,
                                 })
-                                .context("Failed to insert Calculation Chain Order")?;
+                                .context("draviavemal-openxml_office::Failed to insert Calculation Chain Order")?;
                         }
                     }
                 }
@@ -1958,7 +1958,7 @@ impl WorkSheet {
                 Ok((col_index, item.clone()))
             })
             .collect::<Result<Vec<(ColumnIndex, CellProperty)>, AnyError>>()
-            .context("Failed to Generate column cells")?;
+            .context("draviavemal-openxml_office::Failed to Generate column cells")?;
         // Load If Sheet Data Exist
         if let Some(sheet_data) = self.sheet_data.as_mut() {
             // Load If Row Exits
@@ -2011,7 +2011,7 @@ impl WorkSheet {
                 .iter()
                 .any(|existing| ref_range.overlaps(existing))
             {
-                return Err(anyhow!("New Record overlap with existing range"));
+                return Err(AnyError::msg("draviavemal-openxml_office::New Record overlap with existing range"));
             }
             merge_cells.push(ref_range);
         } else {
@@ -2036,7 +2036,7 @@ impl WorkSheet {
                 .iter()
                 .any(|existing| range.overlaps(&existing.range))
             {
-                return Err(anyhow!("New Record overlap with existing range"));
+                return Err(AnyError::msg("draviavemal-openxml_office::New Record overlap with existing range"));
             }
             hyperlinks.push(HyperLinks {
                 id: Some("New".to_string()),
@@ -2090,22 +2090,22 @@ impl WorkSheet {
         if let Some(sheet_collection) = self.sheet_collection.upgrade() {
             sheet_collection
                 .try_borrow_mut()
-                .context("Failed to pull Sheets Collection")?
+                .context("draviavemal-openxml_office::Failed to pull Sheets Collection")?
                 .retain(|item| item.0 != self.display_sheet_name);
         }
         if let Some(workbook_relationship_part) = self.workbook_relationship_part.upgrade() {
             workbook_relationship_part
                 .try_borrow_mut()
-                .context("Failed to pull workbook relationship handle")?
+                .context("draviavemal-openxml_office::Failed to pull workbook relationship handle")?
                 .delete_relationship_mut(&self.file_path);
         }
         if let Some(xml_tree) = self.office_document.upgrade() {
             xml_tree
                 .try_borrow_mut()
-                .context("Failed to Pull XML Handle")?
+                .context("draviavemal-openxml_office::Failed to Pull XML Handle")?
                 .delete_document_mut(&self.file_path);
         }
-        self.flush().context("Failed to flush the worksheet")?;
+        self.flush().context("draviavemal-openxml_office::Failed to flush the worksheet")?;
         Ok(())
     }
 }

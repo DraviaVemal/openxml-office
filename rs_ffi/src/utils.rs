@@ -44,7 +44,7 @@ where
     if in_buffer.is_null() || in_buffer_size == 0 {
         return Err(set_error(
             out_error,
-            &anyhow!("Input buffer is null or empty"),
+            &AnyError::msg("draviavemal-openxml_office::Input buffer is null or empty"),
             StatusCode::InvalidArgument,
         ));
     }

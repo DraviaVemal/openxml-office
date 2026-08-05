@@ -36,17 +36,17 @@ impl XmlDocumentPartClose for RelationsPart {
         if let Some(xml_document) = self.office_document.upgrade() {
             if self
                 .save_relationship_to_doc()
-                .context("Failed to Insert relationship to Relationships")?
+                .context("draviavemal-openxml_office::Failed to Insert relationship to Relationships")?
             {
                 // Remove Links that are not valid
                 xml_document
                     .try_borrow_mut()
-                    .context("Failed to Pull Open XML Relations Handle")?
+                    .context("draviavemal-openxml_office::Failed to Pull Open XML Relations Handle")?
                     .close_xml_document(&self.file_path)?;
             } else {
                 xml_document
                     .try_borrow_mut()
-                    .context("Failed to Pull Open XML Relations Handle")?
+                    .context("draviavemal-openxml_office::Failed to Pull Open XML Relations Handle")?
                     .delete_document_mut(&self.file_path);
             }
         }
@@ -67,7 +67,7 @@ impl XmlDocumentPartInitializing for RelationsPart {
         let mut xml_document = XmlDocument::new();
         xml_document
             .create_root_element_mut("Relationships", Some(attributes))
-            .context("Create XML Root Element Failed")?;
+            .context("draviavemal-openxml_office::Create XML Root Element Failed")?;
         Ok((
             xml_document,
             None,
@@ -84,7 +84,7 @@ impl RelationsPart {
     ) -> AnyResult<RelationsPart, AnyError> {
         let mut xml_document = RelationsPart::get_xml_document(&office_document, &file_name)?;
         let relationships = RelationsPart::load_relations(&mut xml_document)
-            .context("Failed to decode Relations")?;
+            .context("draviavemal-openxml_office::Failed to decode Relations")?;
         Ok(RelationsPart {
             office_document,
             xml_document,
@@ -103,30 +103,30 @@ impl RelationsPart {
         if let Some(xml_document) = xml_document.upgrade() {
             let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
-                .context("Failed for get XML Handle")?;
+                .context("draviavemal-openxml_office::Failed for get XML Handle")?;
             let root_id = xml_doc_mut.get_root_id();
             if let Some(relationship_ids) = xml_doc_mut
                 .find_all_child(root_id, "Relationship")
-                .context("Failed to find Relationship elements")?
+                .context("draviavemal-openxml_office::Failed to find Relationship elements")?
             {
                 for relationship_id in relationship_ids {
                     let relationship_element = xml_doc_mut
                         .get_element(relationship_id)
-                        .context("Failed! Relationship element missing")?;
+                        .context("draviavemal-openxml_office::Failed! Relationship element missing")?;
                     relationships.push((
                         relationship_element
                             .get_attribute("Id")
-                            .context("Failed. Id in relationship Not Fount!")?
+                            .context("draviavemal-openxml_office::Failed. Id in relationship Not Fount!")?
                             .get_value()
                             .to_string(),
                         relationship_element
                             .get_attribute("Target")
-                            .context("Failed. Target in relationship Not Fount!")?
+                            .context("draviavemal-openxml_office::Failed. Target in relationship Not Fount!")?
                             .get_value()
                             .to_string(),
                         relationship_element
                             .get_attribute("Type")
-                            .context("Failed. Type in relationship Not Fount!")?
+                            .context("draviavemal-openxml_office::Failed. Type in relationship Not Fount!")?
                             .get_value()
                             .to_string(),
                         relationship_element
@@ -135,7 +135,7 @@ impl RelationsPart {
                     ));
                     xml_doc_mut
                         .remove_element_mut(relationship_id)
-                        .context("Failed to remove Relationship node")?;
+                        .context("draviavemal-openxml_office::Failed to remove Relationship node")?;
                 }
             }
         }
@@ -146,7 +146,7 @@ impl RelationsPart {
         let rels_position = self
             .file_path
             .find("_rels")
-            .context("Failed to string Prefix path from relation")?;
+            .context("draviavemal-openxml_office::Failed to string Prefix path from relation")?;
         if rels_position > 0 {
             Ok(format!("{}/", &self.file_path[..rels_position - 1]))
         } else {
@@ -166,7 +166,7 @@ impl RelationsPart {
             let file_path = record.1.clone();
             let relative_path = self
                 .get_relative_path()
-                .context("Get Relative Path for Part File")?;
+                .context("draviavemal-openxml_office::Get Relative Path for Part File")?;
             if file_path.starts_with('/') {
                 Ok(Some(file_path.strip_prefix('/').unwrap().to_string()))
             } else {
@@ -210,7 +210,7 @@ impl RelationsPart {
             let file_path = relationship.1.clone();
             let relative_path = self
                 .get_relative_path()
-                .context("Get Relative Path for Part File")?;
+                .context("draviavemal-openxml_office::Get Relative Path for Part File")?;
             if file_path.starts_with('/') {
                 Ok(file_path.strip_prefix('/').unwrap().to_string())
             } else {
@@ -229,10 +229,10 @@ impl RelationsPart {
                 let office_document = self
                     .office_document
                     .upgrade()
-                    .context("Failed to upgrade office document for part numbering")?;
+                    .context("draviavemal-openxml_office::Failed to upgrade office document for part numbering")?;
                 let next_number = office_document
                     .try_borrow()
-                    .context("Failed to borrow office document for part numbering")?
+                    .context("draviavemal-openxml_office::Failed to borrow office document for part numbering")?
                     .get_next_part_number(&dir_path, content.default_name, content.extension);
                 if content.is_unique == &true {
                     content.default_name.to_string()
@@ -241,7 +241,7 @@ impl RelationsPart {
                 }
             };
             self.set_new_relationship_path_mut(content, file_path.clone(), Some(file_name.clone()))
-                .context("Setting New Part Relationship Failed.")?;
+                .context("draviavemal-openxml_office::Setting New Part Relationship Failed.")?;
             Ok(format!("{}/{}.{}", dir_path, file_name, content.extension))
         }
     }
@@ -272,11 +272,11 @@ impl RelationsPart {
         if let Some(xml_tree_ref) = self.xml_document.upgrade() {
             let mut xml_tree = xml_tree_ref
                 .try_borrow_mut()
-                .context("Failed to pull XML Handle")?;
+                .context("draviavemal-openxml_office::Failed to pull XML Handle")?;
             let root_id = xml_tree.get_root_id();
             let child_count = xml_tree
                 .get_element(root_id)
-                .context("No Root Relationship Element Found")?
+                .context("draviavemal-openxml_office::No Root Relationship Element Found")?
                 .get_child_element_count()
                 .unwrap_or(0);
             for relationship in self.relationships.clone() {
@@ -289,11 +289,11 @@ impl RelationsPart {
                 }
                 xml_tree
                     .append_child_element_mut(root_id, "Relationship", Some(attributes))
-                    .context("Failed to add relationship element")?;
+                    .context("draviavemal-openxml_office::Failed to add relationship element")?;
             }
             Ok(child_count > 0 || self.relationships.len() > 0)
         } else {
-            Err(anyhow!("Failed to Get XML Handle"))
+            Err(AnyError::msg("draviavemal-openxml_office::Failed to Get XML Handle"))
         }
     }
 

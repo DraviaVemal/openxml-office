@@ -38,20 +38,20 @@ impl XmlDocumentPartClose for CorePropertiesPart {
         if let Some(xml_document_ref) = self.xml_document.upgrade() {
             let mut xml_document = xml_document_ref
                 .try_borrow_mut()
-                .context("Failed to Pull Office document")?;
+                .context("draviavemal-openxml_office::Failed to Pull Office document")?;
             let root_id = xml_document.get_root_id();
             if let Ok(Some(modified_id)) =
                 xml_document.find_first_child_ns(root_id, "dcterms:modified")
             {
                 xml_document
                     .clear_element_content_mut(modified_id)
-                    .context("Failed to Clear Elemenent node")?;
+                    .context("draviavemal-openxml_office::Failed to Clear Elemenent node")?;
                 if let Ok(element) = xml_document.get_element_mut(modified_id) {
                     element
                         .add_text_mut(
                             &Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                         )
-                        .context("Failed to Add Text to Element")?;
+                        .context("draviavemal-openxml_office::Failed to Add Text to Element")?;
                 }
             }
             if let Ok(Some(created_id)) =
@@ -76,7 +76,7 @@ impl XmlDocumentPartClose for CorePropertiesPart {
                             .add_text_mut(
                                 &Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                             )
-                            .context("Failed to Add Text to Element")?;
+                            .context("draviavemal-openxml_office::Failed to Add Text to Element")?;
                     }
                 }
             }
@@ -85,7 +85,7 @@ impl XmlDocumentPartClose for CorePropertiesPart {
         if let Some(xml_tree) = self.office_document.upgrade() {
             xml_tree
                 .try_borrow_mut()
-                .context("Failed to Pull XML Handle")?
+                .context("draviavemal-openxml_office::Failed to Pull XML Handle")?
                 .close_xml_document(&self.file_path)?;
         }
         Ok(())
@@ -101,7 +101,7 @@ impl XmlDocumentPartInitializing for CorePropertiesPart {
             XmlDeserializer::vec_to_xml_doc_tree(
                 include_str!("core_properties.xml").as_bytes().to_vec(),
             )
-            .context("Initializing Core Property Failed")?,
+            .context("draviavemal-openxml_office::Initializing Core Property Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -117,7 +117,7 @@ impl XmlDocumentPart for CorePropertiesPart {
     ) -> AnyResult<CorePropertiesPart, AnyError> {
         let file_name =
             CorePropertiesPart::get_core_properties_file_name(&parent_relationship_part)
-                .context("Failed to pull Core Property file name")?
+                .context("draviavemal-openxml_office::Failed to pull Core Property file name")?
                 .to_string();
         let xml_document = CorePropertiesPart::get_xml_document(&office_document, &file_name)?;
         Ok(CorePropertiesPart {
@@ -136,7 +136,7 @@ impl CorePropertiesPart {
         if let Some(relations_part) = relations_part.upgrade() {
             relations_part
                 .try_borrow_mut()
-                .context("Failed to pull relationship connection")?
+                .context("draviavemal-openxml_office::Failed to pull relationship connection")?
                 .get_relationship_target_path_by_type_mut(
                     &relationship_content.schemas_type,
                     relationship_content,
@@ -144,7 +144,7 @@ impl CorePropertiesPart {
                     None,
                 )
         } else {
-            Err(anyhow!("Failed to upgrade relation part"))
+            Err(AnyError::msg("draviavemal-openxml_office::Failed to upgrade relation part"))
         }
     }
 }

@@ -34,21 +34,25 @@ pub(crate) trait XmlDocumentPartInitializing:
             if let Some((xml_document, content_type, file_extension, extension_type)) =
                 office_document
                     .upgrade()
-                    .context("Document Upgrade Handled Failed")?
+                    .context("draviavemal-openxml_office::Document Upgrade Handled Failed")?
                     .try_borrow_mut()
-                    .context("Failed to borrow handle")?
+                    .context("draviavemal-openxml_office::Failed to borrow handle")?
                     .get_xml_tree_mut(file_name)
-                    .context(format!("XML Tree Parsing Failed for File : {}", file_name))?
+                    .context(format!(
+                        "draviavemal-openxml_office::XML Tree Parsing Failed for File : {}",
+                        file_name
+                    ))?
             {
                 (xml_document, content_type, file_extension, extension_type)
             } else {
-                Self::initialize_content_xml().context("Initial XML element parsing failed")?
+                Self::initialize_content_xml()
+                    .context("draviavemal-openxml_office::Initial XML element parsing failed")?
             };
         office_document
             .upgrade()
-            .context("Document Upgrade Handled Failed")?
+            .context("draviavemal-openxml_office::Document Upgrade Handled Failed")?
             .try_borrow_mut()
-            .context("Getting XML Tree Handle Failed")?
+            .context("draviavemal-openxml_office::Getting XML Tree Handle Failed")?
             .get_xml_document_ref(
                 file_name,
                 content_type,

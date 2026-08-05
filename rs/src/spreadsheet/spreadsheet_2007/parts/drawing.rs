@@ -56,37 +56,37 @@ impl XmlDocumentPartClose for DrawingPart {
                     {
                         worksheet_relationship_part
                             .try_borrow_mut()
-                            .context("Failed to pull worksheet relationship handle")?
+                            .context("draviavemal-openxml_office::Failed to pull worksheet relationship handle")?
                             .delete_relationship_mut(&self.file_path);
                     }
                     if let Some(office_document) = self.office_document.upgrade() {
                         office_document
                             .try_borrow_mut()
-                            .context("Failed to pull office document")?
+                            .context("draviavemal-openxml_office::Failed to pull office document")?
                             .delete_document_mut(&self.file_path);
                     }
                     self.drawing_relationship_part
                         .try_borrow_mut()
-                        .context("Failed to pull relationship handle")?
+                        .context("draviavemal-openxml_office::Failed to pull relationship handle")?
                         .close_document()
-                        .context("Failed to Close relationship part")?;
+                        .context("draviavemal-openxml_office::Failed to Close relationship part")?;
                     return Ok(());
                 }
                 if let Some(office_document) = self.office_document.upgrade() {
                     let mut office_doc_mut = office_document
                         .try_borrow_mut()
-                        .context("Failed to pull office document")?;
+                        .context("draviavemal-openxml_office::Failed to pull office document")?;
                     if let Some(xml_document) = self.xml_document.upgrade() {
                         let mut xml_doc_mut = xml_document
                             .try_borrow_mut()
-                            .context("Failed to pull XML handle")?;
+                            .context("draviavemal-openxml_office::Failed to pull XML handle")?;
                         log_elapsed!(self.serialize_drawing(&mut xml_doc_mut))?;
                     }
                     log_elapsed!(
                         || {
                             office_doc_mut
                                 .close_xml_document(&self.file_path)
-                                .context("Failed to close the current tree document")
+                                .context("draviavemal-openxml_office::Failed to close the current tree document")
                         },
                         "Close Drawing document"
                     )?;
@@ -95,9 +95,13 @@ impl XmlDocumentPartClose for DrawingPart {
                     || {
                         self.drawing_relationship_part
                             .try_borrow_mut()
-                            .context("Failed to pull relationship handle")?
+                            .context(
+                                "draviavemal-openxml_office::Failed to pull relationship handle",
+                            )?
                             .close_document()
-                            .context("Failed to Close relationship part")
+                            .context(
+                                "draviavemal-openxml_office::Failed to Close relationship part",
+                            )
                     },
                     "Drawing relation part closed"
                 )?;
@@ -117,7 +121,7 @@ impl XmlDocumentPartInitializing for DrawingPart {
             </xdr:wsDr>"#;
         Ok((
             XmlDeserializer::vec_to_xml_doc_tree(template_core_properties.as_bytes().to_vec())
-                .context("Initializing Drawing part Failed")?,
+                .context("draviavemal-openxml_office::Initializing Drawing part Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -134,13 +138,13 @@ impl DrawingPart {
     ) -> AnyResult<DrawingPart, AnyError> {
         let file_path =
             DrawingPart::get_drawing_file_name(&worksheet_relationship_part, type_collection)
-                .context("Failed to pull worksheet file name")?;
+                .context("draviavemal-openxml_office::Failed to pull worksheet file name")?;
         // Detect whether this drawing already exists (loaded) before the xml document
         // handle is created, since fetching the handle moves it out of the archive.
         let is_new = if let Some(office_document) = office_document.upgrade() {
             !office_document
                 .try_borrow()
-                .context("Failed to borrow office document")?
+                .context("draviavemal-openxml_office::Failed to borrow office document")?
                 .check_file_exist(file_path.clone())
         } else {
             true
@@ -155,12 +159,14 @@ impl DrawingPart {
                     file_path.rsplit('/').next().unwrap()
                 ),
             )
-            .context("Creating Relation ship part for workbook failed.")?,
+            .context(
+                "draviavemal-openxml_office::Creating Relation ship part for workbook failed.",
+            )?,
         ));
         let anchor_collection = log_elapsed!(
             || {
                 DrawingPart::deserialize_drawing(&xml_document)
-                    .context("Failed to open drawing part and deserialize anchors")
+                    .context("draviavemal-openxml_office::Failed to open drawing part and deserialize anchors")
             },
             "drawing Initialize Time"
         )?;
@@ -197,16 +203,16 @@ impl DrawingPart {
         if let Some(worksheet_relationship_part) = worksheet_relationship_part.upgrade() {
             Ok(worksheet_relationship_part
                 .try_borrow_mut()
-                .context("Failed to pull relationship connection")?
+                .context("draviavemal-openxml_office::Failed to pull relationship connection")?
                 .get_relationship_target_path_by_type_mut(
                     &drawing_content.schemas_type,
                     drawing_content,
                     Some(format!("xl/{}", drawing_content.default_path)),
                     None,
                 )
-                .context("Pull Path From Existing File Failed")?)
+                .context("draviavemal-openxml_office::Pull Path From Existing File Failed")?)
         } else {
-            Err(anyhow!("Failed to upgrade relation part"))
+            Err(AnyError::msg("draviavemal-openxml_office::Failed to upgrade relation part"))
         }
     }
 
@@ -216,7 +222,7 @@ impl DrawingPart {
         if let Some(xml_document) = xml_document.upgrade() {
             let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
-                .context("Failed to get XML doc handle")?;
+                .context("draviavemal-openxml_office::Failed to get XML doc handle")?;
             if let Ok(root_element) = xml_doc_mut.get_element(xml_doc_mut.get_root_id()) {
                 let mut anchor_collection: VecDeque<DrawingAnchor> = VecDeque::new();
                 let child_list: Vec<(NodeId, Tag)> = root_element
@@ -237,55 +243,64 @@ impl DrawingPart {
                 for (anchor_element_id, anchor_element_tag) in child_list {
                     match anchor_element_tag.as_str() {
                         "absoluteAnchor" => {
-                            let absolute_anchor_element = xml_doc_mut
-                                .get_element(anchor_element_id)
-                                .context("Failed to locate Child element")?;
+                            let absolute_anchor_element =
+                                xml_doc_mut.get_element(anchor_element_id).context(
+                                    "draviavemal-openxml_office::Failed to locate Child element",
+                                )?;
                             let absolute_anchor = DrawingPart::deserialise_absolute_anchor(
                                 &xml_doc_mut,
                                 absolute_anchor_element,
                             )
-                            .context("Failed to deserialise absolute anchor")?;
+                            .context(
+                                "draviavemal-openxml_office::Failed to deserialise absolute anchor",
+                            )?;
                             anchor_collection
                                 .push_back(DrawingAnchor::AbsoluteAnchor(absolute_anchor));
-                            xml_doc_mut
-                                .remove_element_mut(anchor_element_id)
-                                .context("Failed to clean up absolute anchor")?;
+                            xml_doc_mut.remove_element_mut(anchor_element_id).context(
+                                "draviavemal-openxml_office::Failed to clean up absolute anchor",
+                            )?;
                         }
                         "oneCellAnchor" => {
-                            let one_cell_anchor_element = xml_doc_mut
-                                .get_element(anchor_element_id)
-                                .context("Failed to locate Child element")?;
+                            let one_cell_anchor_element =
+                                xml_doc_mut.get_element(anchor_element_id).context(
+                                    "draviavemal-openxml_office::Failed to locate Child element",
+                                )?;
                             let one_cell_anchor = DrawingPart::deserialise_one_cell_anchor(
                                 &xml_doc_mut,
                                 one_cell_anchor_element,
                             )
-                            .context("Failed to deserialise one cell anchor")?;
+                            .context(
+                                "draviavemal-openxml_office::Failed to deserialise one cell anchor",
+                            )?;
                             anchor_collection
                                 .push_back(DrawingAnchor::OneCellAnchor(one_cell_anchor));
-                            xml_doc_mut
-                                .remove_element_mut(anchor_element_id)
-                                .context("Failed to clean up one cell anchor")?;
+                            xml_doc_mut.remove_element_mut(anchor_element_id).context(
+                                "draviavemal-openxml_office::Failed to clean up one cell anchor",
+                            )?;
                         }
                         "twoCellAnchor" => {
-                            let two_cell_anchor_element = xml_doc_mut
-                                .get_element(anchor_element_id)
-                                .context("Failed to locate Child element")?;
+                            let two_cell_anchor_element =
+                                xml_doc_mut.get_element(anchor_element_id).context(
+                                    "draviavemal-openxml_office::Failed to locate Child element",
+                                )?;
                             let two_cell_anchor = DrawingPart::deserialise_two_cell_anchor(
                                 &xml_doc_mut,
                                 two_cell_anchor_element,
                             )
-                            .context("Failed to deserialise two cell anchor")?;
+                            .context(
+                                "draviavemal-openxml_office::Failed to deserialise two cell anchor",
+                            )?;
                             anchor_collection
                                 .push_back(DrawingAnchor::TwoCellAnchor(two_cell_anchor));
-                            xml_doc_mut
-                                .remove_element_mut(anchor_element_id)
-                                .context("Failed to clean up two cell anchor")?;
+                            xml_doc_mut.remove_element_mut(anchor_element_id).context(
+                                "draviavemal-openxml_office::Failed to clean up two cell anchor",
+                            )?;
                         }
                         _ => {
-                            return Err(anyhow!(
-                                "Unhandled Drawing Component Detected. '{}'",
+                            return Err(AnyError::msg(format!(
+                                "draviavemal-openxml_office::Unhandled Drawing Component Detected. '{}'",
                                 anchor_element_tag
-                            ));
+                            )));
                         }
                     }
                 }
@@ -306,25 +321,29 @@ impl DrawingPart {
         let elements = anchor_element
             .get_child_contents()
             .as_ref()
-            .context("Failed to open Elemenet content type vec")?;
+            .context("draviavemal-openxml_office::Failed to open Elemenet content type vec")?;
         for element in elements {
             match element {
                 XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
                     "from" => {
-                        let from_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to locate Child element")?;
+                        let from_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to locate Child element",
+                        )?;
                         two_cell_anchor.from =
                             DrawingPart::deserialise_anchor_position(xml_doc_mut, from_element)
-                                .context("failed to parse from position")?;
+                                .context(
+                                    "draviavemal-openxml_office::failed to parse from position",
+                                )?;
                     }
                     "to" => {
-                        let to_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to locate Child element")?;
+                        let to_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to locate Child element",
+                        )?;
                         two_cell_anchor.to =
                             DrawingPart::deserialise_anchor_position(xml_doc_mut, to_element)
-                                .context("failed to parse to position")?;
+                                .context(
+                                    "draviavemal-openxml_office::failed to parse to position",
+                                )?;
                     }
                     // One of below type should exist
                     "sp" => {
@@ -334,15 +353,15 @@ impl DrawingPart {
                         two_cell_anchor.anchor_content = AnchorContent::GroupShape(GroupShape {});
                     }
                     "graphicFrame" => {
-                        let graphic_frame_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to locate Child element")?;
+                        let graphic_frame_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to locate Child element",
+                        )?;
                         two_cell_anchor.anchor_content = AnchorContent::GraphicFrame(
                             DrawingPart::deserialise_graphic_frame(
                                 xml_doc_mut,
                                 graphic_frame_element,
                             )
-                            .context("failed to parse graphic frame")?,
+                            .context("draviavemal-openxml_office::failed to parse graphic frame")?,
                         );
                     }
                     "cxnSp" => {
@@ -350,12 +369,12 @@ impl DrawingPart {
                             AnchorContent::ConnectorShape(ConnectorShape {});
                     }
                     "pic" => {
-                        let picture_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to locate Child element")?;
+                        let picture_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to locate Child element",
+                        )?;
                         two_cell_anchor.anchor_content = AnchorContent::Picture(
                             DrawingPart::deserialise_picture(xml_doc_mut, picture_element)
-                                .context("failed to parse picture")?,
+                                .context("draviavemal-openxml_office::failed to parse picture")?,
                         );
                     }
                     "contentPart" => {
@@ -386,17 +405,19 @@ impl DrawingPart {
         let elements = anchor_element
             .get_child_contents()
             .as_ref()
-            .context("Failed to open Elemenet content type vec")?;
+            .context("draviavemal-openxml_office::Failed to open Elemenet content type vec")?;
         for element in elements {
             match element {
                 XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
                     "from" => {
-                        let from_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to locate Child element")?;
+                        let from_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to locate Child element",
+                        )?;
                         one_cell_anchor.from =
                             DrawingPart::deserialise_anchor_position(xml_doc_mut, from_element)
-                                .context("failed to parse from position")?;
+                                .context(
+                                    "draviavemal-openxml_office::failed to parse from position",
+                                )?;
                     }
                     "ext" => {}
                     // One of below type should exist
@@ -407,15 +428,15 @@ impl DrawingPart {
                         one_cell_anchor.anchor_content = AnchorContent::GroupShape(GroupShape {});
                     }
                     "graphicFrame" => {
-                        let graphic_frame_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to locate Child element")?;
+                        let graphic_frame_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to locate Child element",
+                        )?;
                         one_cell_anchor.anchor_content = AnchorContent::GraphicFrame(
                             DrawingPart::deserialise_graphic_frame(
                                 xml_doc_mut,
                                 graphic_frame_element,
                             )
-                            .context("failed to parse graphic frame")?,
+                            .context("draviavemal-openxml_office::failed to parse graphic frame")?,
                         );
                     }
                     "cxnSp" => {
@@ -423,12 +444,12 @@ impl DrawingPart {
                             AnchorContent::ConnectorShape(ConnectorShape {});
                     }
                     "pic" => {
-                        let picture_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to locate Child element")?;
+                        let picture_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to locate Child element",
+                        )?;
                         one_cell_anchor.anchor_content = AnchorContent::Picture(
                             DrawingPart::deserialise_picture(xml_doc_mut, picture_element)
-                                .context("failed to parse picture")?,
+                                .context("draviavemal-openxml_office::failed to parse picture")?,
                         );
                     }
                     "contentPart" => {
@@ -459,7 +480,7 @@ impl DrawingPart {
         let elements = anchor_element
             .get_child_contents()
             .as_ref()
-            .context("Failed to open Elemenet content type vec")?;
+            .context("draviavemal-openxml_office::Failed to open Elemenet content type vec")?;
         for element in elements {
             match element {
                 XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
@@ -473,15 +494,15 @@ impl DrawingPart {
                         absolute_anchor.anchor_content = AnchorContent::GroupShape(GroupShape {});
                     }
                     "graphicFrame" => {
-                        let graphic_frame_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to locate Child element")?;
+                        let graphic_frame_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to locate Child element",
+                        )?;
                         absolute_anchor.anchor_content = AnchorContent::GraphicFrame(
                             DrawingPart::deserialise_graphic_frame(
                                 xml_doc_mut,
                                 graphic_frame_element,
                             )
-                            .context("failed to parse graphic frame")?,
+                            .context("draviavemal-openxml_office::failed to parse graphic frame")?,
                         );
                     }
                     "cxnSp" => {
@@ -489,12 +510,12 @@ impl DrawingPart {
                             AnchorContent::ConnectorShape(ConnectorShape {});
                     }
                     "pic" => {
-                        let picture_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to locate Child element")?;
+                        let picture_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to locate Child element",
+                        )?;
                         absolute_anchor.anchor_content = AnchorContent::Picture(
                             DrawingPart::deserialise_picture(xml_doc_mut, picture_element)
-                                .context("failed to parse picture")?,
+                                .context("draviavemal-openxml_office::failed to parse picture")?,
                         );
                     }
                     "contentPart" => {
@@ -522,31 +543,31 @@ impl DrawingPart {
         let picture_children = picture_element
             .get_child_contents()
             .as_ref()
-            .context("Failed to open picture content vec")?;
+            .context("draviavemal-openxml_office::Failed to open picture content vec")?;
         for picture_child in picture_children {
             match picture_child {
                 XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
                     "nvPicPr" => {
-                        let non_visual_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to get non visual picture element")?;
+                        let non_visual_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to get non visual picture element",
+                        )?;
                         DrawingPart::deserialise_picture_non_visual(
                             xml_doc_mut,
                             non_visual_element,
                             &mut picture,
                         )
-                        .context("Failed to parse non visual picture properties")?;
+                        .context("draviavemal-openxml_office::Failed to parse non visual picture properties")?;
                     }
                     "blipFill" => {
-                        let blip_fill_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to get blip fill element")?;
+                        let blip_fill_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to get blip fill element",
+                        )?;
                         DrawingPart::deserialise_blip_fill(
                             xml_doc_mut,
                             blip_fill_element,
                             &mut picture,
                         )
-                        .context("Failed to parse blip fill")?;
+                        .context("draviavemal-openxml_office::Failed to parse blip fill")?;
                     }
                     _ => {
                         log::warn!("Unsupported picture node '{}' is not deserialised and will be lost on save", tag);
@@ -570,19 +591,18 @@ impl DrawingPart {
         let non_visual_children = non_visual_element
             .get_child_contents()
             .as_ref()
-            .context("Failed to open non visual picture content vec")?;
+            .context("draviavemal-openxml_office::Failed to open non visual picture content vec")?;
         for non_visual_child in non_visual_children {
             match non_visual_child {
                 XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
                     "cNvPr" => {
-                        let properties_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to get picture properties element")?;
+                        let properties_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to get picture properties element",
+                        )?;
                         if let Some(picture_id) = properties_element.get_attribute("id") {
-                            picture.id = picture_id
-                                .get_value()
-                                .parse()
-                                .context("Failed to parse picture id")?;
+                            picture.id = picture_id.get_value().parse().context(
+                                "draviavemal-openxml_office::Failed to parse picture id",
+                            )?;
                         }
                         if let Some(picture_name) = properties_element.get_attribute("name") {
                             picture.name = picture_name.get_value().to_string();
@@ -591,13 +611,13 @@ impl DrawingPart {
                     "cNvPicPr" => {
                         let non_visual_picture_element = xml_doc_mut
                             .get_element(*element_id)
-                            .context("Failed to get non visual picture properties element")?;
+                            .context("draviavemal-openxml_office::Failed to get non visual picture properties element")?;
                         DrawingPart::deserialise_picture_locks(
                             xml_doc_mut,
                             non_visual_picture_element,
                             picture,
                         )
-                        .context("Failed to parse picture locks")?;
+                        .context("draviavemal-openxml_office::Failed to parse picture locks")?;
                     }
                     _ => {
                         log::warn!("Unsupported picture node '{}' is not deserialised and will be lost on save", tag);
@@ -621,14 +641,14 @@ impl DrawingPart {
         let non_visual_picture_children = non_visual_picture_element
             .get_child_contents()
             .as_ref()
-            .context("Failed to open non visual picture properties content vec")?;
+            .context("draviavemal-openxml_office::Failed to open non visual picture properties content vec")?;
         for non_visual_picture_child in non_visual_picture_children {
             match non_visual_picture_child {
                 XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
                     "picLocks" => {
-                        let picture_locks_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to get picture locks element")?;
+                        let picture_locks_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to get picture locks element",
+                        )?;
                         if let Some(aspect_ratio) =
                             picture_locks_element.get_attribute("noChangeAspect")
                         {
@@ -657,14 +677,15 @@ impl DrawingPart {
         let blip_fill_children = blip_fill_element
             .get_child_contents()
             .as_ref()
-            .context("Failed to open blip fill content vec")?;
+            .context("draviavemal-openxml_office::Failed to open blip fill content vec")?;
         for blip_fill_child in blip_fill_children {
             match blip_fill_child {
                 XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
                     "blip" => {
                         let blip_element = xml_doc_mut
                             .get_element(*element_id)
-                            .context("Failed to get blip element")?;
+                            .context("draviavemal-openxml_office::Failed to get blip element")?;
+                        // Think to use more dynamic namespace parsing adoption so its stable with alias change
                         if let Some(relationship_id) = blip_element.get_attribute_ns("r:embed") {
                             picture.relationship_id = relationship_id.get_value().to_string();
                         }
@@ -691,31 +712,31 @@ impl DrawingPart {
         let graphic_frame_children = graphic_frame_element
             .get_child_contents()
             .as_ref()
-            .context("Failed to open graphic frame content vec")?;
+            .context("draviavemal-openxml_office::Failed to open graphic frame content vec")?;
         for graphic_frame_child in graphic_frame_children {
             match graphic_frame_child {
                 XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
                     "nvGraphicFramePr" => {
                         let non_visual_element = xml_doc_mut
                             .get_element(*element_id)
-                            .context("Failed to get non visual graphic frame element")?;
+                            .context("draviavemal-openxml_office::Failed to get non visual graphic frame element")?;
                         DrawingPart::deserialise_graphic_frame_non_visual(
                             xml_doc_mut,
                             non_visual_element,
                             &mut graphic_frame,
                         )
-                        .context("Failed to parse non visual graphic frame properties")?;
+                        .context("draviavemal-openxml_office::Failed to parse non visual graphic frame properties")?;
                     }
                     "graphic" => {
                         let graphic_element = xml_doc_mut
                             .get_element(*element_id)
-                            .context("Failed to get graphic element")?;
+                            .context("draviavemal-openxml_office::Failed to get graphic element")?;
                         DrawingPart::deserialise_graphic(
                             xml_doc_mut,
                             graphic_element,
                             &mut graphic_frame,
                         )
-                        .context("Failed to parse graphic")?;
+                        .context("draviavemal-openxml_office::Failed to parse graphic")?;
                     }
                     _ => {
                         log::warn!("Unsupported graphic frame node '{}' is not deserialised and will be lost on save", tag);
@@ -734,22 +755,20 @@ impl DrawingPart {
         non_visual_element: &XmlElement,
         graphic_frame: &mut GraphicFrame,
     ) -> AnyResult<(), AnyError> {
-        let non_visual_children = non_visual_element
-            .get_child_contents()
-            .as_ref()
-            .context("Failed to open non visual graphic frame content vec")?;
+        let non_visual_children = non_visual_element.get_child_contents().as_ref().context(
+            "draviavemal-openxml_office::Failed to open non visual graphic frame content vec",
+        )?;
         for non_visual_child in non_visual_children {
             match non_visual_child {
                 XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
                     "cNvPr" => {
                         let properties_element = xml_doc_mut
                             .get_element(*element_id)
-                            .context("Failed to get graphic frame properties element")?;
+                            .context("draviavemal-openxml_office::Failed to get graphic frame properties element")?;
                         if let Some(frame_id) = properties_element.get_attribute("id") {
-                            graphic_frame.id = frame_id
-                                .get_value()
-                                .parse()
-                                .context("Failed to parse graphic frame id")?;
+                            graphic_frame.id = frame_id.get_value().parse().context(
+                                "draviavemal-openxml_office::Failed to parse graphic frame id",
+                            )?;
                         }
                         if let Some(frame_name) = properties_element.get_attribute("name") {
                             graphic_frame.name = frame_name.get_value().to_string();
@@ -775,20 +794,20 @@ impl DrawingPart {
         let graphic_children = graphic_element
             .get_child_contents()
             .as_ref()
-            .context("Failed to open graphic content vec")?;
+            .context("draviavemal-openxml_office::Failed to open graphic content vec")?;
         for graphic_child in graphic_children {
             match graphic_child {
                 XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
                     "graphicData" => {
-                        let graphic_data_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to get graphic data element")?;
+                        let graphic_data_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to get graphic data element",
+                        )?;
                         DrawingPart::deserialise_graphic_data(
                             xml_doc_mut,
                             graphic_data_element,
                             graphic_frame,
                         )
-                        .context("Failed to parse graphic data")?;
+                        .context("draviavemal-openxml_office::Failed to parse graphic data")?;
                     }
                     _ => {
                         log::warn!("Unsupported graphic frame node '{}' is not deserialised and will be lost on save", tag);
@@ -810,14 +829,14 @@ impl DrawingPart {
         let graphic_data_children = graphic_data_element
             .get_child_contents()
             .as_ref()
-            .context("Failed to open graphic data content vec")?;
+            .context("draviavemal-openxml_office::Failed to open graphic data content vec")?;
         for graphic_data_child in graphic_data_children {
             match graphic_data_child {
                 XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
                     "chart" => {
                         let chart_element = xml_doc_mut
                             .get_element(*element_id)
-                            .context("Failed to get chart element")?;
+                            .context("draviavemal-openxml_office::Failed to get chart element")?;
                         if let Some(chart_relationship_id) = chart_element.get_attribute_ns("r:id")
                         {
                             graphic_frame.relationship_id =
@@ -844,66 +863,65 @@ impl DrawingPart {
         let elements = position_element
             .get_child_contents()
             .as_ref()
-            .context("Failed to open Elemenet content type vec")?;
+            .context("draviavemal-openxml_office::Failed to open Elemenet content type vec")?;
         for element in elements {
             match element {
-                XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
-                    "col" => {
-                        let col_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to get element id")?;
-                        let value = col_element
+                XmlElementContentType::Element((element_id, tag, _)) => {
+                    match tag.as_str() {
+                        "col" => {
+                            let col_element = xml_doc_mut
+                                .get_element(*element_id)
+                                .context("draviavemal-openxml_office::Failed to get element id")?;
+                            let value = col_element
                             .get_element_text_value()
-                            .context("Failed to get child value of the node")?
-                            .context("No Valid Value found for col element")?;
-                        anchor_position.column = value
-                            .trim()
-                            .parse::<u16>()
-                            .context("Failed to parse column value")?;
-                    }
-                    "colOff" => {
-                        let col_offset_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to get element id")?;
-                        let value = col_offset_element
+                            .context("draviavemal-openxml_office::Failed to get child value of the node")?
+                            .context("draviavemal-openxml_office::No Valid Value found for col element")?;
+                            anchor_position.column = value.trim().parse::<u16>().context(
+                                "draviavemal-openxml_office::Failed to parse column value",
+                            )?;
+                        }
+                        "colOff" => {
+                            let col_offset_element = xml_doc_mut
+                                .get_element(*element_id)
+                                .context("draviavemal-openxml_office::Failed to get element id")?;
+                            let value = col_offset_element
                             .get_element_text_value()
-                            .context("Failed to get child value of the node")?
-                            .context("No Valid Value found for col offset element")?;
-                        anchor_position.column_offset = value
-                            .trim()
-                            .parse::<u64>()
-                            .context("Failed to parse column offset value")?;
-                    }
-                    "row" => {
-                        let row_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to get element id")?;
-                        let value = row_element
+                            .context("draviavemal-openxml_office::Failed to get child value of the node")?
+                            .context("draviavemal-openxml_office::No Valid Value found for col offset element")?;
+                            anchor_position.column_offset = value.trim().parse::<u64>().context(
+                                "draviavemal-openxml_office::Failed to parse column offset value",
+                            )?;
+                        }
+                        "row" => {
+                            let row_element = xml_doc_mut
+                                .get_element(*element_id)
+                                .context("draviavemal-openxml_office::Failed to get element id")?;
+                            let value = row_element
                             .get_element_text_value()
-                            .context("Failed to get child value of the node")?
-                            .context("No Valid Value found for row element")?;
-                        anchor_position.row = value
-                            .trim()
-                            .parse::<u32>()
-                            .context("Failed to parse row value")?;
-                    }
-                    "rowOff" => {
-                        let row_offset_element = xml_doc_mut
-                            .get_element(*element_id)
-                            .context("Failed to get element id")?;
-                        let value = row_offset_element
+                            .context("draviavemal-openxml_office::Failed to get child value of the node")?
+                            .context("draviavemal-openxml_office::No Valid Value found for row element")?;
+                            anchor_position.row = value
+                                .trim()
+                                .parse::<u32>()
+                                .context("draviavemal-openxml_office::Failed to parse row value")?;
+                        }
+                        "rowOff" => {
+                            let row_offset_element = xml_doc_mut
+                                .get_element(*element_id)
+                                .context("draviavemal-openxml_office::Failed to get element id")?;
+                            let value = row_offset_element
                             .get_element_text_value()
-                            .context("Failed to get child value of the node")?
-                            .context("No Valid Value found for row offset element")?;
-                        anchor_position.row_offset = value
-                            .trim()
-                            .parse::<u64>()
-                            .context("Failed to parse row offset value")?;
+                            .context("draviavemal-openxml_office::Failed to get child value of the node")?
+                            .context("draviavemal-openxml_office::No Valid Value found for row offset element")?;
+                            anchor_position.row_offset = value.trim().parse::<u64>().context(
+                                "draviavemal-openxml_office::Failed to parse row offset value",
+                            )?;
+                        }
+                        _ => {
+                            log::error!("Unhandled Anchor position Component Detected. '{}'", tag);
+                        }
                     }
-                    _ => {
-                        log::error!("Unhandled Anchor position Component Detected. '{}'", tag);
-                    }
-                },
+                }
                 _ => {
                     log::warn!("Unhandled Content Type Detected Ignoring. ");
                 }
@@ -923,7 +941,9 @@ impl DrawingPart {
                             root_id,
                             two_cell_anchor,
                         )
-                        .context("Failed to serialise two cell anchor")?;
+                        .context(
+                            "draviavemal-openxml_office::Failed to serialise two cell anchor",
+                        )?;
                     }
                     DrawingAnchor::OneCellAnchor(one_cell_anchor) => {
                         DrawingPart::serialize_one_cell_anchor(
@@ -931,7 +951,9 @@ impl DrawingPart {
                             root_id,
                             one_cell_anchor,
                         )
-                        .context("Failed to serialise one cell anchor")?;
+                        .context(
+                            "draviavemal-openxml_office::Failed to serialise one cell anchor",
+                        )?;
                     }
                     DrawingAnchor::AbsoluteAnchor(absolute_anchor) => {
                         DrawingPart::serialize_absolute_anchor(
@@ -939,7 +961,9 @@ impl DrawingPart {
                             root_id,
                             absolute_anchor,
                         )
-                        .context("Failed to serialise absolute anchor")?;
+                        .context(
+                            "draviavemal-openxml_office::Failed to serialise absolute anchor",
+                        )?;
                     }
                 }
             }
@@ -954,30 +978,30 @@ impl DrawingPart {
     ) -> AnyResult<(), AnyError> {
         let anchor_id = xml_doc_mut
             .append_child_element_mut(parent_id, "xdr:twoCellAnchor", None)
-            .context("Failed to add two cell anchor element")?;
+            .context("draviavemal-openxml_office::Failed to add two cell anchor element")?;
         DrawingPart::serialize_anchor_position(
             xml_doc_mut,
             anchor_id,
             "xdr:from",
             &two_cell_anchor.from,
         )
-        .context("Failed to serialise from position")?;
+        .context("draviavemal-openxml_office::Failed to serialise from position")?;
         DrawingPart::serialize_anchor_position(
             xml_doc_mut,
             anchor_id,
             "xdr:to",
             &two_cell_anchor.to,
         )
-        .context("Failed to serialise to position")?;
+        .context("draviavemal-openxml_office::Failed to serialise to position")?;
         DrawingPart::serialize_anchor_content(
             xml_doc_mut,
             anchor_id,
             two_cell_anchor.anchor_content,
         )
-        .context("Failed to serialise anchor content")?;
+        .context("draviavemal-openxml_office::Failed to serialise anchor content")?;
         xml_doc_mut
             .append_child_element_mut(anchor_id, "xdr:clientData", None)
-            .context("Failed to add client data element")?;
+            .context("draviavemal-openxml_office::Failed to add client data element")?;
         Ok(())
     }
 
@@ -988,23 +1012,23 @@ impl DrawingPart {
     ) -> AnyResult<(), AnyError> {
         let anchor_id = xml_doc_mut
             .append_child_element_mut(parent_id, "xdr:oneCellAnchor", None)
-            .context("Failed to add one cell anchor element")?;
+            .context("draviavemal-openxml_office::Failed to add one cell anchor element")?;
         DrawingPart::serialize_anchor_position(
             xml_doc_mut,
             anchor_id,
             "xdr:from",
             &one_cell_anchor.from,
         )
-        .context("Failed to serialise from position")?;
+        .context("draviavemal-openxml_office::Failed to serialise from position")?;
         DrawingPart::serialize_anchor_content(
             xml_doc_mut,
             anchor_id,
             one_cell_anchor.anchor_content,
         )
-        .context("Failed to serialise anchor content")?;
+        .context("draviavemal-openxml_office::Failed to serialise anchor content")?;
         xml_doc_mut
             .append_child_element_mut(anchor_id, "xdr:clientData", None)
-            .context("Failed to add client data element")?;
+            .context("draviavemal-openxml_office::Failed to add client data element")?;
         Ok(())
     }
 
@@ -1015,16 +1039,16 @@ impl DrawingPart {
     ) -> AnyResult<(), AnyError> {
         let anchor_id = xml_doc_mut
             .append_child_element_mut(parent_id, "xdr:absoluteAnchor", None)
-            .context("Failed to add absolute anchor element")?;
+            .context("draviavemal-openxml_office::Failed to add absolute anchor element")?;
         DrawingPart::serialize_anchor_content(
             xml_doc_mut,
             anchor_id,
             absolute_anchor.anchor_content,
         )
-        .context("Failed to serialise anchor content")?;
+        .context("draviavemal-openxml_office::Failed to serialise anchor content")?;
         xml_doc_mut
             .append_child_element_mut(anchor_id, "xdr:clientData", None)
-            .context("Failed to add client data element")?;
+            .context("draviavemal-openxml_office::Failed to add client data element")?;
         Ok(())
     }
 
@@ -1036,7 +1060,7 @@ impl DrawingPart {
     ) -> AnyResult<(), AnyError> {
         let position_id = xml_doc_mut
             .append_child_element_mut(parent_id, tag, None)
-            .context("Failed to add anchor position element")?;
+            .context("draviavemal-openxml_office::Failed to add anchor position element")?;
         DrawingPart::serialize_text_element(
             xml_doc_mut,
             position_id,
@@ -1072,12 +1096,12 @@ impl DrawingPart {
     ) -> AnyResult<(), AnyError> {
         let element_id = xml_doc_mut
             .append_child_element_mut(parent_id, tag, None)
-            .context("Failed to add text element")?;
+            .context("draviavemal-openxml_office::Failed to add text element")?;
         xml_doc_mut
             .get_element_mut(element_id)
-            .context("Failed to get text element")?
+            .context("draviavemal-openxml_office::Failed to get text element")?
             .add_text_mut(value)
-            .context("Failed to add text value")?;
+            .context("draviavemal-openxml_office::Failed to add text value")?;
         Ok(())
     }
 
@@ -1089,31 +1113,31 @@ impl DrawingPart {
         match anchor_content {
             AnchorContent::Picture(picture) => {
                 DrawingPart::serialize_picture(xml_doc_mut, parent_id, picture)
-                    .context("Failed to serialise picture")?;
+                    .context("draviavemal-openxml_office::Failed to serialise picture")?;
             }
             AnchorContent::GraphicFrame(graphic_frame) => {
                 DrawingPart::serialize_graphic_frame(xml_doc_mut, parent_id, graphic_frame)
-                    .context("Failed to serialise graphic frame")?;
+                    .context("draviavemal-openxml_office::Failed to serialise graphic frame")?;
             }
             AnchorContent::Shape(_) => {
                 xml_doc_mut
                     .append_child_element_mut(parent_id, "xdr:sp", None)
-                    .context("Failed to add shape element")?;
+                    .context("draviavemal-openxml_office::Failed to add shape element")?;
             }
             AnchorContent::GroupShape(_) => {
                 xml_doc_mut
                     .append_child_element_mut(parent_id, "xdr:grpSp", None)
-                    .context("Failed to add group shape element")?;
+                    .context("draviavemal-openxml_office::Failed to add group shape element")?;
             }
             AnchorContent::ConnectorShape(_) => {
                 xml_doc_mut
                     .append_child_element_mut(parent_id, "xdr:cxnSp", None)
-                    .context("Failed to add connector shape element")?;
+                    .context("draviavemal-openxml_office::Failed to add connector shape element")?;
             }
             AnchorContent::ContentPart(_) => {
                 xml_doc_mut
                     .append_child_element_mut(parent_id, "xdr:contentPart", None)
-                    .context("Failed to add content part element")?;
+                    .context("draviavemal-openxml_office::Failed to add content part element")?;
             }
         }
         Ok(())
@@ -1126,10 +1150,10 @@ impl DrawingPart {
     ) -> AnyResult<(), AnyError> {
         let picture_id = xml_doc_mut
             .append_child_element_mut(parent_id, "xdr:pic", None)
-            .context("Failed to add picture element")?;
+            .context("draviavemal-openxml_office::Failed to add picture element")?;
         let non_visual_id = xml_doc_mut
             .append_child_element_mut(picture_id, "xdr:nvPicPr", None)
-            .context("Failed to add non visual picture element")?;
+            .context("draviavemal-openxml_office::Failed to add non visual picture element")?;
         xml_doc_mut
             .append_child_element_mut(
                 non_visual_id,
@@ -1139,10 +1163,12 @@ impl DrawingPart {
                     XmlAttribute::new("name".to_string(), picture.name),
                 ]),
             )
-            .context("Failed to add picture properties element")?;
+            .context("draviavemal-openxml_office::Failed to add picture properties element")?;
         let non_visual_picture_id = xml_doc_mut
             .append_child_element_mut(non_visual_id, "xdr:cNvPicPr", None)
-            .context("Failed to add non visual picture properties element")?;
+            .context(
+                "draviavemal-openxml_office::Failed to add non visual picture properties element",
+            )?;
         xml_doc_mut
             .append_child_element_mut(
                 non_visual_picture_id,
@@ -1152,20 +1178,28 @@ impl DrawingPart {
                     if picture.aspect_ratio { "1" } else { "0" }.to_string(),
                 )]),
             )
-            .context("Failed to add picture locks element")?;
+            .context("draviavemal-openxml_office::Failed to add picture locks element")?;
         let blip_fill_id = xml_doc_mut
             .append_child_element_mut(picture_id, "xdr:blipFill", None)
-            .context("Failed to add blip fill element")?;
+            .context("draviavemal-openxml_office::Failed to add blip fill element")?;
         xml_doc_mut
             .append_child_element_mut(
                 blip_fill_id,
                 "a:blip",
-                Some(vec![XmlAttribute::new(
-                    "r:embed".to_string(),
-                    picture.relationship_id,
-                )]),
+                Some(vec![
+                    XmlAttribute::new(
+                        "xmlns:a".to_string(),
+                        "http://schemas.openxmlformats.org/drawingml/2006/main".to_string(),
+                    ),
+                    XmlAttribute::new(
+                        "xmlns:r".to_string(),
+                        "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+                            .to_string(),
+                    ),
+                    XmlAttribute::new("r:embed".to_string(), picture.relationship_id),
+                ]),
             )
-            .context("Failed to add blip element")?;
+            .context("draviavemal-openxml_office::Failed to add blip element")?;
         Ok(())
     }
 
@@ -1176,10 +1210,12 @@ impl DrawingPart {
     ) -> AnyResult<(), AnyError> {
         let graphic_frame_id = xml_doc_mut
             .append_child_element_mut(parent_id, "xdr:graphicFrame", None)
-            .context("Failed to add graphic frame element")?;
+            .context("draviavemal-openxml_office::Failed to add graphic frame element")?;
         let non_visual_id = xml_doc_mut
             .append_child_element_mut(graphic_frame_id, "xdr:nvGraphicFramePr", None)
-            .context("Failed to add non visual graphic frame element")?;
+            .context(
+                "draviavemal-openxml_office::Failed to add non visual graphic frame element",
+            )?;
         xml_doc_mut
             .append_child_element_mut(
                 non_visual_id,
@@ -1189,13 +1225,15 @@ impl DrawingPart {
                     XmlAttribute::new("name".to_string(), graphic_frame.name),
                 ]),
             )
-            .context("Failed to add graphic frame properties element")?;
+            .context(
+                "draviavemal-openxml_office::Failed to add graphic frame properties element",
+            )?;
         xml_doc_mut
             .append_child_element_mut(non_visual_id, "xdr:cNvGraphicFramePr", None)
-            .context("Failed to add non visual graphic frame properties element")?;
+            .context("draviavemal-openxml_office::Failed to add non visual graphic frame properties element")?;
         let graphic_id = xml_doc_mut
             .append_child_element_mut(graphic_frame_id, "a:graphic", None)
-            .context("Failed to add graphic element")?;
+            .context("draviavemal-openxml_office::Failed to add graphic element")?;
         let graphic_data_id = xml_doc_mut
             .append_child_element_mut(
                 graphic_id,
@@ -1205,7 +1243,7 @@ impl DrawingPart {
                     "http://schemas.openxmlformats.org/drawingml/2006/chart".to_string(),
                 )]),
             )
-            .context("Failed to add graphic data element")?;
+            .context("draviavemal-openxml_office::Failed to add graphic data element")?;
         xml_doc_mut
             .append_child_element_mut(
                 graphic_data_id,
@@ -1215,7 +1253,7 @@ impl DrawingPart {
                     graphic_frame.relationship_id,
                 )]),
             )
-            .context("Failed to add chart element")?;
+            .context("draviavemal-openxml_office::Failed to add chart element")?;
         Ok(())
     }
 }

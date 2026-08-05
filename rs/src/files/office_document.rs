@@ -58,8 +58,9 @@ impl OfficeDocument {
         let mut archive_collection = DashMap::new();
         if let Some(file_path) = file_path {
             // Load existing file to our system
-            archive_collection = OfficeDocument::deserialise_office_document(&file_path)
-                .context("Load OpenXML Archive Into deserializing Failed")?;
+            archive_collection = OfficeDocument::deserialise_office_document(&file_path).context(
+                "draviavemal-openxml_office::Load OpenXML Archive Into deserializing Failed",
+            )?;
         }
         Ok(OfficeDocument {
             xml_document_collection: DashMap::new(),
@@ -123,18 +124,18 @@ impl OfficeDocument {
     ) -> AnyResult<Option<(XmlDocument, Option<String>, String, String)>, AnyError> {
         // Check is the file path object already exist
         if self.xml_document_collection.get(file_path).is_some() {
-            return Err(anyhow!(
-                "Please close the Existing object before creating new handle"
+            return Err(AnyError::msg(
+                "draviavemal-openxml_office::Please close the Existing object before creating new handle",
             ));
         }
         if let Some((_, archive_document)) = self.archive_collection.remove(file_path) {
             let content = archive_document
                 .file_content
-                .context("Failed To Get content vec")?;
-            let decompressed_data =
-                decompress_content(&content).context("Raw Content Decompression Failed")?;
+                .context("draviavemal-openxml_office::Failed To Get content vec")?;
+            let decompressed_data = decompress_content(&content)
+                .context("draviavemal-openxml_office::Raw Content Decompression Failed")?;
             let xml_tree = XmlDeserializer::vec_to_xml_doc_tree(decompressed_data)
-                .context("Xml Serializer Failed")?;
+                .context("draviavemal-openxml_office::Xml Struct Serializer Failed")?;
             Ok(Some((
                 xml_tree,
                 archive_document.content_type.clone(),
@@ -152,13 +153,13 @@ impl OfficeDocument {
             let mut xml_doc_mut = extracted_document
                 .document_handle
                 .try_borrow_mut()
-                .context("Failed to get document handle")?;
+                .context("draviavemal-openxml_office::Failed to get document handle")?;
             let uncompressed_data = XmlSerializer::xml_tree_to_vec(&mut xml_doc_mut).context(
-                format!("Failed Xml Tree to String content, File : {}", file_path),
+                format!("draviavemal-openxml_office::Failed Xml Tree to String content, File : {}", file_path),
             )?;
             let compression_level = 4;
             let compressed = compress_content(&uncompressed_data, compression_level)
-                .context("Recompressing in GZip Failed")?;
+                .context("draviavemal-openxml_office::Recompressing in GZip Failed")?;
             self.archive_collection
                 .entry(file_path.to_string())
                 .and_modify(|value| {
@@ -186,29 +187,32 @@ impl OfficeDocument {
     /// Save Current Document to final result
     pub(crate) fn save_as(&mut self, file_path: &str) -> AnyResult<String, AnyError> {
         if self.xml_document_collection.len() > 0 {
-            return Err(anyhow!(
-                "Please close all the open document before saving the file"
+            return Err(AnyError::msg(
+                "draviavemal-openxml_office::Please close all the open document before saving the file",
             ));
         }
         // TODO : Reorganise the file order for more stable structure, mimic actual office document output and better diff for version control
         // self.reorganize_parts()
-        //     .context("Reorganizing part numbering before save Failed")?;
+        //     .context("draviavemal-openxml_office::Reorganizing part numbering before save Failed")?;
         let file_content: Vec<u8> = self
             .save_object_into_archive()
-            .context("Save Object Data into xml")?;
+            .context("draviavemal-openxml_office::Save Object Data into xml")?;
         if metadata(file_path).is_ok() {
-            remove_file(file_path).map_err(|e| anyhow!("Remove Save File Target Failed. {}", e))?;
+            remove_file(file_path)
+                .map_err(|e| AnyError::msg(format!("draviavemal-openxml_office::Remove Save File Target Failed. {}", e)))?;
         }
         let mut result_path = Path::new(file_path).to_path_buf();
         let mut file: File;
         if result_path.is_absolute() {
-            file = File::create(&result_path).context("Create Save File Failed")?;
+            file = File::create(&result_path)
+                .context("draviavemal-openxml_office::Create Save File Failed")?;
         } else {
             result_path = env::current_dir()?.join(result_path);
-            file = File::create(&result_path).context("Create Save File Failed")?;
+            file = File::create(&result_path)
+                .context("draviavemal-openxml_office::Create Save File Failed")?;
         }
         file.write_all(&file_content)
-            .context("Save File Write Failed")?;
+            .context("draviavemal-openxml_office::Save File Write Failed")?;
         Ok(result_path.to_string_lossy().to_string())
     }
 
@@ -256,8 +260,9 @@ impl OfficeDocument {
             return Ok(());
         }
         // Rewrite relationship targets that point at any renamed part file.
-        self.rewrite_relationship_targets(&part_rename)
-            .context("Rewriting relationship targets during reorganize Failed")?;
+        self.rewrite_relationship_targets(&part_rename).context(
+            "draviavemal-openxml_office::Rewriting relationship targets during reorganize Failed",
+        )?;
         let mut moved: Vec<(String, ArchivedDocument)> = Vec::new();
         for (old, _new) in &rename {
             if let Some((_, document)) = self.archive_collection.remove(old) {
@@ -293,10 +298,11 @@ impl OfficeDocument {
             let Some(compressed) = compressed else {
                 continue;
             };
-            let content =
-                decompress_content(&compressed).context("Decompress relationship file Failed")?;
-            let mut text = String::from_utf8(content)
-                .context("Relationship file content is not valid UTF-8")?;
+            let content = decompress_content(&compressed)
+                .context("draviavemal-openxml_office::Decompress relationship file Failed")?;
+            let mut text = String::from_utf8(content).context(
+                "draviavemal-openxml_office::Relationship file content is not valid UTF-8",
+            )?;
             let mut changed = false;
             //  replace each old target with a unique placeholder.
             for (index, (old_path, _new_path)) in part_rename.iter().enumerate() {
@@ -318,7 +324,7 @@ impl OfficeDocument {
             }
             let compression_level = 4;
             let recompressed = compress_content(text.as_bytes(), compression_level)
-                .context("Recompress relationship file Failed")?;
+                .context("draviavemal-openxml_office::Recompress relationship file Failed")?;
             let uncompressed_size = text.len();
             self.archive_collection.entry(rels_key).and_modify(|value| {
                 value.uncompressed_size = uncompressed_size;
@@ -349,21 +355,21 @@ impl OfficeDocument {
                 }
                 zip_writer
                     .start_file(archive_document.key(), zip_option)
-                    .context("Zip File Write Start Fail")?;
+                    .context("draviavemal-openxml_office::Zip File Write Start Fail")?;
                 if let Some(xml_content_compressed) = archive_document.value().file_content.clone()
                 {
-                    let uncompressed =
-                        decompress_content(&xml_content_compressed).context("Decompress Error")?;
+                    let uncompressed = decompress_content(&xml_content_compressed)
+                        .context("draviavemal-openxml_office::Decompress Error")?;
                     zip_writer
                         .write_all(&uncompressed)
-                        .context("Writing compressed data to ZIp")?;
+                        .context("draviavemal-openxml_office::Writing compressed data to ZIp")?;
                 }
             }
         }
         // Insert Content Type Details into Archive
         zip_writer
             .start_file("[Content_Types].xml", zip_option)
-            .context("Zip File Write Start Fail")?;
+            .context("draviavemal-openxml_office::Zip File Write Start Fail")?;
         let content_type_file = ContentTypesPart::create_xml_file(
             extensions
                 .into_iter()
@@ -372,11 +378,13 @@ impl OfficeDocument {
                 .collect::<Vec<_>>(),
             overrides,
         )
-        .context("Creating Content Type XML Failed")?;
+        .context("draviavemal-openxml_office::Creating Content Type XML Failed")?;
         zip_writer
             .write_all(&content_type_file)
-            .context("Writing compressed data to ZIp")?;
-        zip_writer.finish().context("Zip Close Failed")?;
+            .context("draviavemal-openxml_office::Writing compressed data to ZIp")?;
+        zip_writer
+            .finish()
+            .context("draviavemal-openxml_office::Zip Close Failed")?;
         Ok(buffer.into_inner())
     }
 
@@ -384,26 +392,27 @@ impl OfficeDocument {
     fn deserialise_office_document(
         file_path: &str,
     ) -> AnyResult<DashMap<String, ArchivedDocument>, AnyError> {
-        let file: File = File::open(file_path).context("Open Existing archive File")?;
+        let file: File = File::open(file_path)
+            .context("draviavemal-openxml_office::Open Existing archive File")?;
         let archive_collection = DashMap::new();
         let mut zip_read: ZipArchive<File> =
-            ZipArchive::new(file).context("Archive read Failed")?;
+            ZipArchive::new(file).context("draviavemal-openxml_office::Archive read Failed")?;
         let mut uncompressed_file = Vec::new();
         zip_read
             .by_name("[Content_Types].xml")
-            .context("Read [Content_Types].xml Failed")?
+            .context("draviavemal-openxml_office::Read [Content_Types].xml Failed")?
             .read_to_end(&mut uncompressed_file)
-            .context("Failed to uncompress [Content_Types].xml")?;
+            .context("draviavemal-openxml_office::Failed to uncompress [Content_Types].xml")?;
         let file_names = zip_read
             .file_names()
             .filter(|name| "[Content_Types].xml" != *name)
             .map(|item| item.to_string())
             .collect::<Vec<_>>();
-        let mut content_types_part =
-            ContentTypesPart::new(uncompressed_file).context("Decoding Content Type Failed")?;
+        let mut content_types_part = ContentTypesPart::new(uncompressed_file)
+            .context("draviavemal-openxml_office::Decoding Content Type Failed")?;
         let extension_collection = content_types_part
             .get_extensions()
-            .context("Failed to pull extensions list")?;
+            .context("draviavemal-openxml_office::Failed to pull extensions list")?;
         // Load File Content To DB
         for file_name in file_names {
             let mut file_extension = String::new();
@@ -421,15 +430,15 @@ impl OfficeDocument {
             }
             zip_read
                 .by_name(&file_name)
-                .context("Zip file extract failed")?
+                .context("draviavemal-openxml_office::Zip file extract failed")?
                 .read_to_end(&mut uncompressed_data)
-                .context("File Uncompressed failed")?;
+                .context("draviavemal-openxml_office::File Uncompressed failed")?;
             let content_type = content_types_part
                 .get_override_content_type(&file_name)
-                .context("Failed to extract Content Type")?;
+                .context("draviavemal-openxml_office::Failed to extract Content Type")?;
             let compression_level = 4;
             let compressed = compress_content(&uncompressed_data, compression_level)
-                .context("Recompressing in GZip Failed")?;
+                .context("draviavemal-openxml_office::Recompressing in GZip Failed")?;
             archive_collection.insert(
                 file_name,
                 ArchivedDocument {

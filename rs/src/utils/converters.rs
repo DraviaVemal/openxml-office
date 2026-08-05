@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Error as AnyError, Ok, Result as AnyResult};
+use anyhow::{Context, Error as AnyError, Ok, Result as AnyResult};
 
 use crate::spreadsheet_2007::models::{ColumnIndex, RowIndex};
 
@@ -9,7 +9,9 @@ impl ConverterUtil {
     pub fn get_column_index(cell_ref: &str) -> AnyResult<u16, AnyError> {
         let column_part: String = cell_ref.chars().take_while(|c| c.is_alphabetic()).collect();
         if column_part.is_empty() {
-            return Err(anyhow!("Failed to Convert to Column Key Id"));
+            return Err(AnyError::msg(
+                "draviavemal-openxml_office::Failed to Convert to Column Key Id",
+            ));
         }
         let mut index = 0;
         for (i, c) in column_part.chars().rev().enumerate() {
@@ -21,7 +23,9 @@ impl ConverterUtil {
     /// Return String ref of the column
     pub fn get_column_ref(column_id: u16) -> AnyResult<String, AnyError> {
         if column_id == 0 {
-            return Err(anyhow!("Index must be greater than 0"));
+            return Err(AnyError::msg(
+                "draviavemal-openxml_office::Index must be greater than 0",
+            ));
         }
         let mut index = column_id;
         let mut column_name = String::new();
@@ -47,7 +51,7 @@ impl ConverterUtil {
         Ok(format!(
             "{}{}",
             ConverterUtil::get_column_ref(column_index)
-                .context("Failed to Convert Column to ref")?,
+                .context("draviavemal-openxml_office::Failed to Convert Column to ref")?,
             row_index
         ))
     }
@@ -57,8 +61,10 @@ impl ConverterUtil {
     /// - `cell_ref` (`&str`) - Cell Ref "A1" to convert.
     pub fn get_cell_index(cell_ref: &str) -> AnyResult<(RowIndex, ColumnIndex), AnyError> {
         Ok((
-            ConverterUtil::extract_digits(cell_ref).context("Failed to extract int key")?,
-            ConverterUtil::get_column_index(cell_ref).context("Failed to Convert to int key")?,
+            ConverterUtil::extract_digits(cell_ref)
+                .context("draviavemal-openxml_office::Failed to extract int key")?,
+            ConverterUtil::get_column_index(cell_ref)
+                .context("draviavemal-openxml_office::Failed to Convert to int key")?,
         ))
     }
 
@@ -91,6 +97,6 @@ impl ConverterUtil {
             .filter(|c| c.is_digit(10))
             .collect::<String>()
             .parse()
-            .context("Failed to Extract Digits")
+            .context("draviavemal-openxml_office::Failed to Extract Digits")
     }
 }
