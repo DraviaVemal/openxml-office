@@ -36,9 +36,9 @@ impl XmlDocumentPartClose for ShareStringPart {
                 if let Some(office_doc_ref) = self.office_document.upgrade() {
                     if self.share_string_collection.len() > 0 {
                         if let Some(xml_document) = self.xml_document.upgrade() {
-                            let mut xml_doc_mut = xml_document
-                                .try_borrow_mut()
-                                .context("Failed to Pull Doc Reference")?;
+                            let mut xml_doc_mut = xml_document.try_borrow_mut().context(
+                                "draviavemal-openxml_office::Failed to Pull Doc Reference",
+                            )?;
                             let root_id = xml_doc_mut.get_root_id();
                             // Update count & uniqueCount in root
                             {
@@ -57,44 +57,46 @@ impl XmlDocumentPartClose for ShareStringPart {
                                         "count".to_string(),
                                         count,
                                     ))
-                                    .context("Failed to set count attribute")?;
+                                    .context(
+                                        "draviavemal-openxml_office::Failed to set count attribute",
+                                    )?;
                                     root.add_attribute_mut(XmlAttribute::new(
                                         "uniqueCount".to_string(),
                                         unique_count,
                                     ))
-                                    .context("Failed to set uniqueCount attribute")?;
+                                    .context("draviavemal-openxml_office::Failed to set uniqueCount attribute")?;
                                 }
                             }
                             for string in self.share_string_collection.to_owned() {
                                 let parent_id = xml_doc_mut
                                     .append_child_element_mut(root_id, "si", None)
-                                    .context("Failed to Add Child")?;
+                                    .context("draviavemal-openxml_office::Failed to Add Child")?;
                                 let text_id = xml_doc_mut
                                     .append_child_element_mut(parent_id, "t", None)
-                                    .context("Creating Share String Child Failed")?;
+                                    .context("draviavemal-openxml_office::Creating Share String Child Failed")?;
                                 xml_doc_mut
                                     .get_element_mut(text_id)
-                                    .context("Failed to pull text element")?
+                                    .context("draviavemal-openxml_office::Failed to pull text element")?
                                     .add_text_mut(&string)
-                                    .context("Failed to set share string value")?;
+                                    .context("draviavemal-openxml_office::Failed to set share string value")?;
                             }
                         }
                         office_doc_ref
                             .try_borrow_mut()
-                            .context("Failed To pull XML Handle")?
+                            .context("draviavemal-openxml_office::Failed To pull XML Handle")?
                             .close_xml_document(&self.file_path)
-                            .context("Failed to close XML Document Share String")?;
+                            .context("draviavemal-openxml_office::Failed to close XML Document Share String")?;
                     } else {
                         if let Some(relationship_part) = self.parent_relationship_part.upgrade() {
                             relationship_part
                                 .try_borrow_mut()
                                 .context(
-                                    "Failed To pull parent relation ship part of Share String",
+                                    "draviavemal-openxml_office::Failed To pull parent relation ship part of Share String",
                                 )?
                                 .delete_relationship_mut(&self.file_path);
                             office_doc_ref
                                 .try_borrow_mut()
-                                .context("Failed To pull XML Handle")?
+                                .context("draviavemal-openxml_office::Failed To pull XML Handle")?
                                 .delete_document_mut(&self.file_path);
                         }
                     }
@@ -123,7 +125,7 @@ impl XmlDocumentPartInitializing for ShareStringPart {
         let mut xml_document = XmlDocument::new();
         xml_document
             .create_root_element_mut("sst", Some(attributes))
-            .context("Create Root Element Failed")?;
+            .context("draviavemal-openxml_office::Create Root Element Failed")?;
         Ok((
             xml_document,
             Some(content.content_type.to_string()),
@@ -139,11 +141,11 @@ impl XmlDocumentPart for ShareStringPart {
         parent_relationship_part: Weak<RefCell<RelationsPart>>,
     ) -> AnyResult<ShareStringPart, AnyError> {
         let file_name = ShareStringPart::get_share_string_file_name(&parent_relationship_part)
-            .context("Failed to pull share string file name")?
+            .context("draviavemal-openxml_office::Failed to pull share string file name")?
             .to_string();
         let mut xml_document = ShareStringPart::get_xml_document(&office_document, &file_name)?;
         let share_string_collection = ShareStringPart::deserialize_share_string(&mut xml_document)
-            .context("Load Share String To DB Failed")?;
+            .context("draviavemal-openxml_office::Load Share String To DB Failed")?;
         Ok(ShareStringPart {
             office_document,
             parent_relationship_part,
@@ -162,16 +164,18 @@ impl ShareStringPart {
         if let Some(relations_part) = relations_part.upgrade() {
             Ok(relations_part
                 .try_borrow_mut()
-                .context("Failed to pull relationship connection")?
+                .context("draviavemal-openxml_office::Failed to pull relationship connection")?
                 .get_relationship_target_path_by_type_mut(
                     &share_string_content.schemas_type,
                     share_string_content,
                     None,
                     None,
                 )
-                .context("Pull Path From Existing File Failed")?)
+                .context("draviavemal-openxml_office::Pull Path From Existing File Failed")?)
         } else {
-            Err(anyhow!("Failed to upgrade relation part"))
+            Err(AnyError::msg(
+                "draviavemal-openxml_office::Failed to upgrade relation part",
+            ))
         }
     }
 
@@ -182,16 +186,16 @@ impl ShareStringPart {
         if let Some(xml_document) = xml_document.upgrade() {
             let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
-                .context("xml doc borrow failed")?;
+                .context("draviavemal-openxml_office::xml doc borrow failed")?;
             let root_id = xml_doc_mut.get_root_id();
             if let Some(si_ids) = xml_doc_mut
                 .find_all_child(root_id, "si")
-                .context("Failed to find si elements")?
+                .context("draviavemal-openxml_office::Failed to find si elements")?
             {
                 for si_id in si_ids {
                     let first_child = xml_doc_mut
                         .get_element(si_id)
-                        .context("Failed to pull si element")?
+                        .context("draviavemal-openxml_office::Failed to pull si element")?
                         .get_child_contents()
                         .as_ref()
                         .and_then(|contents| {
@@ -203,7 +207,7 @@ impl ShareStringPart {
                     if let Some(child_id) = first_child {
                         let text_element = xml_doc_mut
                             .get_element(child_id)
-                            .context("Failed to pull child element")?;
+                            .context("draviavemal-openxml_office::Failed to pull child element")?;
                         let value = text_element
                             .get_child_contents()
                             .as_ref()
@@ -221,7 +225,7 @@ impl ShareStringPart {
                     }
                     xml_doc_mut
                         .remove_element_mut(si_id)
-                        .context("Failed To remove element")?;
+                        .context("draviavemal-openxml_office::Failed To remove element")?;
                 }
             }
         }
@@ -250,9 +254,9 @@ impl ShareStringPart {
             .share_string_collection
             .get(
                 id.parse::<usize>()
-                    .context("Failed to parse Share String Id")?,
+                    .context("draviavemal-openxml_office::Failed to parse Share String Id")?,
             )
-            .context("Failed to find the value in the Vec")?;
+            .context("draviavemal-openxml_office::Failed to find the value in the Vec")?;
         Ok(actual_string.to_string())
     }
 }

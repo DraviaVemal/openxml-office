@@ -2,25 +2,24 @@ use std::{ffi::c_char, mem::ManuallyDrop};
 
 use crate::{
     openxml_office_fbs::spreadsheet::{
-        worksheet_cell_data_type, worksheet_flush, worksheet_set_cell_index_value,
-        worksheet_set_cell_ref_value, worksheet_set_column_index_properties,
-        worksheet_set_column_ref_properties, worksheet_set_row_index_properties,
-        worksheet_set_merge_cell, worksheet_remove_merge_cell, worksheet_set_hyperlink,
-        worksheet_remove_hyperlink, worksheet_delete_sheet, worksheet_get_range_cell_properties,
+        worksheet_add_picture, worksheet_cell_data_type, worksheet_cell_package,
+        worksheet_cell_packageArgs, worksheet_cell_property as fbs_cell_property,
+        worksheet_cell_propertyArgs, worksheet_delete_sheet, worksheet_excel_hyperlink_type,
+        worksheet_flush, worksheet_get_range_cell_properties,
         worksheet_get_range_cell_properties_return, worksheet_get_range_cell_properties_returnArgs,
-        worksheet_cell_package, worksheet_cell_packageArgs,
-        worksheet_cell_property as fbs_cell_property, worksheet_cell_propertyArgs,
-        worksheet_list_merge_cell,
+        worksheet_hyperlink as fbs_hyperlink, worksheet_hyperlinkArgs, worksheet_image_type,
+        worksheet_list_hyperlinks, worksheet_list_hyperlinks_return,
+        worksheet_list_hyperlinks_returnArgs, worksheet_list_merge_cell,
         worksheet_list_merge_cell_return, worksheet_list_merge_cell_returnArgs,
         worksheet_reference_range as fbs_reference_range, worksheet_reference_rangeArgs,
-        worksheet_list_hyperlinks, worksheet_list_hyperlinks_return,
-        worksheet_list_hyperlinks_returnArgs, worksheet_hyperlink as fbs_hyperlink,
-        worksheet_hyperlinkArgs, worksheet_add_picture, worksheet_image_type,
-        worksheet_excel_hyperlink_type,
+        worksheet_remove_hyperlink, worksheet_remove_merge_cell, worksheet_set_cell_index_value,
+        worksheet_set_cell_ref_value, worksheet_set_column_index_properties,
+        worksheet_set_column_ref_properties, worksheet_set_hyperlink, worksheet_set_merge_cell,
+        worksheet_set_row_index_properties,
     },
     root_from_raw, set_error, write_buffer, StatusCode,
 };
-use anyhow::anyhow;
+use anyhow::Error as AnyError;
 use draviavemal_openxml_office::{
     global_2007::{
         models::{AnchorPosition, ExcelHyperlinkProperties, ExcelHyperlinkPropertyTypeValues},
@@ -52,7 +51,7 @@ pub extern "C" fn set_column_ref_properties(
         return unsafe {
             set_error(
                 out_error,
-                &anyhow!("cell_ref is required"),
+                &AnyError::msg("draviavemal-openxml_office::cell_ref is required"),
                 StatusCode::InvalidArgument,
             )
         };
@@ -169,7 +168,7 @@ pub extern "C" fn set_cell_ref_value(
             return unsafe {
                 set_error(
                     out_error,
-                    &anyhow!("Invalid cell reference"),
+                    &AnyError::msg("draviavemal-openxml_office::Invalid cell reference"),
                     StatusCode::InvalidArgument,
                 )
             }
@@ -360,7 +359,7 @@ pub extern "C" fn worksheet_set_hyperlink(
             return unsafe {
                 set_error(
                     out_error,
-                    &anyhow!("link is required"),
+                    &AnyError::msg("draviavemal-openxml_office::link is required"),
                     StatusCode::InvalidArgument,
                 )
             }
@@ -612,7 +611,9 @@ pub extern "C" fn worksheet_add_picture(
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
-    use draviavemal_openxml_office::{global_2007::models::ImageType, spreadsheet_2007::models::ExcelPictureSetting};
+    use draviavemal_openxml_office::{
+        global_2007::models::ImageType, spreadsheet_2007::models::ExcelPictureSetting,
+    };
     let fbs = match unsafe {
         root_from_raw::<worksheet_add_picture>(in_buffer, in_buffer_size, out_error)
     } {
@@ -625,7 +626,7 @@ pub extern "C" fn worksheet_add_picture(
             return unsafe {
                 set_error(
                     out_error,
-                    &anyhow!("image_path is required"),
+                    &AnyError::msg("draviavemal-openxml_office::image_path is required"),
                     StatusCode::InvalidArgument,
                 )
             }

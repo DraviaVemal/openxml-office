@@ -62,7 +62,7 @@ impl XmlDocumentPartClose for StylePart {
                     || {
                         {
                             self.save_content_to_tree_mut()
-                                .context("Style Save Content Failed")
+                                .context("draviavemal-openxml_office::Style Save Content Failed")
                         }
                     },
                     "Save Tree"
@@ -72,7 +72,7 @@ impl XmlDocumentPartClose for StylePart {
                         || {
                             xml_tree
                                 .try_borrow_mut()
-                                .context("Failed To pull XML Handle")?
+                                .context("draviavemal-openxml_office::Failed To pull XML Handle")?
                                 .close_xml_document(&self.file_path)
                         },
                         "Close Document"
@@ -92,7 +92,7 @@ impl XmlDocumentPartInitializing for StylePart {
         let content = EXCEL_TYPE_COLLECTION.get("style").unwrap();
         Ok((
             XmlDeserializer::vec_to_xml_doc_tree(include_str!("style.xml").as_bytes().to_vec())
-                .context("Initializing Theme Failed")?,
+                .context("draviavemal-openxml_office::Initializing Theme Failed")?,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -106,7 +106,7 @@ impl XmlDocumentPart for StylePart {
         parent_relationship_part: Weak<RefCell<RelationsPart>>,
     ) -> AnyResult<StylePart, AnyError> {
         let file_name = StylePart::get_style_file_name(&parent_relationship_part)
-            .context("Failed to pull style file name")?
+            .context("draviavemal-openxml_office::Failed to pull style file name")?
             .to_string();
         let mut xml_document = StylePart::get_xml_document(&office_document, &file_name)?;
         let (
@@ -117,7 +117,7 @@ impl XmlDocumentPart for StylePart {
             cell_style_collection,
             cell_collection,
         ) = StylePart::deserialize_content(&mut xml_document)
-            .context("Load Share String To Object Failed")?;
+            .context("draviavemal-openxml_office::Load Share String To Object Failed")?;
         Ok(StylePart {
             office_document,
             xml_document,
@@ -144,16 +144,16 @@ impl StylePart {
         if let Some(relations_part) = relations_part.upgrade() {
             Ok(relations_part
                 .try_borrow_mut()
-                .context("Failed to pull relationship connection")?
+                .context("draviavemal-openxml_office::Failed to pull relationship connection")?
                 .get_relationship_target_path_by_type_mut(
                     &style_content.schemas_type,
                     style_content,
                     None,
                     None,
                 )
-                .context("Pull Path From Existing File Failed")?)
+                .context("draviavemal-openxml_office::Pull Path From Existing File Failed")?)
         } else {
-            Err(anyhow!("Failed to upgrade relation part"))
+            Err(AnyError::msg("draviavemal-openxml_office::Failed to upgrade relation part"))
         }
     }
 
@@ -180,28 +180,28 @@ impl StylePart {
         if let Some(xml_document) = xml_document.upgrade() {
             let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
-                .context("xml doc borrow failed")?;
+                .context("draviavemal-openxml_office::xml doc borrow failed")?;
             let root_id = xml_doc_mut.get_root_id();
             // Load Number Format Region
             if let Some(num_fmts_id) = xml_doc_mut
                 .find_first_child(root_id, "numFmts")
-                .context("Failed to find numFmts element")?
+                .context("draviavemal-openxml_office::Failed to find numFmts element")?
             {
                 for element_id in StylePart::collect_child_ids(&xml_doc_mut, num_fmts_id)? {
                     let num_fmt = xml_doc_mut
                         .get_element(element_id)
-                        .context("Element not Found Error")?;
+                        .context("draviavemal-openxml_office::Element not Found Error")?;
                     let mut number_format = NumberFormat::default();
                     number_format.format_id = num_fmt
                         .get_attribute("numFmtId")
                         .map(|attribute| attribute.get_value())
-                        .context("numFmtId Attribute Not Found!")?
+                        .context("draviavemal-openxml_office::numFmtId Attribute Not Found!")?
                         .parse()
-                        .context("Number format ID parsing Failed")?;
+                        .context("draviavemal-openxml_office::Number format ID parsing Failed")?;
                     number_format.format_code = num_fmt
                         .get_attribute("formatCode")
                         .map(|attribute| attribute.get_value())
-                        .context("formatCode Attribute Not Found!")?
+                        .context("draviavemal-openxml_office::formatCode Attribute Not Found!")?
                         .to_string();
                     let mut hasher = DefaultHasher::new();
                     number_format.hash(&mut hasher);
@@ -209,18 +209,18 @@ impl StylePart {
                 }
                 xml_doc_mut
                     .remove_element_mut(num_fmts_id)
-                    .context("Failed to remove numFmts element")?;
+                    .context("draviavemal-openxml_office::Failed to remove numFmts element")?;
             }
             if let Some(fonts_id) = xml_doc_mut
                 .find_first_child(root_id, "fonts")
-                .context("Failed to find fonts element")?
+                .context("draviavemal-openxml_office::Failed to find fonts element")?
             {
                 for font_id in StylePart::collect_child_ids(&xml_doc_mut, fonts_id)? {
                     let mut font_style = FontStyle::default();
                     for item_id in StylePart::collect_child_ids(&xml_doc_mut, font_id)? {
                         let current_element = xml_doc_mut
                             .get_element(item_id)
-                            .context("Failed to pull child element")?;
+                            .context("draviavemal-openxml_office::Failed to pull child element")?;
                         let value = current_element
                             .get_attribute("val")
                             .map(|attribute| attribute.get_value());
@@ -236,7 +236,7 @@ impl StylePart {
                             "sz" => {
                                 if let Some(value) = value {
                                     font_style.size =
-                                        value.parse().context("Font Size Parse Failed")?;
+                                        value.parse().context("draviavemal-openxml_office::Font Size Parse Failed")?;
                                 }
                             }
                             "color" => {
@@ -254,7 +254,7 @@ impl StylePart {
                             "family" => {
                                 if let Some(value) = value {
                                     font_style.family =
-                                        value.parse().context("Font Family Parse Failed")?;
+                                        value.parse().context("draviavemal-openxml_office::Font Family Parse Failed")?;
                                 }
                             }
                             "scheme" => {
@@ -262,7 +262,7 @@ impl StylePart {
                                     font_style.font_scheme = FontSchemeValues::get_enum(value);
                                 }
                             }
-                            _ => return Err(anyhow!("Unknown Font Style Found!")),
+                            _ => return Err(AnyError::msg("draviavemal-openxml_office::Unknown Font Style Found!")),
                         }
                     }
                     let mut hasher = DefaultHasher::new();
@@ -271,18 +271,18 @@ impl StylePart {
                 }
                 xml_doc_mut
                     .remove_element_mut(fonts_id)
-                    .context("Failed to remove fonts element")?;
+                    .context("draviavemal-openxml_office::Failed to remove fonts element")?;
             }
             if let Some(fills_id) = xml_doc_mut
                 .find_first_child(root_id, "fills")
-                .context("Failed to find fills element")?
+                .context("draviavemal-openxml_office::Failed to find fills element")?
             {
                 for fill_id in StylePart::collect_child_ids(&xml_doc_mut, fills_id)? {
                     let mut fill_style = FillStyle::default();
                     for pattern_fill_id in StylePart::collect_child_ids(&xml_doc_mut, fill_id)? {
                         let pattern_type = xml_doc_mut
                             .get_element(pattern_fill_id)
-                            .context("Failed to pull pattern fill element")?
+                            .context("draviavemal-openxml_office::Failed to pull pattern fill element")?
                             .get_attribute("patternType")
                             .map(|attribute| attribute.get_value().to_string());
                         if let Some(pattern_type) = pattern_type {
@@ -292,7 +292,7 @@ impl StylePart {
                             {
                                 let color_element = xml_doc_mut
                                     .get_element(child_id)
-                                    .context("Failed to pull color child element")?;
+                                    .context("draviavemal-openxml_office::Failed to pull color child element")?;
                                 match color_element.get_tag().as_str() {
                                     "fgColor" => {
                                         fill_style.foreground_color =
@@ -302,7 +302,7 @@ impl StylePart {
                                         fill_style.background_color =
                                             StylePart::deserialize_color_setting(color_element);
                                     }
-                                    _ => return Err(anyhow!("Unknown Color patter found")),
+                                    _ => return Err(AnyError::msg("draviavemal-openxml_office::Unknown Color patter found")),
                                 }
                             }
                         }
@@ -313,18 +313,18 @@ impl StylePart {
                 }
                 xml_doc_mut
                     .remove_element_mut(fills_id)
-                    .context("Failed to remove fills element")?;
+                    .context("draviavemal-openxml_office::Failed to remove fills element")?;
             }
             if let Some(borders_id) = xml_doc_mut
                 .find_first_child(root_id, "borders")
-                .context("Failed to find borders element")?
+                .context("draviavemal-openxml_office::Failed to find borders element")?
             {
                 for border_id in StylePart::collect_child_ids(&xml_doc_mut, borders_id)? {
                     let mut border_style = BorderStyle::default();
                     for border_child_id in StylePart::collect_child_ids(&xml_doc_mut, border_id)? {
                         let tag = xml_doc_mut
                             .get_element(border_child_id)
-                            .context("Failed to pull border child element")?
+                            .context("draviavemal-openxml_office::Failed to pull border child element")?
                             .get_tag();
                         match tag.as_str() {
                             "left" => {
@@ -333,7 +333,7 @@ impl StylePart {
                                     &mut border_style.left,
                                     &mut xml_doc_mut,
                                 )
-                                .context("Left Border Decode Failed")?;
+                                .context("draviavemal-openxml_office::Left Border Decode Failed")?;
                             }
                             "right" => {
                                 StylePart::deserialize_border_setting(
@@ -341,7 +341,7 @@ impl StylePart {
                                     &mut border_style.right,
                                     &mut xml_doc_mut,
                                 )
-                                .context("Left Border Decode Failed")?;
+                                .context("draviavemal-openxml_office::Left Border Decode Failed")?;
                             }
                             "top" => {
                                 StylePart::deserialize_border_setting(
@@ -349,7 +349,7 @@ impl StylePart {
                                     &mut border_style.top,
                                     &mut xml_doc_mut,
                                 )
-                                .context("Left Border Decode Failed")?;
+                                .context("draviavemal-openxml_office::Left Border Decode Failed")?;
                             }
                             "bottom" => {
                                 StylePart::deserialize_border_setting(
@@ -357,7 +357,7 @@ impl StylePart {
                                     &mut border_style.bottom,
                                     &mut xml_doc_mut,
                                 )
-                                .context("Left Border Decode Failed")?;
+                                .context("draviavemal-openxml_office::Left Border Decode Failed")?;
                             }
                             "diagonal" => {
                                 StylePart::deserialize_border_setting(
@@ -365,10 +365,10 @@ impl StylePart {
                                     &mut border_style.diagonal,
                                     &mut xml_doc_mut,
                                 )
-                                .context("Left Border Decode Failed")?;
+                                .context("draviavemal-openxml_office::Left Border Decode Failed")?;
                             }
                             _ => {
-                                return Err(anyhow!("Unknown border style found"));
+                                return Err(AnyError::msg("draviavemal-openxml_office::Unknown border style found"));
                             }
                         }
                     }
@@ -378,28 +378,28 @@ impl StylePart {
                 }
                 xml_doc_mut
                     .remove_element_mut(borders_id)
-                    .context("Failed to remove borders element")?;
+                    .context("draviavemal-openxml_office::Failed to remove borders element")?;
             }
             if let Some(cell_style_xfs_id) = xml_doc_mut
                 .find_first_child(root_id, "cellStyleXfs")
-                .context("Failed to find cellStyleXfs element")?
+                .context("draviavemal-openxml_office::Failed to find cellStyleXfs element")?
             {
                 style_collection =
                     StylePart::deserialize_cell_style(cell_style_xfs_id, &mut xml_doc_mut)
-                        .context("Deserializing Cell Style Xfs Failed")?;
+                        .context("draviavemal-openxml_office::Deserializing Cell Style Xfs Failed")?;
                 xml_doc_mut
                     .remove_element_mut(cell_style_xfs_id)
-                    .context("Failed to remove cellStyleXfs element")?;
+                    .context("draviavemal-openxml_office::Failed to remove cellStyleXfs element")?;
             }
             if let Some(cell_xfs_id) = xml_doc_mut
                 .find_first_child(root_id, "cellXfs")
-                .context("Failed to find cellXfs element")?
+                .context("draviavemal-openxml_office::Failed to find cellXfs element")?
             {
                 xfs_collection = StylePart::deserialize_cell_style(cell_xfs_id, &mut xml_doc_mut)
-                    .context("Deserializing Cell Xfs Failed")?;
+                    .context("draviavemal-openxml_office::Deserializing Cell Xfs Failed")?;
                 xml_doc_mut
                     .remove_element_mut(cell_xfs_id)
-                    .context("Failed to remove cellXfs element")?;
+                    .context("draviavemal-openxml_office::Failed to remove cellXfs element")?;
             }
         }
         Ok((
@@ -417,7 +417,7 @@ impl StylePart {
         if let Some(xml_document) = self.xml_document.upgrade() {
             let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
-                .context("xml doc borrow failed")?;
+                .context("draviavemal-openxml_office::xml doc borrow failed")?;
             let root_id = xml_doc_mut.get_root_id();
             // Number Formats
             {
@@ -431,7 +431,7 @@ impl StylePart {
                             self.number_format_collection.len().to_string(),
                         )]),
                     )
-                    .context("Create Number Formats Parent Failed.")?;
+                    .context("draviavemal-openxml_office::Create Number Formats Parent Failed.")?;
                 for (_, num_format) in self.number_format_collection.as_slice() {
                     xml_doc_mut
                         .append_child_element_mut(
@@ -448,7 +448,7 @@ impl StylePart {
                                 ),
                             ]),
                         )
-                        .context("Create Number Format Element Failed")?;
+                        .context("draviavemal-openxml_office::Create Number Format Element Failed")?;
                 }
             }
             // Fonts
@@ -463,25 +463,25 @@ impl StylePart {
                             self.font_collection.len().to_string(),
                         )]),
                     )
-                    .context("Create Fonts Parent Failed.")?;
+                    .context("draviavemal-openxml_office::Create Fonts Parent Failed.")?;
                 for (_, font_style) in self.font_collection.as_slice() {
                     let font_id = xml_doc_mut
                         .append_child_element_mut(fonts_id, "font", None)
-                        .context("Adding Font to Fonts Failed")?;
+                        .context("draviavemal-openxml_office::Adding Font to Fonts Failed")?;
                     if font_style.is_bold {
                         xml_doc_mut
                             .append_child_element_mut(font_id, "b", None)
-                            .context("Create Bold Element Failed")?;
+                            .context("draviavemal-openxml_office::Create Bold Element Failed")?;
                     }
                     if font_style.is_italic {
                         xml_doc_mut
                             .append_child_element_mut(font_id, "i", None)
-                            .context("Create Italic Element Failed")?;
+                            .context("draviavemal-openxml_office::Create Italic Element Failed")?;
                     }
                     if font_style.is_underline {
                         xml_doc_mut
                             .append_child_element_mut(font_id, "u", None)
-                            .context("Create Underline Element Failed")?;
+                            .context("draviavemal-openxml_office::Create Underline Element Failed")?;
                     }
                     if font_style.is_double_underline {
                         xml_doc_mut
@@ -493,7 +493,7 @@ impl StylePart {
                                     "double".to_string(),
                                 )]),
                             )
-                            .context("Create Double Underline Element Failed")?;
+                            .context("draviavemal-openxml_office::Create Double Underline Element Failed")?;
                     }
                     xml_doc_mut
                         .append_child_element_mut(
@@ -504,7 +504,7 @@ impl StylePart {
                                 font_style.size.to_string(),
                             )]),
                         )
-                        .context("Create Font Size Element Failed")?;
+                        .context("draviavemal-openxml_office::Create Font Size Element Failed")?;
                     StylePart::add_color_element(
                         Some(font_style.color.clone()),
                         &mut xml_doc_mut,
@@ -519,7 +519,7 @@ impl StylePart {
                                 font_style.name.clone(),
                             )]),
                         )
-                        .context("Create Font Name Element Failed")?;
+                        .context("draviavemal-openxml_office::Create Font Name Element Failed")?;
                     xml_doc_mut
                         .append_child_element_mut(
                             font_id,
@@ -529,7 +529,7 @@ impl StylePart {
                                 font_style.family.to_string(),
                             )]),
                         )
-                        .context("Create Font Family Element Failed")?;
+                        .context("draviavemal-openxml_office::Create Font Family Element Failed")?;
                     xml_doc_mut
                         .append_child_element_mut(
                             font_id,
@@ -539,7 +539,7 @@ impl StylePart {
                                 FontSchemeValues::get_string(font_style.font_scheme.clone()),
                             )]),
                         )
-                        .context("Create Font Scheme Element Failed")?;
+                        .context("draviavemal-openxml_office::Create Font Scheme Element Failed")?;
                 }
             }
             // Fills
@@ -554,11 +554,11 @@ impl StylePart {
                             self.fill_collection.len().to_string(),
                         )]),
                     )
-                    .context("Create Fills parents Failed.")?;
+                    .context("draviavemal-openxml_office::Create Fills parents Failed.")?;
                 for (_, fill_data) in self.fill_collection.as_slice() {
                     let fill_id = xml_doc_mut
                         .append_child_element_mut(fills_id, "fill", None)
-                        .context("Adding Fill Element Failed")?;
+                        .context("draviavemal-openxml_office::Adding Fill Element Failed")?;
                     let pattern_fill_id = xml_doc_mut
                         .append_child_element_mut(
                             fill_id,
@@ -568,7 +568,7 @@ impl StylePart {
                                 PatternTypeValues::get_string(fill_data.pattern_type.clone()),
                             )]),
                         )
-                        .context("Pattern Fill Element Failed")?;
+                        .context("draviavemal-openxml_office::Pattern Fill Element Failed")?;
                     if let Some(fg_setting) = fill_data.foreground_color.clone() {
                         xml_doc_mut
                             .append_child_element_mut(
@@ -581,7 +581,7 @@ impl StylePart {
                                     fg_setting.value,
                                 )]),
                             )
-                            .context("Pattern Fill Foreground Element Failed")?;
+                            .context("draviavemal-openxml_office::Pattern Fill Foreground Element Failed")?;
                     }
                     if let Some(bg_setting) = fill_data.background_color.clone() {
                         xml_doc_mut
@@ -595,7 +595,7 @@ impl StylePart {
                                     bg_setting.value,
                                 )]),
                             )
-                            .context("Pattern Fill Background Element Failed")?;
+                            .context("draviavemal-openxml_office::Pattern Fill Background Element Failed")?;
                     }
                 }
             }
@@ -611,11 +611,11 @@ impl StylePart {
                             self.border_collection.len().to_string(),
                         )]),
                     )
-                    .context("Create borders parents Failed.")?;
+                    .context("draviavemal-openxml_office::Create borders parents Failed.")?;
                 for (_, border_data) in self.border_collection.as_slice() {
                     let border_id = xml_doc_mut
                         .append_child_element_mut(borders_id, "border", None)
-                        .context("Create Border Failed")?;
+                        .context("draviavemal-openxml_office::Create Border Failed")?;
                     for (border_side, border_setting) in [
                         ("left", &border_data.left),
                         ("right", &border_data.right),
@@ -654,7 +654,7 @@ impl StylePart {
             {
                 let current_element = xml_doc_mut
                     .get_element(xf_id)
-                    .context("Failed to pull xf element")?;
+                    .context("draviavemal-openxml_office::Failed to pull xf element")?;
                 let attribute_value = |attribute_name: &str| {
                     current_element
                         .get_attribute(attribute_name)
@@ -663,19 +663,19 @@ impl StylePart {
                 if let Some(value) = attribute_value("numFmtId") {
                     cell_xf.number_format_id = value
                         .parse()
-                        .context("Cell Number Format Id Parse Failed")?;
+                        .context("draviavemal-openxml_office::Cell Number Format Id Parse Failed")?;
                 }
                 if let Some(value) = attribute_value("fontId") {
-                    cell_xf.font_id = value.parse().context("Cell Font Id Parse Failed")?;
+                    cell_xf.font_id = value.parse().context("draviavemal-openxml_office::Cell Font Id Parse Failed")?;
                 }
                 if let Some(value) = attribute_value("fillId") {
-                    cell_xf.fill_id = value.parse().context("Cell Fill Id Parse Failed")?;
+                    cell_xf.fill_id = value.parse().context("draviavemal-openxml_office::Cell Fill Id Parse Failed")?;
                 }
                 if let Some(value) = attribute_value("borderId") {
-                    cell_xf.border_id = value.parse().context("Cell Border Id Parse Failed")?;
+                    cell_xf.border_id = value.parse().context("draviavemal-openxml_office::Cell Border Id Parse Failed")?;
                 }
                 if let Some(value) = attribute_value("xfId") {
-                    cell_xf.format_id = value.parse().context("Cell Format Id Parse Failed")?;
+                    cell_xf.format_id = value.parse().context("draviavemal-openxml_office::Cell Format Id Parse Failed")?;
                 }
                 if let Some(value) = attribute_value("applyProtection") {
                     cell_xf.apply_protection = ConverterUtil::normalize_bool_property_u8(value);
@@ -700,7 +700,7 @@ impl StylePart {
             for alignment_id in StylePart::collect_child_ids(xml_doc_mut, xf_id)? {
                 let alignment_element = xml_doc_mut
                     .get_element(alignment_id)
-                    .context("Failed to pull alignment element")?;
+                    .context("draviavemal-openxml_office::Failed to pull alignment element")?;
                 let attribute_value = |attribute_name: &str| {
                     alignment_element
                         .get_attribute(attribute_name)
@@ -730,7 +730,7 @@ impl StylePart {
     ) -> Result<(), AnyError> {
         let style = xml_doc_mut
             .get_element(current_element_id)
-            .context("Failed to pull border side element")?
+            .context("draviavemal-openxml_office::Failed to pull border side element")?
             .get_attribute("style")
             .map(|attribute| attribute.get_value().to_string());
         if let Some(style) = style {
@@ -739,7 +739,7 @@ impl StylePart {
                 for color_id in StylePart::collect_child_ids(xml_doc_mut, current_element_id)? {
                     let color_element = xml_doc_mut
                         .get_element(color_id)
-                        .context("Failed to pull border color element")?;
+                        .context("draviavemal-openxml_office::Failed to pull border color element")?;
                     if let Some(color) = StylePart::deserialize_color_setting(color_element) {
                         border.border_color = Some(color);
                     }
@@ -773,7 +773,7 @@ impl StylePart {
     ) -> AnyResult<Vec<NodeId>, AnyError> {
         Ok(xml_doc
             .get_element(parent_id)
-            .context("Failed to pull parent element")?
+            .context("draviavemal-openxml_office::Failed to pull parent element")?
             .get_child_contents()
             .as_ref()
             .map(|contents| {
@@ -804,7 +804,7 @@ impl StylePart {
                         border_color_setting.value,
                     )]),
                 )
-                .context("Create Color Element Failed")?;
+                .context("draviavemal-openxml_office::Create Color Element Failed")?;
         }
         Ok(())
     }
@@ -854,7 +854,7 @@ impl StylePart {
                     xfs_data.len().to_string(),
                 )]),
             )
-            .context("Create Cell Style parents Failed.")?;
+            .context("draviavemal-openxml_office::Create Cell Style parents Failed.")?;
         for (_, xfs) in xfs_data {
             let mut attributes = vec![
                 XmlAttribute::new("numFmtId".to_string(), xfs.number_format_id.to_string()),
@@ -906,7 +906,7 @@ impl StylePart {
             }
             let xf_id = xml_doc_mut
                 .append_child_element_mut(cell_style_xfs_id, "xf", Some(attributes))
-                .context("Create Cell Style Config Failed")?;
+                .context("draviavemal-openxml_office::Create Cell Style Config Failed")?;
             if xfs.is_wrap_text > 0
                 || xfs.vertical_alignment != VerticalAlignmentValues::None
                 || xfs.horizontal_alignment != HorizontalAlignmentValues::None
@@ -932,7 +932,7 @@ impl StylePart {
                 }
                 xml_doc_mut
                     .append_child_element_mut(xf_id, "alignment", Some(alignment_attributes))
-                    .context("Create Cell Alignment Style Config Failed")?;
+                    .context("draviavemal-openxml_office::Create Cell Alignment Style Config Failed")?;
             }
         }
         Ok(())
@@ -981,8 +981,8 @@ impl StylePart {
                             (self.number_format_collection.len() - 1) as u16;
                     }
                 } else {
-                    return Err(anyhow!(
-                        "Custom Format Type is used without providing custom number format."
+                    return Err(AnyError::msg(
+                        "draviavemal-openxml_office::Custom Format Type is used without providing custom number format."
                     ));
                 }
             }

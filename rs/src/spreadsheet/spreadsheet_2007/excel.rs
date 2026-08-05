@@ -42,23 +42,23 @@ impl Excel {
             || {
                 let office_document = Rc::new(RefCell::new(
                     OfficeDocument::new(file_name.clone())
-                        .context("Creating Office Document Struct Failed")?,
+                        .context("draviavemal-openxml_office::Creating Office Document Struct Failed")?,
                 ));
                 let root_relations = Rc::new(RefCell::new(
                     RelationsPart::new(Rc::downgrade(&office_document), "_rels/.rels")
-                        .context("Initialize Root Relation Part failed")?,
+                        .context("draviavemal-openxml_office::Initialize Root Relation Part failed")?,
                 ));
                 // Load relevant parts from root relations part
                 let core_properties = CorePropertiesPart::new(
                     Rc::downgrade(&office_document),
                     Rc::downgrade(&root_relations),
                 )
-                .context("Creating Core Property Part Failed.")?;
+                .context("draviavemal-openxml_office::Creating Core Property Part Failed.")?;
                 let workbook = WorkbookPart::new(
                     Rc::downgrade(&office_document),
                     Rc::downgrade(&root_relations),
                 )
-                .context("Creating Workbook part Failed")?;
+                .context("draviavemal-openxml_office::Creating Workbook part Failed")?;
                 let excel = Self {
                     office_document,
                     root_relations,
@@ -144,12 +144,12 @@ impl Excel {
     pub fn save_as(mut self, file_name: &str) -> AnyResult<String, AnyError> {
         if self
             .list_sheet_names()
-            .context("Failed to get Sheet Name List")?
+            .context("draviavemal-openxml_office::Failed to get Sheet Name List")?
             .len()
             == 0
         {
             self.add_sheet_mut(None)
-                .context("Failed To Add Default Sheet to excel")?;
+                .context("draviavemal-openxml_office::Failed To Add Default Sheet to excel")?;
         }
         log_elapsed!(
             || {
@@ -157,13 +157,13 @@ impl Excel {
                 self.core_properties.flush()?;
                 self.root_relations
                     .try_borrow_mut()
-                    .context("Failed To Pull Relation Handle")?
+                    .context("draviavemal-openxml_office::Failed To Pull Relation Handle")?
                     .close_document()?;
                 self.office_document
                     .try_borrow_mut()
-                    .context("Save Office Document handle Failed")?
+                    .context("draviavemal-openxml_office::Save Office Document handle Failed")?
                     .save_as(file_name)
-                    .context("File Save Failed for the target path.")
+                    .context("draviavemal-openxml_office::File Save Failed for the target path.")
             },
             "File Save"
         )

@@ -49,7 +49,7 @@ impl XmlDocumentPartClose for CalculationChainPart {
                         if let Some(xml_document) = self.xml_document.upgrade() {
                             let mut xml_doc_mut = xml_document
                                 .try_borrow_mut()
-                                .context("Failed to pull document handle")?;
+                                .context("draviavemal-openxml_office::Failed to pull document handle")?;
                             let root_id = xml_doc_mut.get_root_id();
                             for calc_chain in self.calculation_collection.iter() {
                                 let mut attributes = Vec::new();
@@ -87,22 +87,22 @@ impl XmlDocumentPartClose for CalculationChainPart {
                                 }
                                 xml_doc_mut
                                     .append_child_element_mut(root_id, "c", Some(attributes))
-                                    .context("Failed To Add Child Item")?;
+                                    .context("draviavemal-openxml_office::Failed To Add Child Item")?;
                             }
                         }
                         office_doc_ref
                             .try_borrow_mut()
-                            .context("Failed to Borrow Share Tree")?
+                            .context("draviavemal-openxml_office::Failed to Borrow Share Tree")?
                             .close_xml_document(&self.file_path)?;
                     } else {
                         if let Some(relationship_part) = self.parent_relationship_part.upgrade() {
                             relationship_part
                                 .try_borrow_mut()
-                                .context("Failed To pull parent relation ship part of Calc Chain")?
+                                .context("draviavemal-openxml_office::Failed To pull parent relation ship part of Calc Chain")?
                                 .delete_relationship_mut(&self.file_path);
                             office_doc_ref
                                 .try_borrow_mut()
-                                .context("Failed to Borrow Share Tree")?
+                                .context("draviavemal-openxml_office::Failed to Borrow Share Tree")?
                                 .delete_document_mut(&self.file_path);
                         }
                     }
@@ -131,7 +131,7 @@ impl XmlDocumentPartInitializing for CalculationChainPart {
         let mut xml_document = XmlDocument::new();
         xml_document
             .create_root_element_mut("calcChain", Some(attributes))
-            .context("Create XML Root Element Failed")?;
+            .context("draviavemal-openxml_office::Create XML Root Element Failed")?;
         Ok((
             xml_document,
             Some(content.content_type.to_string()),
@@ -147,13 +147,13 @@ impl XmlDocumentPart for CalculationChainPart {
         parent_relationship_part: Weak<RefCell<RelationsPart>>,
     ) -> AnyResult<CalculationChainPart, AnyError> {
         let file_name = CalculationChainPart::get_calc_chain_file_name(&parent_relationship_part)
-            .context("Failed to pull calc chain file name")?
+            .context("draviavemal-openxml_office::Failed to pull calc chain file name")?
             .to_string();
         let mut xml_document =
             CalculationChainPart::get_xml_document(&office_document, &file_name)?;
         let calculation_collection =
             CalculationChainPart::deserialise_calc_chain(&mut xml_document)
-                .context("Load Calculation Chain To DB Failed")?;
+                .context("draviavemal-openxml_office::Load Calculation Chain To DB Failed")?;
         Ok(CalculationChainPart {
             office_document,
             parent_relationship_part,
@@ -172,16 +172,16 @@ impl CalculationChainPart {
         if let Some(relations_part) = relations_part.upgrade() {
             Ok(relations_part
                 .try_borrow_mut()
-                .context("Failed to pull relationship connection")?
+                .context("draviavemal-openxml_office::Failed to pull relationship connection")?
                 .get_relationship_target_path_by_type_mut(
                     &calc_chain_content.schemas_type,
                     calc_chain_content,
                     None,
                     None,
                 )
-                .context("Pull Path From Existing File Failed")?)
+                .context("draviavemal-openxml_office::Pull Path From Existing File Failed")?)
         } else {
-            Err(anyhow!("Failed to upgrade relation part"))
+            Err(AnyError::msg("draviavemal-openxml_office::Failed to upgrade relation part"))
         }
     }
     fn deserialise_calc_chain(
@@ -191,16 +191,16 @@ impl CalculationChainPart {
         if let Some(xml_document) = xml_document.upgrade() {
             let mut xml_doc_mut = xml_document
                 .try_borrow_mut()
-                .context("xml doc borrow failed")?;
+                .context("draviavemal-openxml_office::xml doc borrow failed")?;
             let root_id = xml_doc_mut.get_root_id();
             if let Some(element_ids) = xml_doc_mut
                 .find_all_child(root_id, "c")
-                .context("Failed to find calc chain elements")?
+                .context("draviavemal-openxml_office::Failed to find calc chain elements")?
             {
                 for element_id in element_ids {
                     let element = xml_doc_mut
                         .get_element(element_id)
-                        .context("Failed to pull calc chain element")?;
+                        .context("draviavemal-openxml_office::Failed to pull calc chain element")?;
                     if let Some(cell_ref) = element.get_attribute("r") {
                         calculation_collection.push(CalculationChain {
                             cell_ref: cell_ref.get_value().to_string(),
@@ -209,7 +209,7 @@ impl CalculationChainPart {
                                 .map(|attribute| attribute.get_value().to_string())
                                 .unwrap_or_else(|| "1".to_string())
                                 .parse::<u32>()
-                                .context("Failed to Convert Sheet ID")?, // Set Default Sheet id to 1
+                                .context("draviavemal-openxml_office::Failed to Convert Sheet ID")?, // Set Default Sheet id to 1
                             level_calcualtion: element.get_attribute("l").map(|attribute| {
                                 ConverterUtil::normalize_bool_property_bool(attribute.get_value())
                             }),
@@ -226,7 +226,7 @@ impl CalculationChainPart {
                     }
                     xml_doc_mut
                         .remove_element_mut(element_id)
-                        .context("Falied to remove element")?;
+                        .context("draviavemal-openxml_office::Falied to remove element")?;
                 }
             }
         }

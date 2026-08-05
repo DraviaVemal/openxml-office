@@ -31,13 +31,13 @@ impl CommonServices {
     pub(crate) fn close_service(&mut self) -> AnyResult<(), AnyError> {
         self.calculation_chain
             .close_document()
-            .context("Common Service Calculation Chain Close Failed")?;
+            .context("draviavemal-openxml_office::Common Service Calculation Chain Close Failed")?;
         self.share_string
             .close_document()
-            .context("Common Service Share String Close Failed")?;
+            .context("draviavemal-openxml_office::Common Service Share String Close Failed")?;
         self.style
             .close_document()
-            .context("Common Style Chain Close Failed")?;
+            .context("draviavemal-openxml_office::Common Style Chain Close Failed")?;
         Ok(())
     }
 }
