@@ -15,6 +15,7 @@ use crate::{
         traits::{Enum, XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing},
     },
     log_elapsed,
+    namespaces::{RELATIONSHIPS_NS, RELS_PKG_NS, SPREADSHEET_NS},
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
         models::{
@@ -25,10 +26,9 @@ use crate::{
         services::{CalculationChain, CommonServices},
     },
 };
-use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{
-    NodeId, XmlAttribute, XmlDeserializer, XmlDocument, XmlElementContentType,
-};
+use anyhow::{Context, Error as AnyError, Result as AnyResult};
+use draviavemal_xml_rs::{NodeId, XmlAttribute, XmlDocument, XmlElementContentType};
+use log::debug;
 use std::{
     cell::RefCell,
     cmp::{max, min},
@@ -217,9 +217,13 @@ impl XmlDocumentPartClose for WorkSheet {
                     || {
                         self.sheet_relationship_part
                             .try_borrow_mut()
-                            .context("draviavemal-openxml_office::Failed to pull relationship handle")?
+                            .context(
+                                "draviavemal-openxml_office::Failed to pull relationship handle",
+                            )?
                             .close_document()
-                            .context("draviavemal-openxml_office::Failed to Close relationship part")
+                            .context(
+                                "draviavemal-openxml_office::Failed to Close relationship part",
+                            )
                     },
                     "Worksheet relation part closed"
                 )?;
@@ -244,15 +248,30 @@ impl XmlDocumentPartInitializing for WorkSheet {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
-        let content = EXCEL_TYPE_COLLECTION.get("worksheet").unwrap();
-        let template_core_properties = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-            <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
-                xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-                <sheetData />
-            </worksheet>"#;
+        let content = EXCEL_TYPE_COLLECTION
+            .get("worksheet")
+            .context("Type Collection Missing key value")?;
+        let mut template_core_properties = XmlDocument::new();
+        let root_id = template_core_properties
+            .create_root_element_mut(
+                "worksheet",
+                Some(vec![
+                    XmlAttribute::new(
+                        "xmlns".to_string(),
+                        SPREADSHEET_NS.schemas_namespace.to_string(),
+                    ),
+                    XmlAttribute::new(
+                        format!("xmlns:{}", RELS_PKG_NS.default_alias),
+                        RELS_PKG_NS.schemas_namespace.to_string(),
+                    ),
+                ]),
+            )
+            .context("Failed to create worksheet root element")?;
+        template_core_properties
+            .append_child_element_mut(root_id, "sheetData", None)
+            .context("Failed to add Sheet Data to the worksheet")?;
         Ok((
-            XmlDeserializer::vec_to_xml_doc_tree(template_core_properties.as_bytes().to_vec())
-                .context("draviavemal-openxml_office::Initializing Worksheet Failed")?,
+            template_core_properties,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -287,7 +306,9 @@ impl WorkSheet {
                     file_path.rsplit('/').next().unwrap()
                 ),
             )
-            .context("draviavemal-openxml_office::Creating Relation ship part for workbook failed.")?,
+            .context(
+                "draviavemal-openxml_office::Creating Relation ship part for workbook failed.",
+            )?,
         ));
         let (column_collection, sheet_data, merge_cells, hyperlinks, sheet_views, dimension) = log_elapsed!(
             || {
@@ -303,7 +324,9 @@ impl WorkSheet {
                 common_service.clone(),
                 &EXCEL_TYPE_COLLECTION,
             )
-            .context("draviavemal-openxml_office::Failed to create/load drawing part of the sheet")?,
+            .context(
+                "draviavemal-openxml_office::Failed to create/load drawing part of the sheet",
+            )?,
         ));
         Ok(WorkSheet {
             office_document,
@@ -351,9 +374,9 @@ impl WorkSheet {
                 .context("draviavemal-openxml_office::Failed to find dimension elements")?
             {
                 for dimension_id in dimension_ids {
-                    xml_doc_mut
-                        .remove_element_mut(dimension_id)
-                        .context("draviavemal-openxml_office::Failed to remove dimension element")?;
+                    xml_doc_mut.remove_element_mut(dimension_id).context(
+                        "draviavemal-openxml_office::Failed to remove dimension element",
+                    )?;
                 }
             }
             let worksheet_views = log_elapsed!(
@@ -428,8 +451,9 @@ impl WorkSheet {
                     "ref".to_string(),
                     format!(
                         "{}{}:{}{}",
-                        ConverterUtil::get_column_ref(self.dimension.start_col)
-                            .context("draviavemal-openxml_office::Failed to convert dim col start")?,
+                        ConverterUtil::get_column_ref(self.dimension.start_col).context(
+                            "draviavemal-openxml_office::Failed to convert dim col start"
+                        )?,
                         first_item.0,
                         ConverterUtil::get_column_ref(self.dimension.end_col)
                             .context("draviavemal-openxml_office::Failed to convert dim col end")?,
@@ -443,7 +467,9 @@ impl WorkSheet {
                 let root_id = xml_doc_mut.get_root_id();
                 xml_doc_mut
                     .append_child_element_mut(root_id, "dimension", Some(dimension_attribute))
-                    .context("draviavemal-openxml_office::Failed to Add Dimension node to worksheet")?;
+                    .context(
+                        "draviavemal-openxml_office::Failed to Add Dimension node to worksheet",
+                    )?;
             } else {
                 set_default(xml_doc_mut)?;
             }
@@ -675,8 +701,9 @@ impl WorkSheet {
                             "r".to_string(),
                             format!(
                                 "{}{}",
-                                ConverterUtil::get_column_ref(col_index)
-                                    .context("draviavemal-openxml_office::Failed to get Char Id from Int")?,
+                                ConverterUtil::get_column_ref(col_index).context(
+                                    "draviavemal-openxml_office::Failed to get Char Id from Int"
+                                )?,
                                 row_index
                             ),
                         );
@@ -862,7 +889,9 @@ impl WorkSheet {
                     let r_id = relationship_part
                         .borrow_mut()
                         .set_new_relationship_mut(&content, hyperlink.link)
-                        .context("draviavemal-openxml_office::Failed to Create Hyperlink Relationship")?;
+                        .context(
+                            "draviavemal-openxml_office::Failed to Create Hyperlink Relationship",
+                        )?;
                     attributes.insert("r:id".to_string(), r_id);
                 } else {
                     attributes.insert("location".to_string(), hyperlink.link);
@@ -913,42 +942,71 @@ impl WorkSheet {
                     .get_element(col_id)
                     .context("draviavemal-openxml_office::Failed to get col element")?;
                 let mut column_properties = ColumnProperties::default();
-                if let Some(min) = col.get_attribute("min").map(|a| a.get_value()) {
-                    column_properties.min = min.parse().context("draviavemal-openxml_office::Failed to parse min value")?;
+                if let Some(min) = col
+                    .get_attribute("min")
+                    .map(|attribute| attribute.get_value())
+                {
+                    column_properties.min = min
+                        .parse()
+                        .context("draviavemal-openxml_office::Failed to parse min value")?;
                 }
-                if let Some(max) = col.get_attribute("max").map(|a| a.get_value()) {
-                    column_properties.max = max.parse().context("draviavemal-openxml_office::Failed to parse min value")?;
+                if let Some(max) = col
+                    .get_attribute("max")
+                    .map(|attribute| attribute.get_value())
+                {
+                    column_properties.max = max
+                        .parse()
+                        .context("draviavemal-openxml_office::Failed to parse min value")?;
                 }
-                if let Some(best_fit) = col.get_attribute("bestFit").map(|a| a.get_value()) {
+                if let Some(best_fit) = col
+                    .get_attribute("bestFit")
+                    .map(|attribute| attribute.get_value())
+                {
                     column_properties.best_fit = if best_fit == "1" { Some(true) } else { None }
                 }
-                if let Some(hidden) = col.get_attribute("hidden").map(|a| a.get_value()) {
+                if let Some(hidden) = col
+                    .get_attribute("hidden")
+                    .map(|attribute| attribute.get_value())
+                {
                     column_properties.hidden = if hidden == "1" { Some(true) } else { None }
                 }
-                if let Some(style) = col.get_attribute("style").map(|a| a.get_value()) {
-                    column_properties.style_id = Some(StyleId::new(
-                        style.parse().context("draviavemal-openxml_office::Failed to parse style ID")?,
-                    ));
-                }
-                if let Some(outline_level) =
-                    col.get_attribute("outlineLevel").map(|a| a.get_value())
+                if let Some(style) = col
+                    .get_attribute("style")
+                    .map(|attribute| attribute.get_value())
                 {
-                    column_properties.group_level =
-                        outline_level.parse().context("draviavemal-openxml_office::Failed to parse style ID")?;
+                    column_properties.style_id =
+                        Some(StyleId::new(style.parse().context(
+                            "draviavemal-openxml_office::Failed to parse style ID",
+                        )?));
                 }
-                if let Some(custom_width) = col.get_attribute("customWidth").map(|a| a.get_value())
+                if let Some(outline_level) = col
+                    .get_attribute("outlineLevel")
+                    .map(|attribute| attribute.get_value())
+                {
+                    column_properties.group_level = outline_level
+                        .parse()
+                        .context("draviavemal-openxml_office::Failed to parse style ID")?;
+                }
+                if let Some(custom_width) = col
+                    .get_attribute("customWidth")
+                    .map(|attribute| attribute.get_value())
                 {
                     if custom_width == "1" {
                         column_properties.width = Some(
                             col.get_attribute("width")
-                                .map(|a| a.get_value())
+                                .map(|attribute| attribute.get_value())
                                 .context("draviavemal-openxml_office::Failed to get custom width")?
                                 .parse()
-                                .context("draviavemal-openxml_office::Failed to parse custom width")?,
+                                .context(
+                                    "draviavemal-openxml_office::Failed to parse custom width",
+                                )?,
                         );
                     }
                 }
-                if let Some(collapsed) = col.get_attribute("collapsed").map(|a| a.get_value()) {
+                if let Some(collapsed) = col
+                    .get_attribute("collapsed")
+                    .map(|attribute| attribute.get_value())
+                {
                     column_properties.collapsed = if collapsed == "1" { Some(true) } else { None }
                 }
                 column_collection.push_back(column_properties);
@@ -991,7 +1049,9 @@ impl WorkSheet {
             for (element_id, element_tag) in child_records {
                 // Validate element that are not accounted
                 if element_tag != "sheetView" {
-                    return Err(AnyError::msg("draviavemal-openxml_office::Failed to Process Sheet Views child"));
+                    return Err(AnyError::msg(
+                        "draviavemal-openxml_office::Failed to Process Sheet Views child",
+                    ));
                 }
                 let sheet_view_element = xml_doc_mut
                     .get_element(element_id)
@@ -999,13 +1059,13 @@ impl WorkSheet {
                 let mut worksheet_view = WorkSheetView::default();
                 worksheet_view.workbook_view_id = sheet_view_element
                     .get_attribute("workbookViewId")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                     .context("draviavemal-openxml_office::Mandatory attribute \"workbookViewId\" is missing from sheetView")?
                     .to_string();
                 // Windows protection
                 if let Some(window_protection) = sheet_view_element
                     .get_attribute("windowProtection")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.window_protection = Some(
                         ConverterUtil::normalize_bool_property_bool(window_protection),
@@ -1014,7 +1074,7 @@ impl WorkSheet {
                 // Show formula
                 if let Some(show_formula_bar) = sheet_view_element
                     .get_attribute("showFormulas")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.show_formula_bar = Some(
                         ConverterUtil::normalize_bool_property_bool(show_formula_bar),
@@ -1023,7 +1083,7 @@ impl WorkSheet {
                 // Show Grid Line
                 if let Some(show_grid_line) = sheet_view_element
                     .get_attribute("showGridLines")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.show_grid_line =
                         Some(ConverterUtil::normalize_bool_property_bool(show_grid_line));
@@ -1031,7 +1091,7 @@ impl WorkSheet {
                 // Show row column header
                 if let Some(show_row_col_header) = sheet_view_element
                     .get_attribute("showRowColHeaders")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.show_row_col_header = Some(
                         ConverterUtil::normalize_bool_property_bool(show_row_col_header),
@@ -1040,7 +1100,7 @@ impl WorkSheet {
                 // Show Zero
                 if let Some(show_zero) = sheet_view_element
                     .get_attribute("showZeros")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.show_zero =
                         Some(ConverterUtil::normalize_bool_property_bool(show_zero));
@@ -1048,7 +1108,7 @@ impl WorkSheet {
                 // Right to Left
                 if let Some(view_right_to_left) = sheet_view_element
                     .get_attribute("rightToLeft")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.view_right_to_left = Some(
                         ConverterUtil::normalize_bool_property_bool(view_right_to_left),
@@ -1057,7 +1117,7 @@ impl WorkSheet {
                 // Tab Selected
                 if let Some(tab_selected) = sheet_view_element
                     .get_attribute("tabSelected")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.tab_selected =
                         Some(ConverterUtil::normalize_bool_property_bool(tab_selected));
@@ -1065,7 +1125,7 @@ impl WorkSheet {
                 // show ruler
                 if let Some(show_ruler) = sheet_view_element
                     .get_attribute("showRuler")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.show_ruler =
                         Some(ConverterUtil::normalize_bool_property_bool(show_ruler));
@@ -1073,7 +1133,7 @@ impl WorkSheet {
                 // show white space
                 if let Some(show_white_space) = sheet_view_element
                     .get_attribute("showWhiteSpace")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.show_white_space = Some(
                         ConverterUtil::normalize_bool_property_bool(show_white_space),
@@ -1082,7 +1142,7 @@ impl WorkSheet {
                 // Show outlined Symbols
                 if let Some(show_outline_symbol) = sheet_view_element
                     .get_attribute("showOutlineSymbols")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.show_outline_symbol = Some(
                         ConverterUtil::normalize_bool_property_bool(show_outline_symbol),
@@ -1091,7 +1151,7 @@ impl WorkSheet {
                 // Default Grid Color
                 if let Some(default_grid_color) = sheet_view_element
                     .get_attribute("defaultGridColor")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.default_grid_color = Some(
                         ConverterUtil::normalize_bool_property_bool(default_grid_color),
@@ -1100,60 +1160,54 @@ impl WorkSheet {
                 // Top Left Cell
                 if let Some(top_left_cell) = sheet_view_element
                     .get_attribute("topLeftCell")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.top_left_cell = Some(top_left_cell.to_string());
                 }
                 // View Setting
                 if let Some(view) = sheet_view_element
                     .get_attribute("view")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     worksheet_view.view = Some(view.to_string());
                 }
                 // Zoom Scale
                 if let Some(zoom_scale) = sheet_view_element
                     .get_attribute("zoomScale")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
-                    worksheet_view.zoom_scale = Some(
-                        zoom_scale
-                            .parse()
-                            .context("draviavemal-openxml_office::Failed to Convert Zoom Normal to i16")?,
-                    );
+                    worksheet_view.zoom_scale = Some(zoom_scale.parse().context(
+                        "draviavemal-openxml_office::Failed to Convert Zoom Normal to i16",
+                    )?);
                 }
                 // Zoom Scale Normal
                 if let Some(zoom_scale_normal) = sheet_view_element
                     .get_attribute("zoomScaleNormal")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
-                    worksheet_view.zoom_scale_normal = Some(
-                        zoom_scale_normal
-                            .parse()
-                            .context("draviavemal-openxml_office::Failed to Convert Zoom Normal to i16")?,
-                    );
+                    worksheet_view.zoom_scale_normal = Some(zoom_scale_normal.parse().context(
+                        "draviavemal-openxml_office::Failed to Convert Zoom Normal to i16",
+                    )?);
                 }
                 // Zoom Scale Sheet Layout View
                 if let Some(zoom_scale_sheet_layout) = sheet_view_element
                     .get_attribute("zoomScaleSheetLayoutView")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
-                    worksheet_view.zoom_scale_sheet_layout = Some(
-                        zoom_scale_sheet_layout
-                            .parse()
-                            .context("draviavemal-openxml_office::Failed to Convert Zoom Normal to i16")?,
-                    );
+                    worksheet_view.zoom_scale_sheet_layout =
+                        Some(zoom_scale_sheet_layout.parse().context(
+                            "draviavemal-openxml_office::Failed to Convert Zoom Normal to i16",
+                        )?);
                 }
                 // Zoom Scale Page Layout View
                 if let Some(zoom_scale_page_layout) = sheet_view_element
                     .get_attribute("zoomScalePageLayoutView")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
-                    worksheet_view.zoom_scale_page_layout = Some(
-                        zoom_scale_page_layout
-                            .parse()
-                            .context("draviavemal-openxml_office::Failed to Convert Zoom Normal to i16")?,
-                    );
+                    worksheet_view.zoom_scale_page_layout =
+                        Some(zoom_scale_page_layout.parse().context(
+                            "draviavemal-openxml_office::Failed to Convert Zoom Normal to i16",
+                        )?);
                 }
                 worksheet_views.view_collection.push(worksheet_view);
             }
@@ -1199,39 +1253,51 @@ impl WorkSheet {
                 // Get Row Id
                 let row_index: u32 = row_element
                     .get_attribute("r")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                     .context("draviavemal-openxml_office::Missing mandatory row id attribute")?
                     .parse()
                     .context("draviavemal-openxml_office::Failed to parse row id")?;
-                if let Some(row_span) = row_element.get_attribute("spans").map(|a| a.get_value()) {
+                if let Some(row_span) = row_element
+                    .get_attribute("spans")
+                    .map(|attribute| attribute.get_value())
+                {
                     row_record.span = Some(row_span.to_string());
                 }
-                if let Some(style_id) = row_element.get_attribute("s").map(|a| a.get_value()) {
+                if let Some(style_id) = row_element
+                    .get_attribute("s")
+                    .map(|attribute| attribute.get_value())
+                {
                     if let Some(custom_formant) = row_element
                         .get_attribute("customFormat")
-                        .map(|a| a.get_value())
+                        .map(|attribute| attribute.get_value())
                     {
                         row_record.style_id = if custom_formant == "1" {
-                            Some(StyleId::new(
-                                style_id
-                                    .parse()
-                                    .context("draviavemal-openxml_office::Failed to parse the row style id")?,
-                            ))
+                            Some(StyleId::new(style_id.parse().context(
+                                "draviavemal-openxml_office::Failed to parse the row style id",
+                            )?))
                         } else {
                             None
                         };
                     }
                 }
-                if let Some(hidden) = row_element.get_attribute("hidden").map(|a| a.get_value()) {
+                if let Some(hidden) = row_element
+                    .get_attribute("hidden")
+                    .map(|attribute| attribute.get_value())
+                {
                     row_record.hidden = if hidden == "1" { Some(true) } else { None };
                 }
-                if let Some(height) = row_element.get_attribute("ht").map(|a| a.get_value()) {
+                if let Some(height) = row_element
+                    .get_attribute("ht")
+                    .map(|attribute| attribute.get_value())
+                {
                     if let Some(custom_height) = row_element
                         .get_attribute("customHeight")
-                        .map(|a| a.get_value())
+                        .map(|attribute| attribute.get_value())
                     {
                         row_record.height = if custom_height == "1" {
-                            Some(height.parse().context("draviavemal-openxml_office::Failed to parse the row height")?)
+                            Some(height.parse().context(
+                                "draviavemal-openxml_office::Failed to parse the row height",
+                            )?)
                         } else {
                             None
                         };
@@ -1239,11 +1305,11 @@ impl WorkSheet {
                 }
                 if let Some(row_group_level) = row_element
                     .get_attribute("outlineLevel")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
-                    let outline_level = row_group_level
-                        .parse()
-                        .context("draviavemal-openxml_office::Failed to parse the row group level")?;
+                    let outline_level = row_group_level.parse().context(
+                        "draviavemal-openxml_office::Failed to parse the row group level",
+                    )?;
                     row_record.group_level = if outline_level > 0 {
                         Some(outline_level)
                     } else {
@@ -1252,17 +1318,19 @@ impl WorkSheet {
                 }
                 if let Some(collapsed) = row_element
                     .get_attribute("collapsed")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                 {
                     row_record.collapsed = if collapsed == "1" { Some(true) } else { None };
                 }
-                if let Some(thick_top) =
-                    row_element.get_attribute("thickTop").map(|a| a.get_value())
+                if let Some(thick_top) = row_element
+                    .get_attribute("thickTop")
+                    .map(|attribute| attribute.get_value())
                 {
                     row_record.thick_top = if thick_top == "1" { Some(true) } else { None };
                 }
-                if let Some(thick_bottom) =
-                    row_element.get_attribute("thickBot").map(|a| a.get_value())
+                if let Some(thick_bottom) = row_element
+                    .get_attribute("thickBot")
+                    .map(|attribute| attribute.get_value())
                 {
                     row_record.thick_bottom = if thick_bottom == "1" {
                         Some(true)
@@ -1270,7 +1338,10 @@ impl WorkSheet {
                         None
                     };
                 }
-                if let Some(place_holder) = row_element.get_attribute("ph").map(|a| a.get_value()) {
+                if let Some(place_holder) = row_element
+                    .get_attribute("ph")
+                    .map(|attribute| attribute.get_value())
+                {
                     row_record.place_holder = if place_holder == "1" {
                         Some(true)
                     } else {
@@ -1303,41 +1374,49 @@ impl WorkSheet {
                     let col_index = ConverterUtil::get_column_index(
                         col_element
                             .get_attribute("r")
-                            .map(|a| a.get_value())
-                            .context("draviavemal-openxml_office::Missing mandatory col id attribute")?,
+                            .map(|attribute| attribute.get_value())
+                            .context(
+                                "draviavemal-openxml_office::Missing mandatory col id attribute",
+                            )?,
                     )
-                    .context("draviavemal-openxml_office::Failed to Convert col worksheet initialize")?;
-                    if let Some(style_id) = col_element.get_attribute("s").map(|a| a.get_value()) {
-                        cell_record.style_id = Some(StyleId::new(
-                            style_id
-                                .parse()
-                                .context("draviavemal-openxml_office::Failed to parse the col style id")?,
-                        ));
+                    .context(
+                        "draviavemal-openxml_office::Failed to Convert col worksheet initialize",
+                    )?;
+                    if let Some(style_id) = col_element
+                        .get_attribute("s")
+                        .map(|attribute| attribute.get_value())
+                    {
+                        cell_record.style_id = Some(StyleId::new(style_id.parse().context(
+                            "draviavemal-openxml_office::Failed to parse the col style id",
+                        )?));
                     }
-                    if let Some(cell_type) = col_element.get_attribute("t").map(|a| a.get_value()) {
+                    if let Some(cell_type) = col_element
+                        .get_attribute("t")
+                        .map(|attribute| attribute.get_value())
+                    {
                         cell_record.data_type = CellDataType::get_enum(cell_type);
                     } else {
                         cell_record.data_type = CellDataType::Number;
                     }
-                    if let Some(comment_id) = col_element.get_attribute("cm").map(|a| a.get_value())
+                    if let Some(comment_id) = col_element
+                        .get_attribute("cm")
+                        .map(|attribute| attribute.get_value())
                     {
-                        cell_record.comment_id = Some(
-                            comment_id
-                                .parse()
-                                .context("draviavemal-openxml_office::Failed to parse the col comment id")?,
-                        );
+                        cell_record.comment_id = Some(comment_id.parse().context(
+                            "draviavemal-openxml_office::Failed to parse the col comment id",
+                        )?);
                     };
-                    if let Some(value_meta_id) =
-                        col_element.get_attribute("vm").map(|a| a.get_value())
+                    if let Some(value_meta_id) = col_element
+                        .get_attribute("vm")
+                        .map(|attribute| attribute.get_value())
                     {
-                        cell_record.metadata = Some(
-                            value_meta_id
-                                .parse()
-                                .context("draviavemal-openxml_office::Failed to parse the col value meta id")?,
-                        );
+                        cell_record.metadata = Some(value_meta_id.parse().context(
+                            "draviavemal-openxml_office::Failed to parse the col value meta id",
+                        )?);
                     };
-                    if let Some(place_holder) =
-                        col_element.get_attribute("ph").map(|a| a.get_value())
+                    if let Some(place_holder) = col_element
+                        .get_attribute("ph")
+                        .map(|attribute| attribute.get_value())
                     {
                         cell_record.place_holder = if place_holder == "1" {
                             Some(true)
@@ -1459,7 +1538,7 @@ impl WorkSheet {
                     .context("draviavemal-openxml_office::Failed to Get Element")?;
                 let merge_range = merge_cell_element
                     .get_attribute("ref")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                     .context("draviavemal-openxml_office::Failed to get merge ref")?;
                 if merge_range.contains(':') {
                     let range: Vec<&str> = merge_range.split(':').collect();
@@ -1529,14 +1608,14 @@ impl WorkSheet {
                     .context("draviavemal-openxml_office::Failed to Get Element")?;
                 let display = hyperlink_element
                     .get_attribute("display")
-                    .map(|a| a.get_value().to_string());
+                    .map(|attribute| attribute.get_value().to_string());
                 let hyperlink_ref = hyperlink_element
                     .get_attribute("ref")
-                    .map(|a| a.get_value())
+                    .map(|attribute| attribute.get_value())
                     .context("draviavemal-openxml_office::Failed to get hyperlink ref")?;
                 let hyperlink_id = hyperlink_element
-                    .get_attribute_ns("r:id")
-                    .map(|a| a.get_value().to_string());
+                    .get_attribute_by_uri(RELATIONSHIPS_NS.schemas_namespace, "id")
+                    .map(|attribute| attribute.get_value().to_string());
                 let range_reference = if hyperlink_ref.contains(':') {
                     let range: Vec<&str> = hyperlink_ref.split(':').collect();
                     let (row_start, column_start) = ConverterUtil::get_cell_index(range[0])
@@ -1573,7 +1652,7 @@ impl WorkSheet {
                 } else {
                     hyperlink_element
                         .get_attribute("location")
-                        .map(|a| a.get_value())
+                        .map(|attribute| attribute.get_value())
                         .context("draviavemal-openxml_office::Failed to Get Internal Location")?
                         .to_string()
                 };
@@ -1643,7 +1722,9 @@ impl WorkSheet {
                 } else {
                     sheet_collection
                         .try_borrow()
-                        .context("draviavemal-openxml_office::Failed to pull Sheet Name Collection")?
+                        .context(
+                            "draviavemal-openxml_office::Failed to pull Sheet Name Collection",
+                        )?
                         .len()
                         + 1
                 };
@@ -1656,7 +1737,9 @@ impl WorkSheet {
                         Some(file_path.clone()),
                         Some(sheet_name.clone()),
                     )
-                    .context("draviavemal-openxml_office::Setting New Worksheet Relationship Failed.")?;
+                    .context(
+                        "draviavemal-openxml_office::Setting New Worksheet Relationship Failed.",
+                    )?;
                 sheet_collection
                     .try_borrow_mut()
                     .context("draviavemal-openxml_office::Failed To pull Sheet Collection Handle")?
@@ -1674,7 +1757,9 @@ impl WorkSheet {
                 ));
             }
         }
-        Err(AnyError::msg("draviavemal-openxml_office::Failed to upgrade relation part"))
+        Err(AnyError::msg(
+            "draviavemal-openxml_office::Failed to upgrade relation part",
+        ))
     }
 
     fn update_share_string(&mut self, cell_value: &String) -> AnyResult<String, AnyError> {
@@ -1685,7 +1770,9 @@ impl WorkSheet {
                 .get_string_id_mut(cell_value.to_owned())
                 .context("draviavemal-openxml_office::Failed to get share string id")
         } else {
-            Err(AnyError::msg("draviavemal-openxml_office::Failed to update Share String Record"))
+            Err(AnyError::msg(
+                "draviavemal-openxml_office::Failed to update Share String Record",
+            ))
         }
     }
 
@@ -1868,8 +1955,8 @@ impl WorkSheet {
         cell_ref: &str,
         column_cells: Vec<CellProperty>,
     ) -> AnyResult<(), AnyError> {
-        let (row_index, col_index) =
-            ConverterUtil::get_cell_index(cell_ref).context("draviavemal-openxml_office::Failed to extract cell key")?;
+        let (row_index, col_index) = ConverterUtil::get_cell_index(cell_ref)
+            .context("draviavemal-openxml_office::Failed to extract cell key")?;
         self.set_cell_index_value_mut(row_index, col_index, column_cells)
     }
 
@@ -1895,7 +1982,10 @@ impl WorkSheet {
                             cell_data.data_type = CellDataType::Number;
                         } else if cell_value.parse::<bool>().is_ok() {
                             cell_data.data_type = CellDataType::Boolean;
-                            if cell_value.parse::<bool>().context("draviavemal-openxml_office::Parse Fail")? {
+                            if cell_value
+                                .parse::<bool>()
+                                .context("draviavemal-openxml_office::Parse Fail")?
+                            {
                                 cell_data.value = Some("1".to_string());
                             } else {
                                 cell_data.value = Some("0".to_string());
@@ -1929,7 +2019,7 @@ impl WorkSheet {
                     // Check and add Calculation entry
                     if let Some(common_service) = self.common_service.upgrade() {
                         if let Some(sheet_collection) = self.sheet_collection.upgrade() {
-                            println!("Sheet name: {}", self.display_sheet_name);
+                            debug!("Sheet name: {}", self.display_sheet_name);
                             let sheet_id = (sheet_collection
                                 .borrow()
                                 .iter()
@@ -2011,7 +2101,9 @@ impl WorkSheet {
                 .iter()
                 .any(|existing| ref_range.overlaps(existing))
             {
-                return Err(AnyError::msg("draviavemal-openxml_office::New Record overlap with existing range"));
+                return Err(AnyError::msg(
+                    "draviavemal-openxml_office::New Record overlap with existing range",
+                ));
             }
             merge_cells.push(ref_range);
         } else {
@@ -2036,7 +2128,9 @@ impl WorkSheet {
                 .iter()
                 .any(|existing| range.overlaps(&existing.range))
             {
-                return Err(AnyError::msg("draviavemal-openxml_office::New Record overlap with existing range"));
+                return Err(AnyError::msg(
+                    "draviavemal-openxml_office::New Record overlap with existing range",
+                ));
             }
             hyperlinks.push(HyperLinks {
                 id: Some("New".to_string()),
@@ -2105,7 +2199,8 @@ impl WorkSheet {
                 .context("draviavemal-openxml_office::Failed to Pull XML Handle")?
                 .delete_document_mut(&self.file_path);
         }
-        self.flush().context("draviavemal-openxml_office::Failed to flush the worksheet")?;
+        self.flush()
+            .context("draviavemal-openxml_office::Failed to flush the worksheet")?;
         Ok(())
     }
 }

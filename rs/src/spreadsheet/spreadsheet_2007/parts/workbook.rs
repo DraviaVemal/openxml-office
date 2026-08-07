@@ -13,6 +13,7 @@ use crate::{
         },
     },
     log_elapsed,
+    namespaces::{RELATIONSHIPS_NS, RELS_PKG_NS, SPREADSHEET_NS},
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
         models::{CellStyleSetting, StyleId},
@@ -20,10 +21,8 @@ use crate::{
         services::{CalculationChainPart, CommonServices, ShareStringPart, StylePart},
     },
 };
-use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{
-    NodeId, XmlAttribute, XmlDeserializer, XmlDocument, XmlElementContentType,
-};
+use anyhow::{Context, Error as AnyError, Result as AnyResult};
+use draviavemal_xml_rs::{NodeId, XmlAttribute, XmlDocument, XmlElementContentType};
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -91,7 +90,9 @@ impl XmlDocumentPartClose for WorkbookPart {
                     .try_borrow_mut()
                     .context("draviavemal-openxml_office::Failed to pull common Service Handle")?
                     .close_service()
-                    .context("draviavemal-openxml_office::Failed to Close Common Service From Workbook")?;
+                    .context(
+                        "draviavemal-openxml_office::Failed to Close Common Service From Workbook",
+                    )?;
                 self.workbook_relationship_part
                     .try_borrow_mut()
                     .context("draviavemal-openxml_office::Failed to pull relationship handle")?
@@ -113,7 +114,9 @@ impl XmlDocumentPartClose for WorkbookPart {
                                 "fileVersion",
                                 None,
                             )
-                            .context("draviavemal-openxml_office::Create book viewsD Node Failed")?;
+                            .context(
+                                "draviavemal-openxml_office::Create book viewsD Node Failed",
+                            )?;
                         let mut attributes: Vec<XmlAttribute> = Vec::new();
                         if let Some(active_tab) = &workbook_view.active_tab {
                             attributes.push(XmlAttribute::new(
@@ -189,7 +192,9 @@ impl XmlDocumentPartClose for WorkbookPart {
                                 "workbookView",
                                 Some(attributes),
                             )
-                            .context("draviavemal-openxml_office::Failed to create workbook view")?;
+                            .context(
+                                "draviavemal-openxml_office::Failed to create workbook view",
+                            )?;
                     }
                     // Create and set Sheets
                     let sheets_id = xml_doc_mut
@@ -203,7 +208,9 @@ impl XmlDocumentPartClose for WorkbookPart {
                     for (sheet_display_name, relationship_id, hide) in &self
                         .sheet_collection
                         .try_borrow_mut()
-                        .context("draviavemal-openxml_office::Failed to pull Sheet Name Collection")?
+                        .context(
+                            "draviavemal-openxml_office::Failed to pull Sheet Name Collection",
+                        )?
                         .clone()
                     {
                         let mut attributes = Vec::new();
@@ -260,14 +267,35 @@ impl XmlDocumentPartInitializing for WorkbookPart {
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
         let content = EXCEL_TYPE_COLLECTION.get("workbook").unwrap();
-        let template_core_properties = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
-    xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-    <fileVersion appName="openxml-office" lastEdited="7" lowestEdited="7" />
-</workbook>"#;
+        let mut template_core_properties = XmlDocument::new();
+        let root_id = template_core_properties
+            .create_root_element_mut(
+                "workbook",
+                Some(vec![
+                    XmlAttribute::new(
+                        "xmlns".to_string(),
+                        SPREADSHEET_NS.schemas_namespace.to_string(),
+                    ),
+                    XmlAttribute::new(
+                        format!("xmlns:{}", RELS_PKG_NS.default_alias),
+                        RELS_PKG_NS.schemas_namespace.to_string(),
+                    ),
+                ]),
+            )
+            .context("draviavemal-openxml_office::Initializing Workbook Failed")?;
+        template_core_properties
+            .append_child_element_mut(
+                root_id,
+                "fileVersion",
+                Some(vec![
+                    XmlAttribute::new("appName".to_string(), "openxml-office".to_string()),
+                    XmlAttribute::new("lastEdited".to_string(), "7".to_string()),
+                    XmlAttribute::new("lowestEdited".to_string(), "7".to_string()),
+                ]),
+            )
+            .context("Failed to add child to root element")?;
         Ok((
-            XmlDeserializer::vec_to_xml_doc_tree(template_core_properties.as_bytes().to_vec())
-                .context("draviavemal-openxml_office::Initializing Workbook Failed")?,
+            template_core_properties,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -305,7 +333,8 @@ impl XmlDocumentPart for WorkbookPart {
                 )
                 .context("draviavemal-openxml_office::Loading Theme Part Failed")?;
                 // Share String
-                let meadia_files = MediaFiles::new().context("draviavemal-openxml_office::Loading Share String Failed")?;
+                let meadia_files = MediaFiles::new()
+                    .context("draviavemal-openxml_office::Loading Share String Failed")?;
                 // Share String
                 let share_string = ShareStringPart::new(
                     office_document.clone(),
@@ -371,7 +400,9 @@ impl WorkbookPart {
                     {
                         let workbook_view_ids: Vec<NodeId> = xml_doc_mut
                             .get_element(book_views_id)
-                            .context("draviavemal-openxml_office::Failed to pull bookViews element")?
+                            .context(
+                                "draviavemal-openxml_office::Failed to pull bookViews element",
+                            )?
                             .get_child_contents()
                             .as_ref()
                             .map(|contents| {
@@ -385,10 +416,11 @@ impl WorkbookPart {
                             })
                             .unwrap_or_default();
                         for workbook_view_id in workbook_view_ids {
-                            let workbook_view_element =
-                                xml_doc_mut
-                                    .get_element(workbook_view_id)
-                                    .context("draviavemal-openxml_office::Failed to pull workbookView element")?;
+                            let workbook_view_element = xml_doc_mut
+                                .get_element(workbook_view_id)
+                                .context(
+                                "draviavemal-openxml_office::Failed to pull workbookView element",
+                            )?;
                             workbook_view = Some(WorkbookView {
                                 auto_filter_date_grouping: match workbook_view_element
                                     .get_attribute("autoFilterDateGrouping")
@@ -452,9 +484,9 @@ impl WorkbookPart {
                             })
                         }
                         // Delete Deconstructed Book View from XML
-                        xml_doc_mut
-                            .remove_element_mut(book_views_id)
-                            .context("draviavemal-openxml_office::Failed remove bookViews element")?
+                        xml_doc_mut.remove_element_mut(book_views_id).context(
+                            "draviavemal-openxml_office::Failed remove bookViews element",
+                        )?
                     }
                     // Deconstruct Sheets into collection
                     if let Some(sheets_id) = xml_doc_mut
@@ -477,14 +509,14 @@ impl WorkbookPart {
                             })
                             .unwrap_or_default();
                         for sheet_id in sheet_ids {
-                            let sheet = xml_doc_mut
-                                .get_element(sheet_id)
-                                .context("draviavemal-openxml_office::Failed to pull sheet element")?;
+                            let sheet = xml_doc_mut.get_element(sheet_id).context(
+                                "draviavemal-openxml_office::Failed to pull sheet element",
+                            )?;
                             let name = sheet
                                 .get_attribute("name")
                                 .context("draviavemal-openxml_office::Error When Trying to read Sheet Details.")?;
                             let r_id = sheet
-                                .get_attribute_ns("r:id")
+                                .get_attribute_by_uri(RELATIONSHIPS_NS.schemas_namespace, "id")
                                 .context("draviavemal-openxml_office::Error When Trying to read Sheet Details.")?;
                             let state = sheet.get_attribute("state");
                             sheet_collection.push((
@@ -526,7 +558,9 @@ impl WorkbookPart {
                 )
                 .context("draviavemal-openxml_office::Pull Path From Existing File Failed")?)
         } else {
-            Err(AnyError::msg("draviavemal-openxml_office::Failed to upgrade relation part"))
+            Err(AnyError::msg(
+                "draviavemal-openxml_office::Failed to upgrade relation part",
+            ))
         }
     }
 
@@ -578,7 +612,9 @@ impl WorkbookPart {
                 "Get Exiting Workbook"
             )
         } else {
-            Err(AnyError::msg("draviavemal-openxml_office::Sheet Not Found!"))
+            Err(AnyError::msg(
+                "draviavemal-openxml_office::Sheet Not Found!",
+            ))
         }
     }
 
@@ -711,7 +747,9 @@ impl WorkbookPart {
             .iter()
             .any(|item| new_sheet_name == item.0)
         {
-            Err(AnyError::msg("draviavemal-openxml_office::New Sheet Name Already exist in the stack"))
+            Err(AnyError::msg(
+                "draviavemal-openxml_office::New Sheet Name Already exist in the stack",
+            ))
         } else {
             if let Some(record) = self
                 .sheet_collection
@@ -723,7 +761,9 @@ impl WorkbookPart {
                 record.0 = new_sheet_name.to_string();
                 Ok(())
             } else {
-                Err(AnyError::msg("draviavemal-openxml_office::Old Sheet Name not found in the stack"))
+                Err(AnyError::msg(
+                    "draviavemal-openxml_office::Old Sheet Name not found in the stack",
+                ))
             }
         }
     }

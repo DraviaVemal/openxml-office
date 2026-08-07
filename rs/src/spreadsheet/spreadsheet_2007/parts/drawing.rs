@@ -4,9 +4,9 @@ use std::{
     rc::{Rc, Weak},
 };
 
-use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
+use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use draviavemal_xml_rs::{
-    NodeId, Tag, XmlAttribute, XmlDeserializer, XmlDocument, XmlElement, XmlElementContentType,
+    NodeId, Tag, XmlAttribute, XmlDocument, XmlElement, XmlElementContentType,
 };
 use phf::Map;
 
@@ -19,6 +19,7 @@ use crate::{
         traits::{XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing},
     },
     log_elapsed,
+    namespaces::{CHART_NS, DRAWINGML_NS, RELATIONSHIPS_NS, RELS_PKG_NS, SPREADSHEET_DRAWING_NS},
     spreadsheet_2007::{
         models::{
             AbsoluteAnchor, AnchorContent, ConnectorShape, ContentPart, DrawingAnchor,
@@ -116,12 +117,32 @@ impl XmlDocumentPartInitializing for DrawingPart {
     fn initialize_content_xml(
     ) -> anyhow::Result<(XmlDocument, Option<String>, String, String), anyhow::Error> {
         let content = EXCEL_TYPE_COLLECTION.get("drawing").unwrap();
-        let template_core_properties = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-            <xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
-            </xdr:wsDr>"#;
+        let mut template_core_properties = XmlDocument::new();
+        template_core_properties
+            .create_root_element_mut(
+                &"xdr:wsDr".to_string(),
+                Some(vec![
+                    XmlAttribute::new(
+                        format!("xmlns:{}", SPREADSHEET_DRAWING_NS.default_alias),
+                        SPREADSHEET_DRAWING_NS.schemas_namespace.to_string(),
+                    ),
+                    XmlAttribute::new(
+                        format!("xmlns:{}", DRAWINGML_NS.default_alias),
+                        DRAWINGML_NS.schemas_namespace.to_string(),
+                    ),
+                    XmlAttribute::new(
+                        format!("xmlns:{}", CHART_NS.default_alias),
+                        CHART_NS.schemas_namespace.to_string(),
+                    ),
+                    XmlAttribute::new(
+                        format!("xmlns:{}", RELS_PKG_NS.default_alias),
+                        RELS_PKG_NS.schemas_namespace.to_string(),
+                    ),
+                ]),
+            )
+            .context("draviavemal-openxml_office::Failed to create drawing root element")?;
         Ok((
-            XmlDeserializer::vec_to_xml_doc_tree(template_core_properties.as_bytes().to_vec())
-                .context("draviavemal-openxml_office::Initializing Drawing part Failed")?,
+            template_core_properties,
             Some(content.content_type.to_string()),
             content.extension.to_string(),
             content.extension_type.to_string(),
@@ -212,7 +233,9 @@ impl DrawingPart {
                 )
                 .context("draviavemal-openxml_office::Pull Path From Existing File Failed")?)
         } else {
-            Err(AnyError::msg("draviavemal-openxml_office::Failed to upgrade relation part"))
+            Err(AnyError::msg(
+                "draviavemal-openxml_office::Failed to upgrade relation part",
+            ))
         }
     }
 
@@ -685,8 +708,9 @@ impl DrawingPart {
                         let blip_element = xml_doc_mut
                             .get_element(*element_id)
                             .context("draviavemal-openxml_office::Failed to get blip element")?;
-                        // Think to use more dynamic namespace parsing adoption so its stable with alias change
-                        if let Some(relationship_id) = blip_element.get_attribute_ns("r:embed") {
+                        if let Some(relationship_id) = blip_element
+                            .get_attribute_by_uri(RELATIONSHIPS_NS.schemas_namespace, "embed")
+                        {
                             picture.relationship_id = relationship_id.get_value().to_string();
                         }
                     }
@@ -837,7 +861,8 @@ impl DrawingPart {
                         let chart_element = xml_doc_mut
                             .get_element(*element_id)
                             .context("draviavemal-openxml_office::Failed to get chart element")?;
-                        if let Some(chart_relationship_id) = chart_element.get_attribute_ns("r:id")
+                        if let Some(chart_relationship_id) = chart_element
+                            .get_attribute_by_uri(RELATIONSHIPS_NS.schemas_namespace, "id")
                         {
                             graphic_frame.relationship_id =
                                 chart_relationship_id.get_value().to_string();
@@ -1169,10 +1194,20 @@ impl DrawingPart {
             .context(
                 "draviavemal-openxml_office::Failed to add non visual picture properties element",
             )?;
+        // Resolve aliases once from the parent scope for all namespaced tags/attrs below
+        let (tag_pic_locks, attr_embed) = xml_doc_mut
+            .get_element(non_visual_picture_id)
+            .map(|element| {
+                (
+                    DRAWINGML_NS.tag(element, "picLocks"),
+                    RELATIONSHIPS_NS.attr(element, "embed"),
+                )
+            })
+            .unwrap_or_else(|_| ("a:picLocks".to_string(), "r:embed".to_string()));
         xml_doc_mut
             .append_child_element_mut(
                 non_visual_picture_id,
-                "a:picLocks",
+                &tag_pic_locks,
                 Some(vec![XmlAttribute::new(
                     "noChangeAspect".to_string(),
                     if picture.aspect_ratio { "1" } else { "0" }.to_string(),
@@ -1182,22 +1217,15 @@ impl DrawingPart {
         let blip_fill_id = xml_doc_mut
             .append_child_element_mut(picture_id, "xdr:blipFill", None)
             .context("draviavemal-openxml_office::Failed to add blip fill element")?;
+        let tag_blip = xml_doc_mut
+            .get_element(blip_fill_id)
+            .map(|element| DRAWINGML_NS.tag(element, "blip"))
+            .unwrap_or_else(|_| "a:blip".to_string());
         xml_doc_mut
             .append_child_element_mut(
                 blip_fill_id,
-                "a:blip",
-                Some(vec![
-                    XmlAttribute::new(
-                        "xmlns:a".to_string(),
-                        "http://schemas.openxmlformats.org/drawingml/2006/main".to_string(),
-                    ),
-                    XmlAttribute::new(
-                        "xmlns:r".to_string(),
-                        "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-                            .to_string(),
-                    ),
-                    XmlAttribute::new("r:embed".to_string(), picture.relationship_id),
-                ]),
+                &tag_blip,
+                Some(vec![XmlAttribute::new(attr_embed, picture.relationship_id)]),
             )
             .context("draviavemal-openxml_office::Failed to add blip element")?;
         Ok(())
@@ -1231,25 +1259,44 @@ impl DrawingPart {
         xml_doc_mut
             .append_child_element_mut(non_visual_id, "xdr:cNvGraphicFramePr", None)
             .context("draviavemal-openxml_office::Failed to add non visual graphic frame properties element")?;
+        // Resolve all aliases once from this frame's scope
+        let (tag_graphic, tag_graphic_data, tag_chart, attr_r_id) = xml_doc_mut
+            .get_element(graphic_frame_id)
+            .map(|element| {
+                (
+                    DRAWINGML_NS.tag(element, "graphic"),
+                    DRAWINGML_NS.tag(element, "graphicData"),
+                    CHART_NS.tag(element, "chart"),
+                    RELATIONSHIPS_NS.attr(element, "id"),
+                )
+            })
+            .unwrap_or_else(|_| {
+                (
+                    "a:graphic".to_string(),
+                    "a:graphicData".to_string(),
+                    "c:chart".to_string(),
+                    "r:id".to_string(),
+                )
+            });
         let graphic_id = xml_doc_mut
-            .append_child_element_mut(graphic_frame_id, "a:graphic", None)
+            .append_child_element_mut(graphic_frame_id, &tag_graphic, None)
             .context("draviavemal-openxml_office::Failed to add graphic element")?;
         let graphic_data_id = xml_doc_mut
             .append_child_element_mut(
                 graphic_id,
-                "a:graphicData",
+                &tag_graphic_data,
                 Some(vec![XmlAttribute::new(
                     "uri".to_string(),
-                    "http://schemas.openxmlformats.org/drawingml/2006/chart".to_string(),
+                    CHART_NS.schemas_namespace.to_string(),
                 )]),
             )
             .context("draviavemal-openxml_office::Failed to add graphic data element")?;
         xml_doc_mut
             .append_child_element_mut(
                 graphic_data_id,
-                "c:chart",
+                &tag_chart,
                 Some(vec![XmlAttribute::new(
-                    "r:id".to_string(),
+                    attr_r_id,
                     graphic_frame.relationship_id,
                 )]),
             )

@@ -7,7 +7,7 @@ use crate::{
         traits::{XmlDocumentPart, XmlDocumentPartInitializing},
     },
 };
-use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
+use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use draviavemal_xml_rs::{XmlDeserializer, XmlDocument};
 use std::{cell::RefCell, rc::Weak};
 
@@ -91,7 +91,9 @@ impl ThemePart {
                 )
                 .context("draviavemal-openxml_office::Pull Path From Existing File Failed")?)
         } else {
-            Err(AnyError::msg("draviavemal-openxml_office::Failed to upgrade relation part"))
+            Err(AnyError::msg(
+                "draviavemal-openxml_office::Failed to upgrade relation part",
+            ))
         }
     }
 }

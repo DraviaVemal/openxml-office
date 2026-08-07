@@ -2,11 +2,11 @@ use crate::{
     element_dictionary::{Content, COMMON_TYPE_COLLECTION},
     files::OfficeDocument,
     global_2007::traits::{
-        XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
+        XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
     },
     utils,
 };
-use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
+use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use draviavemal_xml_rs::{XmlAttribute, XmlDocument};
 use std::{cell::RefCell, path::Path, rc::Weak};
 
@@ -34,19 +34,22 @@ impl XmlDocumentPartClose for RelationsPart {
         Self: Sized,
     {
         if let Some(xml_document) = self.office_document.upgrade() {
-            if self
-                .save_relationship_to_doc()
-                .context("draviavemal-openxml_office::Failed to Insert relationship to Relationships")?
-            {
+            if self.save_relationship_to_doc().context(
+                "draviavemal-openxml_office::Failed to Insert relationship to Relationships",
+            )? {
                 // Remove Links that are not valid
                 xml_document
                     .try_borrow_mut()
-                    .context("draviavemal-openxml_office::Failed to Pull Open XML Relations Handle")?
+                    .context(
+                        "draviavemal-openxml_office::Failed to Pull Open XML Relations Handle",
+                    )?
                     .close_xml_document(&self.file_path)?;
             } else {
                 xml_document
                     .try_borrow_mut()
-                    .context("draviavemal-openxml_office::Failed to Pull Open XML Relations Handle")?
+                    .context(
+                        "draviavemal-openxml_office::Failed to Pull Open XML Relations Handle",
+                    )?
                     .delete_document_mut(&self.file_path);
             }
         }
@@ -110,9 +113,9 @@ impl RelationsPart {
                 .context("draviavemal-openxml_office::Failed to find Relationship elements")?
             {
                 for relationship_id in relationship_ids {
-                    let relationship_element = xml_doc_mut
-                        .get_element(relationship_id)
-                        .context("draviavemal-openxml_office::Failed! Relationship element missing")?;
+                    let relationship_element = xml_doc_mut.get_element(relationship_id).context(
+                        "draviavemal-openxml_office::Failed! Relationship element missing",
+                    )?;
                     relationships.push((
                         relationship_element
                             .get_attribute("Id")
@@ -133,9 +136,9 @@ impl RelationsPart {
                             .get_attribute("TargetMode")
                             .map(|attribute| attribute.get_value().to_string()),
                     ));
-                    xml_doc_mut
-                        .remove_element_mut(relationship_id)
-                        .context("draviavemal-openxml_office::Failed to remove Relationship node")?;
+                    xml_doc_mut.remove_element_mut(relationship_id).context(
+                        "draviavemal-openxml_office::Failed to remove Relationship node",
+                    )?;
                 }
             }
         }
@@ -293,7 +296,9 @@ impl RelationsPart {
             }
             Ok(child_count > 0 || self.relationships.len() > 0)
         } else {
-            Err(AnyError::msg("draviavemal-openxml_office::Failed to Get XML Handle"))
+            Err(AnyError::msg(
+                "draviavemal-openxml_office::Failed to Get XML Handle",
+            ))
         }
     }
 
