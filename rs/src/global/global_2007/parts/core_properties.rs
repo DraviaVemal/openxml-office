@@ -9,7 +9,7 @@ use crate::{
         },
     },
 };
-use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
+use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use chrono::Utc;
 use draviavemal_xml_rs::{XmlDeserializer, XmlDocument, XmlElementContentType};
 use std::{cell::RefCell, rc::Weak};
@@ -144,7 +144,9 @@ impl CorePropertiesPart {
                     None,
                 )
         } else {
-            Err(AnyError::msg("draviavemal-openxml_office::Failed to upgrade relation part"))
+            Err(AnyError::msg(
+                "draviavemal-openxml_office::Failed to upgrade relation part",
+            ))
         }
     }
 }

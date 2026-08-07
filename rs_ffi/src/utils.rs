@@ -3,8 +3,9 @@ use std::{
     slice::from_raw_parts,
 };
 
-use anyhow::{anyhow, Error as AnyError};
+use anyhow::Error as AnyError;
 use flatbuffers::{Follow, Verifiable};
+use log::error;
 
 use crate::StatusCode;
 
@@ -19,7 +20,7 @@ pub(crate) fn chain_error(error: &AnyError) -> *mut c_char {
     match CString::new(message) {
         Result::Ok(str) => str.into_raw(),
         Err(e) => {
-            eprintln!("Error String send Error. {}", e);
+            error!("Error String send Error. {}", e);
             std::ptr::null_mut()
         }
     }

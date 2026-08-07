@@ -748,6 +748,7 @@ mod spreadsheet_test {
                     ExcelPictureSetting::default(),
                 )
                 .expect("Failed to add image");
+            sheet.flush().expect("Worksheet flush failed");
         }
         let path = excel
             .save_as(&get_save_file(None))

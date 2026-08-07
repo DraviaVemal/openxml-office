@@ -13,9 +13,10 @@ include = ["src/**", "Cargo.toml", "Cargo.lock", "README.md"]
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-draviavemal-openxml_office = { path = "../rs" }
-flatbuffers = "24.3.25"
-anyhow = "1.0.90"
+draviavemal-openxml_office.workspace = true
+flatbuffers.workspace = true
+anyhow.workspace = true
+log.workspace = true
 
 [profile.dev]
 debug = true

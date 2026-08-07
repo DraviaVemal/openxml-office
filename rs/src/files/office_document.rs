@@ -4,9 +4,10 @@ use crate::{
     file_handling::{compress_content, decompress_content},
     global_2007::parts::ContentTypesPart,
 };
-use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
+use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use dashmap::DashMap;
 use draviavemal_xml_rs::{XmlDeserializer, XmlDocument, XmlSerializer};
+use log::debug;
 use std::{
     cell::RefCell,
     collections::HashSet,
@@ -154,9 +155,11 @@ impl OfficeDocument {
                 .document_handle
                 .try_borrow_mut()
                 .context("draviavemal-openxml_office::Failed to get document handle")?;
-            let uncompressed_data = XmlSerializer::xml_tree_to_vec(&mut xml_doc_mut).context(
-                format!("draviavemal-openxml_office::Failed Xml Tree to String content, File : {}", file_path),
-            )?;
+            let uncompressed_data =
+                XmlSerializer::xml_tree_to_vec(&mut xml_doc_mut).context(format!(
+                    "draviavemal-openxml_office::Failed Xml Tree to String content, File : {}",
+                    file_path
+                ))?;
             let compression_level = 4;
             let compressed = compress_content(&uncompressed_data, compression_level)
                 .context("draviavemal-openxml_office::Recompressing in GZip Failed")?;
@@ -187,6 +190,14 @@ impl OfficeDocument {
     /// Save Current Document to final result
     pub(crate) fn save_as(&mut self, file_path: &str) -> AnyResult<String, AnyError> {
         if self.xml_document_collection.len() > 0 {
+            for file in self
+                .xml_document_collection
+                .iter()
+                .map(|entry| entry.key().into())
+                .collect::<Vec<String>>()
+            {
+                debug!("draviavemal-openxml_office::Failed to close Doc : {file}");
+            }
             return Err(AnyError::msg(
                 "draviavemal-openxml_office::Please close all the open document before saving the file",
             ));
@@ -198,8 +209,12 @@ impl OfficeDocument {
             .save_object_into_archive()
             .context("draviavemal-openxml_office::Save Object Data into xml")?;
         if metadata(file_path).is_ok() {
-            remove_file(file_path)
-                .map_err(|e| AnyError::msg(format!("draviavemal-openxml_office::Remove Save File Target Failed. {}", e)))?;
+            remove_file(file_path).map_err(|e| {
+                AnyError::msg(format!(
+                    "draviavemal-openxml_office::Remove Save File Target Failed. {}",
+                    e
+                ))
+            })?;
         }
         let mut result_path = Path::new(file_path).to_path_buf();
         let mut file: File;
