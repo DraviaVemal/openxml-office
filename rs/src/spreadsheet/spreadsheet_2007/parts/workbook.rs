@@ -13,7 +13,7 @@ use crate::{
         },
     },
     log_elapsed,
-    namespaces::{RELATIONSHIPS_NS, RELS_PKG_NS, SPREADSHEET_NS},
+    namespaces::{RELATIONSHIPS_NS, RELATIONSHIP_OFFICE_DOC_NS, SPREADSHEET_NS},
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
         models::{CellStyleSetting, StyleId},
@@ -266,19 +266,18 @@ impl XmlDocumentPartInitializing for WorkbookPart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
-        let content = EXCEL_TYPE_COLLECTION.get("workbook").unwrap();
+        let content = EXCEL_TYPE_COLLECTION
+            .get("workbook")
+            .context("Failed to read excel type collection")?;
         let mut template_core_properties = XmlDocument::new();
         let root_id = template_core_properties
             .create_root_element_mut(
                 "workbook",
                 Some(vec![
+                    XmlAttribute::new("xmlns".to_string(), SPREADSHEET_NS.uri.to_string()),
                     XmlAttribute::new(
-                        "xmlns".to_string(),
-                        SPREADSHEET_NS.schemas_namespace.to_string(),
-                    ),
-                    XmlAttribute::new(
-                        format!("xmlns:{}", RELS_PKG_NS.default_alias),
-                        RELS_PKG_NS.schemas_namespace.to_string(),
+                        format!("xmlns:{}", RELATIONSHIP_OFFICE_DOC_NS.default_alias),
+                        RELATIONSHIP_OFFICE_DOC_NS.uri.to_string(),
                     ),
                 ]),
             )
@@ -516,7 +515,7 @@ impl WorkbookPart {
                                 .get_attribute("name")
                                 .context("draviavemal-openxml_office::Error When Trying to read Sheet Details.")?;
                             let r_id = sheet
-                                .get_attribute_by_uri(RELATIONSHIPS_NS.schemas_namespace, "id")
+                                .get_attribute_by_uri(RELATIONSHIPS_NS.uri, "id")
                                 .context("draviavemal-openxml_office::Error When Trying to read Sheet Details.")?;
                             let state = sheet.get_attribute("state");
                             sheet_collection.push((

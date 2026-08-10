@@ -5,7 +5,7 @@ use crate::global_2007::traits::{
 };
 use crate::log_elapsed;
 use crate::{files::OfficeDocument, global_2007::traits::XmlDocumentPart};
-use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
+use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use draviavemal_xml_rs::{XmlAttribute, XmlDocument, XmlElementContentType};
 use std::{cell::RefCell, collections::HashSet, rc::Weak};
 
@@ -112,7 +112,9 @@ impl XmlDocumentPartInitializing for ShareStringPart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
-        let content = EXCEL_TYPE_COLLECTION.get("share_string").unwrap();
+        let content = EXCEL_TYPE_COLLECTION
+            .get("share_string")
+            .context("Failed to read Excel type collection")?;
         let mut attributes: Vec<XmlAttribute> = Vec::new();
         attributes.push(XmlAttribute::new(
             "xmlns".to_string(),
@@ -160,7 +162,9 @@ impl ShareStringPart {
     fn get_share_string_file_name(
         relations_part: &Weak<RefCell<RelationsPart>>,
     ) -> AnyResult<String, AnyError> {
-        let share_string_content = EXCEL_TYPE_COLLECTION.get("share_string").unwrap();
+        let share_string_content = EXCEL_TYPE_COLLECTION
+            .get("share_string")
+            .context("Failed to read Excel type collection")?;
         if let Some(relations_part) = relations_part.upgrade() {
             Ok(relations_part
                 .try_borrow_mut()
