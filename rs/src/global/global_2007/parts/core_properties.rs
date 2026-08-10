@@ -96,7 +96,9 @@ impl XmlDocumentPartInitializing for CorePropertiesPart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
-        let content = COMMON_TYPE_COLLECTION.get("docProps_core").unwrap();
+        let content = COMMON_TYPE_COLLECTION
+            .get("docProps_core")
+            .context("Failed to read Common type collection")?;
         Ok((
             XmlDeserializer::vec_to_xml_doc_tree(
                 include_str!("core_properties.xml").as_bytes().to_vec(),
@@ -132,7 +134,9 @@ impl CorePropertiesPart {
     fn get_core_properties_file_name(
         relations_part: &Weak<RefCell<RelationsPart>>,
     ) -> AnyResult<String, AnyError> {
-        let relationship_content = COMMON_TYPE_COLLECTION.get("docProps_core").unwrap();
+        let relationship_content = COMMON_TYPE_COLLECTION
+            .get("docProps_core")
+            .context("Failed to read Common type collection")?;
         if let Some(relations_part) = relations_part.upgrade() {
             relations_part
                 .try_borrow_mut()

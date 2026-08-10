@@ -15,7 +15,7 @@ use crate::{
         traits::{Enum, XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing},
     },
     log_elapsed,
-    namespaces::{RELATIONSHIPS_NS, RELS_PKG_NS, SPREADSHEET_NS},
+    namespaces::{RELATIONSHIPS_NS, RELATIONSHIP_PKG_NS, SPREADSHEET_NS},
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
         models::{
@@ -215,6 +215,16 @@ impl XmlDocumentPartClose for WorkSheet {
                 }
                 log_elapsed!(
                     || {
+                        self.drawing_part
+                            .try_borrow_mut()
+                            .context("draviavemal-openxml_office::Failed to pull Drawing handle")?
+                            .close_document()
+                            .context("draviavemal-openxml_office::Failed to Close Drawing part")
+                    },
+                    "Worksheet Drawing part closed"
+                )?;
+                log_elapsed!(
+                    || {
                         self.sheet_relationship_part
                             .try_borrow_mut()
                             .context(
@@ -226,16 +236,6 @@ impl XmlDocumentPartClose for WorkSheet {
                             )
                     },
                     "Worksheet relation part closed"
-                )?;
-                log_elapsed!(
-                    || {
-                        self.drawing_part
-                            .try_borrow_mut()
-                            .context("draviavemal-openxml_office::Failed to pull Drawing handle")?
-                            .close_document()
-                            .context("draviavemal-openxml_office::Failed to Close Drawing part")
-                    },
-                    "Worksheet Drawing part closed"
                 )?;
                 Ok(())
             },
@@ -256,13 +256,10 @@ impl XmlDocumentPartInitializing for WorkSheet {
             .create_root_element_mut(
                 "worksheet",
                 Some(vec![
+                    XmlAttribute::new("xmlns".to_string(), SPREADSHEET_NS.uri.to_string()),
                     XmlAttribute::new(
-                        "xmlns".to_string(),
-                        SPREADSHEET_NS.schemas_namespace.to_string(),
-                    ),
-                    XmlAttribute::new(
-                        format!("xmlns:{}", RELS_PKG_NS.default_alias),
-                        RELS_PKG_NS.schemas_namespace.to_string(),
+                        format!("xmlns:{}", RELATIONSHIP_PKG_NS.default_alias),
+                        RELATIONSHIP_PKG_NS.uri.to_string(),
                     ),
                 ]),
             )
@@ -885,7 +882,9 @@ impl WorkSheet {
                 }
                 // Insert Relationship link
                 if hyperlink.id.is_some() {
-                    let content = COMMON_TYPE_COLLECTION.get("hyperlink").unwrap();
+                    let content = COMMON_TYPE_COLLECTION
+                        .get("hyperlink")
+                        .context("Failed to read Common type collection")?;
                     let r_id = relationship_part
                         .borrow_mut()
                         .set_new_relationship_mut(&content, hyperlink.link)
@@ -1614,7 +1613,7 @@ impl WorkSheet {
                     .map(|attribute| attribute.get_value())
                     .context("draviavemal-openxml_office::Failed to get hyperlink ref")?;
                 let hyperlink_id = hyperlink_element
-                    .get_attribute_by_uri(RELATIONSHIPS_NS.schemas_namespace, "id")
+                    .get_attribute_by_uri(RELATIONSHIPS_NS.uri, "id")
                     .map(|attribute| attribute.get_value().to_string());
                 let range_reference = if hyperlink_ref.contains(':') {
                     let range: Vec<&str> = hyperlink_ref.split(':').collect();
@@ -1682,7 +1681,9 @@ impl WorkSheet {
         sheet_collection: &Weak<RefCell<Vec<(String, String, bool)>>>,
         workbook_relationship_part: &Weak<RefCell<RelationsPart>>,
     ) -> AnyResult<(String, String), AnyError> {
-        let worksheet_content = EXCEL_TYPE_COLLECTION.get("worksheet").unwrap();
+        let worksheet_content = EXCEL_TYPE_COLLECTION
+            .get("worksheet")
+            .context("Failed to read Excel type collection")?;
         if let Some(sheet_collection) = sheet_collection.upgrade() {
             if let Some(workbook_relationship_part) = workbook_relationship_part.upgrade() {
                 if let Some(sheet_name) = display_sheet_name.clone() {
@@ -1823,7 +1824,7 @@ impl WorkSheet {
             if let Some(cmn_service) = self.common_service.upgrade() {
                 let actual_value = cmn_service
                     .borrow()
-                    .get_string_id_value(parsed_property.value.unwrap())
+                    .get_string_id_value(parsed_property.value.context("Failed to get cell value")?)
                     .context("draviavemal-openxml_office::Failed to normalize share string")?;
                 parsed_property.value = Some(actual_value);
             }

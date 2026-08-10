@@ -16,14 +16,16 @@ use crate::{
     global_2007::{
         models::{AnchorPosition, GraphPosition},
         parts::{DrawingPartGlobal, RelationsPart},
-        traits::{XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing},
+        traits::{Enum, XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing},
     },
     log_elapsed,
-    namespaces::{CHART_NS, DRAWINGML_NS, RELATIONSHIPS_NS, RELS_PKG_NS, SPREADSHEET_DRAWING_NS},
+    namespaces::{CHART_NS, DRAWINGML_NS, RELATIONSHIPS_NS, SPREADSHEET_DRAWING_NS},
     spreadsheet_2007::{
         models::{
-            AbsoluteAnchor, AnchorContent, ConnectorShape, ContentPart, DrawingAnchor,
-            GraphicFrame, GroupShape, OneCellAnchor, Picture, Shape, TwoCellAnchor,
+            AbsoluteAnchor, AnchorContent, BlipFillMode, ConnectorShape, ContentPart,
+            DrawingAnchor, EditAsValues, Extent, GraphicFrame, GroupShape, Offset, OneCellAnchor,
+            Picture, PresetGeometry, RelativeRect, Shape, ShapeProperties, TileProperties,
+            Transform, TwoCellAnchor,
         },
         services::CommonServices,
     },
@@ -116,30 +118,12 @@ impl XmlDocumentPartClose for DrawingPart {
 impl XmlDocumentPartInitializing for DrawingPart {
     fn initialize_content_xml(
     ) -> anyhow::Result<(XmlDocument, Option<String>, String, String), anyhow::Error> {
-        let content = EXCEL_TYPE_COLLECTION.get("drawing").unwrap();
+        let content = EXCEL_TYPE_COLLECTION
+            .get("drawing")
+            .context("Failed to read excel type collection")?;
         let mut template_core_properties = XmlDocument::new();
         template_core_properties
-            .create_root_element_mut(
-                &"xdr:wsDr".to_string(),
-                Some(vec![
-                    XmlAttribute::new(
-                        format!("xmlns:{}", SPREADSHEET_DRAWING_NS.default_alias),
-                        SPREADSHEET_DRAWING_NS.schemas_namespace.to_string(),
-                    ),
-                    XmlAttribute::new(
-                        format!("xmlns:{}", DRAWINGML_NS.default_alias),
-                        DRAWINGML_NS.schemas_namespace.to_string(),
-                    ),
-                    XmlAttribute::new(
-                        format!("xmlns:{}", CHART_NS.default_alias),
-                        CHART_NS.schemas_namespace.to_string(),
-                    ),
-                    XmlAttribute::new(
-                        format!("xmlns:{}", RELS_PKG_NS.default_alias),
-                        RELS_PKG_NS.schemas_namespace.to_string(),
-                    ),
-                ]),
-            )
+            .create_root_element_ns_mut(&SPREADSHEET_DRAWING_NS, "wsDr", None)
             .context("draviavemal-openxml_office::Failed to create drawing root element")?;
         Ok((
             template_core_properties,
@@ -220,7 +204,9 @@ impl DrawingPart {
         worksheet_relationship_part: &Weak<RefCell<RelationsPart>>,
         type_collection: &Map<&'static str, &'static Content>,
     ) -> AnyResult<String, AnyError> {
-        let drawing_content = type_collection.get("drawing").unwrap();
+        let drawing_content = type_collection
+            .get("drawing")
+            .context("Failed to read drawing type collection")?;
         if let Some(worksheet_relationship_part) = worksheet_relationship_part.upgrade() {
             Ok(worksheet_relationship_part
                 .try_borrow_mut()
@@ -341,6 +327,9 @@ impl DrawingPart {
         anchor_element: &XmlElement,
     ) -> AnyResult<TwoCellAnchor, AnyError> {
         let mut two_cell_anchor = TwoCellAnchor::default();
+        if let Some(edit_as) = anchor_element.get_attribute("editAs") {
+            two_cell_anchor.edit_as = EditAsValues::get_enum(edit_as.get_value());
+        }
         let elements = anchor_element
             .get_child_contents()
             .as_ref()
@@ -592,6 +581,18 @@ impl DrawingPart {
                         )
                         .context("draviavemal-openxml_office::Failed to parse blip fill")?;
                     }
+                    "spPr" => {
+                        let shape_property_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to get shape property element",
+                        )?;
+                        DrawingPart::deserialise_shape_property(
+                            xml_doc_mut,
+                            shape_property_element,
+                            &mut picture,
+                        )
+                        .context("draviavemal-openxml_office::Failed to parse blip fill")?;
+                    }
+                    "style" => {}
                     _ => {
                         log::warn!("Unsupported picture node '{}' is not deserialised and will be lost on save", tag);
                     }
@@ -629,6 +630,12 @@ impl DrawingPart {
                         }
                         if let Some(picture_name) = properties_element.get_attribute("name") {
                             picture.name = picture_name.get_value().to_string();
+                        }
+                        if let Some(description) = properties_element.get_attribute("descr") {
+                            picture.description = Some(description.get_value().to_string());
+                        }
+                        if let Some(hidden) = properties_element.get_attribute("hidden") {
+                            picture.hidden = hidden.get_value() == "1";
                         }
                     }
                     "cNvPicPr" => {
@@ -708,12 +715,42 @@ impl DrawingPart {
                         let blip_element = xml_doc_mut
                             .get_element(*element_id)
                             .context("draviavemal-openxml_office::Failed to get blip element")?;
-                        if let Some(relationship_id) = blip_element
-                            .get_attribute_by_uri(RELATIONSHIPS_NS.schemas_namespace, "embed")
+                        if let Some(relationship_id) =
+                            blip_element.get_attribute_by_ns(&RELATIONSHIPS_NS, "embed")
                         {
                             picture.relationship_id = relationship_id.get_value().to_string();
                         }
+                        if let Some(compression_state) = blip_element.get_attribute("cstate") {
+                            picture.compression_state =
+                                Some(compression_state.get_value().to_string());
+                        }
                     }
+                    "srcRect" => {
+                        let source_rect_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to get source rectangle element",
+                        )?;
+                        picture.source_rectangle =
+                            Some(DrawingPart::deserialise_relative_rect(source_rect_element));
+                    }
+                    "stretch" => {
+                        let stretch_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to get stretch element",
+                        )?;
+                        let fill_rect = stretch_element
+                            .find_first_child("fillRect")
+                            .and_then(|fill_rect_id| xml_doc_mut.get_element(fill_rect_id).ok())
+                            .map(DrawingPart::deserialise_relative_rect)
+                            .unwrap_or_default();
+                        picture.fill_mode = BlipFillMode::Stretch(fill_rect);
+                    }
+                    "tile" => {
+                        let tile_element = xml_doc_mut
+                            .get_element(*element_id)
+                            .context("draviavemal-openxml_office::Failed to get tile element")?;
+                        picture.fill_mode =
+                            BlipFillMode::Tile(DrawingPart::deserialise_tile(tile_element)?);
+                    }
+                    "extLst" => {}
                     _ => {
                         log::warn!("Unsupported picture node '{}' is not deserialised and will be lost on save", tag);
                     }
@@ -728,11 +765,189 @@ impl DrawingPart {
         Ok(())
     }
 
+    fn deserialise_shape_property(
+        xml_doc_mut: &RefMut<'_, XmlDocument>,
+        shape_property_element: &XmlElement,
+        picture: &mut Picture,
+    ) -> AnyResult<(), AnyError> {
+        let shape_property_children = shape_property_element
+            .get_child_contents()
+            .as_ref()
+            .context("draviavemal-openxml_office::Failed to open shape property content vec")?;
+        for shape_property_child in shape_property_children {
+            match shape_property_child {
+                XmlElementContentType::Element((element_id, tag, _)) => match tag.as_str() {
+                    "xfrm" => {
+                        let transform_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to get transform element",
+                        )?;
+                        picture.shape_properties.transform = Some(
+                            DrawingPart::deserialise_transform(xml_doc_mut, transform_element)
+                                .context("draviavemal-openxml_office::Failed to parse transform")?,
+                        );
+                    }
+                    "prstGeom" => {
+                        let preset_geometry_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to get preset geometry element",
+                        )?;
+                        let mut preset_geometry = PresetGeometry::default();
+                        if let Some(preset) = preset_geometry_element.get_attribute("prst") {
+                            preset_geometry.preset = preset.get_value().to_string();
+                        }
+                        picture.shape_properties.preset_geometry = Some(preset_geometry);
+                    }
+                    "custGeom" | "noFill" | "solidFill" | "gradFill" | "blipFill" | "pattFill"
+                    | "grpFill" | "ln" | "effectLst" | "effectDag" | "scene3d" | "sp3d"
+                    | "extLst" => {}
+                    _ => {
+                        log::warn!("Unsupported shape property node '{}' is not deserialised and will be lost on save", tag);
+                    }
+                },
+                _ => {
+                    log::warn!(
+                        "Unsupported shape property content is not deserialised and will be lost on save"
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn deserialise_transform(
+        xml_doc_mut: &RefMut<'_, XmlDocument>,
+        transform_element: &XmlElement,
+    ) -> AnyResult<Transform, AnyError> {
+        let mut transform = Transform::default();
+        if let Some(rotation) = transform_element.get_attribute("rot") {
+            transform.rotation = Some(
+                rotation
+                    .get_value()
+                    .trim()
+                    .parse()
+                    .context("draviavemal-openxml_office::Failed to parse transform rotation")?,
+            );
+        }
+        if let Some(flip_horizontal) = transform_element.get_attribute("flipH") {
+            transform.flip_horizontal = flip_horizontal.get_value() == "1";
+        }
+        if let Some(flip_vertical) = transform_element.get_attribute("flipV") {
+            transform.flip_vertical = flip_vertical.get_value() == "1";
+        }
+        if let Some(children) = transform_element.get_child_contents().as_ref() {
+            for child in children {
+                if let XmlElementContentType::Element((element_id, tag, _)) = child {
+                    match tag.as_str() {
+                        "off" => {
+                            let offset_element = xml_doc_mut.get_element(*element_id).context(
+                                "draviavemal-openxml_office::Failed to get offset element",
+                            )?;
+                            let mut offset = Offset::default();
+                            if let Some(x) = offset_element.get_attribute("x") {
+                                offset.x = x.get_value().trim().parse().context(
+                                    "draviavemal-openxml_office::Failed to parse offset x",
+                                )?;
+                            }
+                            if let Some(y) = offset_element.get_attribute("y") {
+                                offset.y = y.get_value().trim().parse().context(
+                                    "draviavemal-openxml_office::Failed to parse offset y",
+                                )?;
+                            }
+                            transform.offset = Some(offset);
+                        }
+                        "ext" => {
+                            let extent_element = xml_doc_mut.get_element(*element_id).context(
+                                "draviavemal-openxml_office::Failed to get extent element",
+                            )?;
+                            let mut extent = Extent::default();
+                            if let Some(width) = extent_element.get_attribute("cx") {
+                                extent.width = width.get_value().trim().parse().context(
+                                    "draviavemal-openxml_office::Failed to parse extent width",
+                                )?;
+                            }
+                            if let Some(height) = extent_element.get_attribute("cy") {
+                                extent.height = height.get_value().trim().parse().context(
+                                    "draviavemal-openxml_office::Failed to parse extent height",
+                                )?;
+                            }
+                            transform.extent = Some(extent);
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+        Ok(transform)
+    }
+
+    fn deserialise_relative_rect(rect_element: &XmlElement) -> RelativeRect {
+        let parse_edge = |name: &str| -> Option<i32> {
+            rect_element
+                .get_attribute(name)
+                .and_then(|attribute| attribute.get_value().trim().parse().ok())
+        };
+        RelativeRect {
+            left: parse_edge("l"),
+            top: parse_edge("t"),
+            right: parse_edge("r"),
+            bottom: parse_edge("b"),
+        }
+    }
+
+    fn deserialise_tile(tile_element: &XmlElement) -> AnyResult<TileProperties, AnyError> {
+        let mut tile = TileProperties::default();
+        if let Some(offset_x) = tile_element.get_attribute("tx") {
+            tile.offset_x = Some(
+                offset_x
+                    .get_value()
+                    .trim()
+                    .parse()
+                    .context("draviavemal-openxml_office::Failed to parse tile offset x")?,
+            );
+        }
+        if let Some(offset_y) = tile_element.get_attribute("ty") {
+            tile.offset_y = Some(
+                offset_y
+                    .get_value()
+                    .trim()
+                    .parse()
+                    .context("draviavemal-openxml_office::Failed to parse tile offset y")?,
+            );
+        }
+        if let Some(scale_x) = tile_element.get_attribute("sx") {
+            tile.scale_x = Some(
+                scale_x
+                    .get_value()
+                    .trim()
+                    .parse()
+                    .context("draviavemal-openxml_office::Failed to parse tile scale x")?,
+            );
+        }
+        if let Some(scale_y) = tile_element.get_attribute("sy") {
+            tile.scale_y = Some(
+                scale_y
+                    .get_value()
+                    .trim()
+                    .parse()
+                    .context("draviavemal-openxml_office::Failed to parse tile scale y")?,
+            );
+        }
+        if let Some(flip) = tile_element.get_attribute("flip") {
+            tile.flip = Some(flip.get_value().to_string());
+        }
+        if let Some(alignment) = tile_element.get_attribute("algn") {
+            tile.alignment = Some(alignment.get_value().to_string());
+        }
+        Ok(tile)
+    }
+
     fn deserialise_graphic_frame(
         xml_doc_mut: &RefMut<'_, XmlDocument>,
         graphic_frame_element: &XmlElement,
     ) -> AnyResult<GraphicFrame, AnyError> {
         let mut graphic_frame = GraphicFrame::default();
+        if let Some(macro_reference) = graphic_frame_element.get_attribute("macro") {
+            graphic_frame.macro_reference = Some(macro_reference.get_value().to_string());
+        }
         let graphic_frame_children = graphic_frame_element
             .get_child_contents()
             .as_ref()
@@ -761,6 +976,17 @@ impl DrawingPart {
                             &mut graphic_frame,
                         )
                         .context("draviavemal-openxml_office::Failed to parse graphic")?;
+                    }
+                    "xfrm" => {
+                        let transform_element = xml_doc_mut.get_element(*element_id).context(
+                            "draviavemal-openxml_office::Failed to get graphic frame transform element",
+                        )?;
+                        graphic_frame.transform = Some(
+                            DrawingPart::deserialise_transform(xml_doc_mut, transform_element)
+                                .context(
+                                    "draviavemal-openxml_office::Failed to parse graphic frame transform",
+                                )?,
+                        );
                     }
                     _ => {
                         log::warn!("Unsupported graphic frame node '{}' is not deserialised and will be lost on save", tag);
@@ -798,6 +1024,7 @@ impl DrawingPart {
                             graphic_frame.name = frame_name.get_value().to_string();
                         }
                     }
+                    "cNvGraphicFramePr" => {}
                     _ => {
                         log::warn!("Unsupported graphic frame node '{}' is not deserialised and will be lost on save", tag);
                     }
@@ -850,6 +1077,9 @@ impl DrawingPart {
         graphic_data_element: &XmlElement,
         graphic_frame: &mut GraphicFrame,
     ) -> AnyResult<(), AnyError> {
+        if let Some(graphic_uri) = graphic_data_element.get_attribute("uri") {
+            graphic_frame.graphic_uri = graphic_uri.get_value().to_string();
+        }
         let graphic_data_children = graphic_data_element
             .get_child_contents()
             .as_ref()
@@ -861,8 +1091,8 @@ impl DrawingPart {
                         let chart_element = xml_doc_mut
                             .get_element(*element_id)
                             .context("draviavemal-openxml_office::Failed to get chart element")?;
-                        if let Some(chart_relationship_id) = chart_element
-                            .get_attribute_by_uri(RELATIONSHIPS_NS.schemas_namespace, "id")
+                        if let Some(chart_relationship_id) =
+                            chart_element.get_attribute_by_ns(&RELATIONSHIPS_NS, "id")
                         {
                             graphic_frame.relationship_id =
                                 chart_relationship_id.get_value().to_string();
@@ -1001,23 +1231,30 @@ impl DrawingPart {
         parent_id: NodeId,
         two_cell_anchor: TwoCellAnchor,
     ) -> AnyResult<(), AnyError> {
+        let anchor_attributes = match two_cell_anchor.edit_as {
+            EditAsValues::TwoCell => None,
+            edit_as => Some(vec![XmlAttribute::new(
+                "editAs".to_string(),
+                EditAsValues::get_string(edit_as),
+            )]),
+        };
         let anchor_id = xml_doc_mut
-            .append_child_element_mut(parent_id, "xdr:twoCellAnchor", None)
+            .append_child_element_ns_mut(
+                parent_id,
+                &SPREADSHEET_DRAWING_NS,
+                "twoCellAnchor",
+                anchor_attributes,
+            )
             .context("draviavemal-openxml_office::Failed to add two cell anchor element")?;
         DrawingPart::serialize_anchor_position(
             xml_doc_mut,
             anchor_id,
-            "xdr:from",
+            "from",
             &two_cell_anchor.from,
         )
         .context("draviavemal-openxml_office::Failed to serialise from position")?;
-        DrawingPart::serialize_anchor_position(
-            xml_doc_mut,
-            anchor_id,
-            "xdr:to",
-            &two_cell_anchor.to,
-        )
-        .context("draviavemal-openxml_office::Failed to serialise to position")?;
+        DrawingPart::serialize_anchor_position(xml_doc_mut, anchor_id, "to", &two_cell_anchor.to)
+            .context("draviavemal-openxml_office::Failed to serialise to position")?;
         DrawingPart::serialize_anchor_content(
             xml_doc_mut,
             anchor_id,
@@ -1025,7 +1262,7 @@ impl DrawingPart {
         )
         .context("draviavemal-openxml_office::Failed to serialise anchor content")?;
         xml_doc_mut
-            .append_child_element_mut(anchor_id, "xdr:clientData", None)
+            .append_child_element_ns_mut(anchor_id, &SPREADSHEET_DRAWING_NS, "clientData", None)
             .context("draviavemal-openxml_office::Failed to add client data element")?;
         Ok(())
     }
@@ -1036,12 +1273,12 @@ impl DrawingPart {
         one_cell_anchor: OneCellAnchor,
     ) -> AnyResult<(), AnyError> {
         let anchor_id = xml_doc_mut
-            .append_child_element_mut(parent_id, "xdr:oneCellAnchor", None)
+            .append_child_element_ns_mut(parent_id, &SPREADSHEET_DRAWING_NS, "oneCellAnchor", None)
             .context("draviavemal-openxml_office::Failed to add one cell anchor element")?;
         DrawingPart::serialize_anchor_position(
             xml_doc_mut,
             anchor_id,
-            "xdr:from",
+            "from",
             &one_cell_anchor.from,
         )
         .context("draviavemal-openxml_office::Failed to serialise from position")?;
@@ -1052,7 +1289,7 @@ impl DrawingPart {
         )
         .context("draviavemal-openxml_office::Failed to serialise anchor content")?;
         xml_doc_mut
-            .append_child_element_mut(anchor_id, "xdr:clientData", None)
+            .append_child_element_ns_mut(anchor_id, &SPREADSHEET_DRAWING_NS, "clientData", None)
             .context("draviavemal-openxml_office::Failed to add client data element")?;
         Ok(())
     }
@@ -1063,7 +1300,7 @@ impl DrawingPart {
         absolute_anchor: AbsoluteAnchor,
     ) -> AnyResult<(), AnyError> {
         let anchor_id = xml_doc_mut
-            .append_child_element_mut(parent_id, "xdr:absoluteAnchor", None)
+            .append_child_element_ns_mut(parent_id, &SPREADSHEET_DRAWING_NS, "absoluteAnchor", None)
             .context("draviavemal-openxml_office::Failed to add absolute anchor element")?;
         DrawingPart::serialize_anchor_content(
             xml_doc_mut,
@@ -1072,7 +1309,7 @@ impl DrawingPart {
         )
         .context("draviavemal-openxml_office::Failed to serialise anchor content")?;
         xml_doc_mut
-            .append_child_element_mut(anchor_id, "xdr:clientData", None)
+            .append_child_element_ns_mut(anchor_id, &SPREADSHEET_DRAWING_NS, "clientData", None)
             .context("draviavemal-openxml_office::Failed to add client data element")?;
         Ok(())
     }
@@ -1080,34 +1317,34 @@ impl DrawingPart {
     fn serialize_anchor_position(
         xml_doc_mut: &mut XmlDocument,
         parent_id: NodeId,
-        tag: &str,
+        local_name: &str,
         anchor_position: &AnchorPosition,
     ) -> AnyResult<(), AnyError> {
         let position_id = xml_doc_mut
-            .append_child_element_mut(parent_id, tag, None)
+            .append_child_element_ns_mut(parent_id, &SPREADSHEET_DRAWING_NS, local_name, None)
             .context("draviavemal-openxml_office::Failed to add anchor position element")?;
         DrawingPart::serialize_text_element(
             xml_doc_mut,
             position_id,
-            "xdr:col",
+            "col",
             &anchor_position.column.to_string(),
         )?;
         DrawingPart::serialize_text_element(
             xml_doc_mut,
             position_id,
-            "xdr:colOff",
+            "colOff",
             &anchor_position.column_offset.to_string(),
         )?;
         DrawingPart::serialize_text_element(
             xml_doc_mut,
             position_id,
-            "xdr:row",
+            "row",
             &anchor_position.row.to_string(),
         )?;
         DrawingPart::serialize_text_element(
             xml_doc_mut,
             position_id,
-            "xdr:rowOff",
+            "rowOff",
             &anchor_position.row_offset.to_string(),
         )?;
         Ok(())
@@ -1116,11 +1353,11 @@ impl DrawingPart {
     fn serialize_text_element(
         xml_doc_mut: &mut XmlDocument,
         parent_id: NodeId,
-        tag: &str,
+        local_name: &str,
         value: &str,
     ) -> AnyResult<(), AnyError> {
         let element_id = xml_doc_mut
-            .append_child_element_mut(parent_id, tag, None)
+            .append_child_element_ns_mut(parent_id, &SPREADSHEET_DRAWING_NS, local_name, None)
             .context("draviavemal-openxml_office::Failed to add text element")?;
         xml_doc_mut
             .get_element_mut(element_id)
@@ -1146,22 +1383,27 @@ impl DrawingPart {
             }
             AnchorContent::Shape(_) => {
                 xml_doc_mut
-                    .append_child_element_mut(parent_id, "xdr:sp", None)
+                    .append_child_element_ns_mut(parent_id, &SPREADSHEET_DRAWING_NS, "sp", None)
                     .context("draviavemal-openxml_office::Failed to add shape element")?;
             }
             AnchorContent::GroupShape(_) => {
                 xml_doc_mut
-                    .append_child_element_mut(parent_id, "xdr:grpSp", None)
+                    .append_child_element_ns_mut(parent_id, &SPREADSHEET_DRAWING_NS, "grpSp", None)
                     .context("draviavemal-openxml_office::Failed to add group shape element")?;
             }
             AnchorContent::ConnectorShape(_) => {
                 xml_doc_mut
-                    .append_child_element_mut(parent_id, "xdr:cxnSp", None)
+                    .append_child_element_ns_mut(parent_id, &SPREADSHEET_DRAWING_NS, "cxnSp", None)
                     .context("draviavemal-openxml_office::Failed to add connector shape element")?;
             }
             AnchorContent::ContentPart(_) => {
                 xml_doc_mut
-                    .append_child_element_mut(parent_id, "xdr:contentPart", None)
+                    .append_child_element_ns_mut(
+                        parent_id,
+                        &SPREADSHEET_DRAWING_NS,
+                        "contentPart",
+                        None,
+                    )
                     .context("draviavemal-openxml_office::Failed to add content part element")?;
             }
         }
@@ -1174,40 +1416,39 @@ impl DrawingPart {
         picture: Picture,
     ) -> AnyResult<(), AnyError> {
         let picture_id = xml_doc_mut
-            .append_child_element_mut(parent_id, "xdr:pic", None)
+            .append_child_element_ns_mut(parent_id, &SPREADSHEET_DRAWING_NS, "pic", None)
             .context("draviavemal-openxml_office::Failed to add picture element")?;
         let non_visual_id = xml_doc_mut
-            .append_child_element_mut(picture_id, "xdr:nvPicPr", None)
+            .append_child_element_ns_mut(picture_id, &SPREADSHEET_DRAWING_NS, "nvPicPr", None)
             .context("draviavemal-openxml_office::Failed to add non visual picture element")?;
+        let mut properties_attributes = vec![
+            XmlAttribute::new("id".to_string(), picture.id.to_string()),
+            XmlAttribute::new("name".to_string(), picture.name),
+        ];
+        if let Some(description) = picture.description {
+            properties_attributes.push(XmlAttribute::new("descr".to_string(), description));
+        }
+        if picture.hidden {
+            properties_attributes.push(XmlAttribute::new("hidden".to_string(), "1".to_string()));
+        }
         xml_doc_mut
-            .append_child_element_mut(
+            .append_child_element_ns_mut(
                 non_visual_id,
-                "xdr:cNvPr",
-                Some(vec![
-                    XmlAttribute::new("id".to_string(), picture.id.to_string()),
-                    XmlAttribute::new("name".to_string(), picture.name),
-                ]),
+                &SPREADSHEET_DRAWING_NS,
+                "cNvPr",
+                Some(properties_attributes),
             )
             .context("draviavemal-openxml_office::Failed to add picture properties element")?;
         let non_visual_picture_id = xml_doc_mut
-            .append_child_element_mut(non_visual_id, "xdr:cNvPicPr", None)
+            .append_child_element_ns_mut(non_visual_id, &SPREADSHEET_DRAWING_NS, "cNvPicPr", None)
             .context(
                 "draviavemal-openxml_office::Failed to add non visual picture properties element",
             )?;
-        // Resolve aliases once from the parent scope for all namespaced tags/attrs below
-        let (tag_pic_locks, attr_embed) = xml_doc_mut
-            .get_element(non_visual_picture_id)
-            .map(|element| {
-                (
-                    DRAWINGML_NS.tag(element, "picLocks"),
-                    RELATIONSHIPS_NS.attr(element, "embed"),
-                )
-            })
-            .unwrap_or_else(|_| ("a:picLocks".to_string(), "r:embed".to_string()));
         xml_doc_mut
-            .append_child_element_mut(
+            .append_child_element_ns_mut(
                 non_visual_picture_id,
-                &tag_pic_locks,
+                &DRAWINGML_NS,
+                "picLocks",
                 Some(vec![XmlAttribute::new(
                     "noChangeAspect".to_string(),
                     if picture.aspect_ratio { "1" } else { "0" }.to_string(),
@@ -1215,19 +1456,212 @@ impl DrawingPart {
             )
             .context("draviavemal-openxml_office::Failed to add picture locks element")?;
         let blip_fill_id = xml_doc_mut
-            .append_child_element_mut(picture_id, "xdr:blipFill", None)
+            .append_child_element_ns_mut(picture_id, &SPREADSHEET_DRAWING_NS, "blipFill", None)
             .context("draviavemal-openxml_office::Failed to add blip fill element")?;
-        let tag_blip = xml_doc_mut
-            .get_element(blip_fill_id)
-            .map(|element| DRAWINGML_NS.tag(element, "blip"))
-            .unwrap_or_else(|_| "a:blip".to_string());
-        xml_doc_mut
-            .append_child_element_mut(
+        let mut blip_attributes = Vec::new();
+        if let Some(compression_state) = picture.compression_state {
+            blip_attributes.push(XmlAttribute::new("cstate".to_string(), compression_state));
+        }
+        let blip_id = xml_doc_mut
+            .append_child_element_ns_mut(
                 blip_fill_id,
-                &tag_blip,
-                Some(vec![XmlAttribute::new(attr_embed, picture.relationship_id)]),
+                &DRAWINGML_NS,
+                "blip",
+                if blip_attributes.is_empty() {
+                    None
+                } else {
+                    Some(blip_attributes)
+                },
             )
             .context("draviavemal-openxml_office::Failed to add blip element")?;
+        xml_doc_mut
+            .get_element_mut(blip_id)
+            .context("draviavemal-openxml_office::Failed to get blip element")?
+            .add_attribute_ns_mut(&RELATIONSHIPS_NS, "embed", &picture.relationship_id)
+            .context("draviavemal-openxml_office::Failed to add blip relationship")?;
+        if let Some(source_rectangle) = picture.source_rectangle {
+            DrawingPart::serialize_relative_rect(
+                xml_doc_mut,
+                blip_fill_id,
+                "srcRect",
+                &source_rectangle,
+            )
+            .context("draviavemal-openxml_office::Failed to add source rectangle element")?;
+        }
+        match picture.fill_mode {
+            BlipFillMode::Stretch(fill_rect) => {
+                let stretch_id = xml_doc_mut
+                    .append_child_element_ns_mut(blip_fill_id, &DRAWINGML_NS, "stretch", None)
+                    .context("draviavemal-openxml_office::Failed to add stretch element")?;
+                DrawingPart::serialize_relative_rect(
+                    xml_doc_mut,
+                    stretch_id,
+                    "fillRect",
+                    &fill_rect,
+                )
+                .context("draviavemal-openxml_office::Failed to add fill rectangle element")?;
+            }
+            BlipFillMode::Tile(tile) => {
+                let mut tile_attributes = Vec::new();
+                if let Some(offset_x) = tile.offset_x {
+                    tile_attributes.push(XmlAttribute::new("tx".to_string(), offset_x.to_string()));
+                }
+                if let Some(offset_y) = tile.offset_y {
+                    tile_attributes.push(XmlAttribute::new("ty".to_string(), offset_y.to_string()));
+                }
+                if let Some(scale_x) = tile.scale_x {
+                    tile_attributes.push(XmlAttribute::new("sx".to_string(), scale_x.to_string()));
+                }
+                if let Some(scale_y) = tile.scale_y {
+                    tile_attributes.push(XmlAttribute::new("sy".to_string(), scale_y.to_string()));
+                }
+                if let Some(flip) = tile.flip {
+                    tile_attributes.push(XmlAttribute::new("flip".to_string(), flip));
+                }
+                if let Some(alignment) = tile.alignment {
+                    tile_attributes.push(XmlAttribute::new("algn".to_string(), alignment));
+                }
+                xml_doc_mut
+                    .append_child_element_ns_mut(
+                        blip_fill_id,
+                        &DRAWINGML_NS,
+                        "tile",
+                        if tile_attributes.is_empty() {
+                            None
+                        } else {
+                            Some(tile_attributes)
+                        },
+                    )
+                    .context("draviavemal-openxml_office::Failed to add tile element")?;
+            }
+        }
+        DrawingPart::serialize_shape_properties(
+            xml_doc_mut,
+            picture_id,
+            &picture.shape_properties,
+        )
+        .context("draviavemal-openxml_office::Failed to serialise shape properties")?;
+        Ok(())
+    }
+
+    fn serialize_shape_properties(
+        xml_doc_mut: &mut XmlDocument,
+        parent_id: NodeId,
+        shape_properties: &ShapeProperties,
+    ) -> AnyResult<(), AnyError> {
+        let shape_property_id = xml_doc_mut
+            .append_child_element_ns_mut(parent_id, &SPREADSHEET_DRAWING_NS, "spPr", None)
+            .context("draviavemal-openxml_office::Failed to add shape property element")?;
+        if let Some(transform) = &shape_properties.transform {
+            DrawingPart::serialize_transform(xml_doc_mut, shape_property_id, transform)
+                .context("draviavemal-openxml_office::Failed to serialise transform")?;
+        }
+        if let Some(preset_geometry) = &shape_properties.preset_geometry {
+            let preset_geometry_id = xml_doc_mut
+                .append_child_element_ns_mut(
+                    shape_property_id,
+                    &DRAWINGML_NS,
+                    "prstGeom",
+                    Some(vec![XmlAttribute::new(
+                        "prst".to_string(),
+                        preset_geometry.preset.clone(),
+                    )]),
+                )
+                .context("draviavemal-openxml_office::Failed to add preset geometry element")?;
+            xml_doc_mut
+                .append_child_element_ns_mut(preset_geometry_id, &DRAWINGML_NS, "avLst", None)
+                .context("draviavemal-openxml_office::Failed to add adjust value list element")?;
+        }
+        Ok(())
+    }
+
+    fn serialize_transform(
+        xml_doc_mut: &mut XmlDocument,
+        parent_id: NodeId,
+        transform: &Transform,
+    ) -> AnyResult<(), AnyError> {
+        let mut transform_attributes = Vec::new();
+        if let Some(rotation) = transform.rotation {
+            transform_attributes.push(XmlAttribute::new("rot".to_string(), rotation.to_string()));
+        }
+        if transform.flip_horizontal {
+            transform_attributes.push(XmlAttribute::new("flipH".to_string(), "1".to_string()));
+        }
+        if transform.flip_vertical {
+            transform_attributes.push(XmlAttribute::new("flipV".to_string(), "1".to_string()));
+        }
+        let transform_id = xml_doc_mut
+            .append_child_element_ns_mut(
+                parent_id,
+                &DRAWINGML_NS,
+                "xfrm",
+                if transform_attributes.is_empty() {
+                    None
+                } else {
+                    Some(transform_attributes)
+                },
+            )
+            .context("draviavemal-openxml_office::Failed to add transform element")?;
+        if let Some(offset) = &transform.offset {
+            xml_doc_mut
+                .append_child_element_ns_mut(
+                    transform_id,
+                    &DRAWINGML_NS,
+                    "off",
+                    Some(vec![
+                        XmlAttribute::new("x".to_string(), offset.x.to_string()),
+                        XmlAttribute::new("y".to_string(), offset.y.to_string()),
+                    ]),
+                )
+                .context("draviavemal-openxml_office::Failed to add offset element")?;
+        }
+        if let Some(extent) = &transform.extent {
+            xml_doc_mut
+                .append_child_element_ns_mut(
+                    transform_id,
+                    &DRAWINGML_NS,
+                    "ext",
+                    Some(vec![
+                        XmlAttribute::new("cx".to_string(), extent.width.to_string()),
+                        XmlAttribute::new("cy".to_string(), extent.height.to_string()),
+                    ]),
+                )
+                .context("draviavemal-openxml_office::Failed to add extent element")?;
+        }
+        Ok(())
+    }
+
+    fn serialize_relative_rect(
+        xml_doc_mut: &mut XmlDocument,
+        parent_id: NodeId,
+        local_name: &str,
+        relative_rect: &RelativeRect,
+    ) -> AnyResult<(), AnyError> {
+        let mut rect_attributes = Vec::new();
+        if let Some(left) = relative_rect.left {
+            rect_attributes.push(XmlAttribute::new("l".to_string(), left.to_string()));
+        }
+        if let Some(top) = relative_rect.top {
+            rect_attributes.push(XmlAttribute::new("t".to_string(), top.to_string()));
+        }
+        if let Some(right) = relative_rect.right {
+            rect_attributes.push(XmlAttribute::new("r".to_string(), right.to_string()));
+        }
+        if let Some(bottom) = relative_rect.bottom {
+            rect_attributes.push(XmlAttribute::new("b".to_string(), bottom.to_string()));
+        }
+        xml_doc_mut
+            .append_child_element_ns_mut(
+                parent_id,
+                &DRAWINGML_NS,
+                local_name,
+                if rect_attributes.is_empty() {
+                    None
+                } else {
+                    Some(rect_attributes)
+                },
+            )
+            .context("draviavemal-openxml_office::Failed to add relative rectangle element")?;
         Ok(())
     }
 
@@ -1237,17 +1671,30 @@ impl DrawingPart {
         graphic_frame: GraphicFrame,
     ) -> AnyResult<(), AnyError> {
         let graphic_frame_id = xml_doc_mut
-            .append_child_element_mut(parent_id, "xdr:graphicFrame", None)
+            .append_child_element_ns_mut(
+                parent_id,
+                &SPREADSHEET_DRAWING_NS,
+                "graphicFrame",
+                graphic_frame.macro_reference.clone().map(|macro_reference| {
+                    vec![XmlAttribute::new("macro".to_string(), macro_reference)]
+                }),
+            )
             .context("draviavemal-openxml_office::Failed to add graphic frame element")?;
         let non_visual_id = xml_doc_mut
-            .append_child_element_mut(graphic_frame_id, "xdr:nvGraphicFramePr", None)
+            .append_child_element_ns_mut(
+                graphic_frame_id,
+                &SPREADSHEET_DRAWING_NS,
+                "nvGraphicFramePr",
+                None,
+            )
             .context(
                 "draviavemal-openxml_office::Failed to add non visual graphic frame element",
             )?;
         xml_doc_mut
-            .append_child_element_mut(
+            .append_child_element_ns_mut(
                 non_visual_id,
-                "xdr:cNvPr",
+                &SPREADSHEET_DRAWING_NS,
+                "cNvPr",
                 Some(vec![
                     XmlAttribute::new("id".to_string(), graphic_frame.id.to_string()),
                     XmlAttribute::new("name".to_string(), graphic_frame.name),
@@ -1257,50 +1704,73 @@ impl DrawingPart {
                 "draviavemal-openxml_office::Failed to add graphic frame properties element",
             )?;
         xml_doc_mut
-            .append_child_element_mut(non_visual_id, "xdr:cNvGraphicFramePr", None)
+            .append_child_element_ns_mut(
+                non_visual_id,
+                &SPREADSHEET_DRAWING_NS,
+                "cNvGraphicFramePr",
+                None,
+            )
             .context("draviavemal-openxml_office::Failed to add non visual graphic frame properties element")?;
-        // Resolve all aliases once from this frame's scope
-        let (tag_graphic, tag_graphic_data, tag_chart, attr_r_id) = xml_doc_mut
-            .get_element(graphic_frame_id)
-            .map(|element| {
-                (
-                    DRAWINGML_NS.tag(element, "graphic"),
-                    DRAWINGML_NS.tag(element, "graphicData"),
-                    CHART_NS.tag(element, "chart"),
-                    RELATIONSHIPS_NS.attr(element, "id"),
+        if let Some(transform) = &graphic_frame.transform {
+            let transform_id = xml_doc_mut
+                .append_child_element_ns_mut(
+                    graphic_frame_id,
+                    &SPREADSHEET_DRAWING_NS,
+                    "xfrm",
+                    None,
                 )
-            })
-            .unwrap_or_else(|_| {
-                (
-                    "a:graphic".to_string(),
-                    "a:graphicData".to_string(),
-                    "c:chart".to_string(),
-                    "r:id".to_string(),
-                )
-            });
+                .context("draviavemal-openxml_office::Failed to add graphic frame transform element")?;
+            if let Some(offset) = &transform.offset {
+                xml_doc_mut
+                    .append_child_element_ns_mut(
+                        transform_id,
+                        &DRAWINGML_NS,
+                        "off",
+                        Some(vec![
+                            XmlAttribute::new("x".to_string(), offset.x.to_string()),
+                            XmlAttribute::new("y".to_string(), offset.y.to_string()),
+                        ]),
+                    )
+                    .context("draviavemal-openxml_office::Failed to add offset element")?;
+            }
+            if let Some(extent) = &transform.extent {
+                xml_doc_mut
+                    .append_child_element_ns_mut(
+                        transform_id,
+                        &DRAWINGML_NS,
+                        "ext",
+                        Some(vec![
+                            XmlAttribute::new("cx".to_string(), extent.width.to_string()),
+                            XmlAttribute::new("cy".to_string(), extent.height.to_string()),
+                        ]),
+                    )
+                    .context("draviavemal-openxml_office::Failed to add extent element")?;
+            }
+        }
         let graphic_id = xml_doc_mut
-            .append_child_element_mut(graphic_frame_id, &tag_graphic, None)
+            .append_child_element_ns_mut(graphic_frame_id, &DRAWINGML_NS, "graphic", None)
             .context("draviavemal-openxml_office::Failed to add graphic element")?;
+        let graphic_uri = if graphic_frame.graphic_uri.is_empty() {
+            CHART_NS.uri.to_string()
+        } else {
+            graphic_frame.graphic_uri.clone()
+        };
         let graphic_data_id = xml_doc_mut
-            .append_child_element_mut(
+            .append_child_element_ns_mut(
                 graphic_id,
-                &tag_graphic_data,
-                Some(vec![XmlAttribute::new(
-                    "uri".to_string(),
-                    CHART_NS.schemas_namespace.to_string(),
-                )]),
+                &DRAWINGML_NS,
+                "graphicData",
+                Some(vec![XmlAttribute::new("uri".to_string(), graphic_uri)]),
             )
             .context("draviavemal-openxml_office::Failed to add graphic data element")?;
-        xml_doc_mut
-            .append_child_element_mut(
-                graphic_data_id,
-                &tag_chart,
-                Some(vec![XmlAttribute::new(
-                    attr_r_id,
-                    graphic_frame.relationship_id,
-                )]),
-            )
+        let chart_id = xml_doc_mut
+            .append_child_element_ns_mut(graphic_data_id, &CHART_NS, "chart", None)
             .context("draviavemal-openxml_office::Failed to add chart element")?;
+        xml_doc_mut
+            .get_element_mut(chart_id)
+            .context("draviavemal-openxml_office::Failed to get chart element")?
+            .add_attribute_ns_mut(&RELATIONSHIPS_NS, "id", &graphic_frame.relationship_id)
+            .context("draviavemal-openxml_office::Failed to add chart relationship")?;
         Ok(())
     }
 }

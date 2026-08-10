@@ -29,12 +29,16 @@ impl ContentTypesPart {
                 elements.push((
                     default_element
                         .get_attribute("Extension")
-                        .context("draviavemal-openxml_office::content type default attribute missing")?
+                        .context(
+                            "draviavemal-openxml_office::content type default attribute missing",
+                        )?
                         .get_value()
                         .to_string(),
                     default_element
                         .get_attribute("ContentType")
-                        .context("draviavemal-openxml_office::content type default attribute missing")?
+                        .context(
+                            "draviavemal-openxml_office::content type default attribute missing",
+                        )?
                         .get_value()
                         .to_string(),
                 ));
@@ -85,7 +89,7 @@ impl ContentTypesPart {
             "xmlns".to_string(),
             COMMON_TYPE_COLLECTION
                 .get("content_type")
-                .unwrap()
+                .context("Failed to load common type collection")?
                 .schemas_namespace
                 .to_string(),
         ));

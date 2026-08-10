@@ -61,7 +61,9 @@ impl XmlDocumentPartInitializing for RelationsPart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
-        let relationship_content = COMMON_TYPE_COLLECTION.get("rels").unwrap();
+        let relationship_content = COMMON_TYPE_COLLECTION
+            .get("rels")
+            .context("Failed to read Common type collection")?;
         let mut attributes = Vec::new();
         attributes.push(XmlAttribute::new(
             "xmlns".to_string(),
@@ -171,7 +173,12 @@ impl RelationsPart {
                 .get_relative_path()
                 .context("draviavemal-openxml_office::Get Relative Path for Part File")?;
             if file_path.starts_with('/') {
-                Ok(Some(file_path.strip_prefix('/').unwrap().to_string()))
+                Ok(Some(
+                    file_path
+                        .strip_prefix('/')
+                        .context("There is no file string to strip from")?
+                        .to_string(),
+                ))
             } else {
                 Ok(Some(format!("{}{}", relative_path, file_path)))
             }

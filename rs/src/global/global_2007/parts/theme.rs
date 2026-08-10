@@ -45,7 +45,9 @@ impl XmlDocumentPartInitializing for ThemePart {
     /// Initialize xml content for this part from base template
     fn initialize_content_xml() -> AnyResult<(XmlDocument, Option<String>, String, String), AnyError>
     {
-        let content = COMMON_TYPE_COLLECTION.get("theme").unwrap();
+        let content = COMMON_TYPE_COLLECTION
+            .get("theme")
+            .context("Failed to read Common type collection")?;
         Ok((
             XmlDeserializer::vec_to_xml_doc_tree(include_str!("theme.xml").as_bytes().to_vec())
                 .context("draviavemal-openxml_office::Initializing Theme Failed")?,
@@ -78,7 +80,9 @@ impl ThemePart {
     fn get_theme_file_name(
         relations_part: &Weak<RefCell<RelationsPart>>,
     ) -> AnyResult<String, AnyError> {
-        let theme_content = COMMON_TYPE_COLLECTION.get("theme").unwrap();
+        let theme_content = COMMON_TYPE_COLLECTION
+            .get("theme")
+            .context("Failed to read Common type collection")?;
         if let Some(relations_part) = relations_part.upgrade() {
             Ok(relations_part
                 .try_borrow_mut()
