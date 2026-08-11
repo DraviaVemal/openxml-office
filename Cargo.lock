@@ -810,9 +810,9 @@ dependencies = [
 
 [[package]]
 name = "draviavemal-xml_rs"
-version = "1.0.4-alpha.9"
+version = "1.0.4-alpha.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59a58fa326742705674b702584036a92e609f77b7010698d20ae842af7a03461"
+checksum = "4779479c905e8967e94975b0e4ca48b385fefac4179e7f6a1d2cffa103dab722"
 dependencies = [
  "anyhow",
  "chrono",

@@ -53,17 +53,13 @@ impl XmlDocumentPartClose for ShareStringPart {
                                 if let Ok(root) = xml_doc_mut.get_element_mut(root_id) {
                                     root.remove_attribute_mut("count");
                                     root.remove_attribute_mut("uniqueCount");
-                                    root.add_attribute_mut(XmlAttribute::new(
-                                        "count".to_string(),
-                                        count,
-                                    ))
-                                    .context(
+                                    root.add_attribute_mut("count", &count).context(
                                         "draviavemal-openxml_office::Failed to set count attribute",
                                     )?;
-                                    root.add_attribute_mut(XmlAttribute::new(
-                                        "uniqueCount".to_string(),
-                                        unique_count,
-                                    ))
+                                    root.add_attribute_mut(
+                                        "uniqueCount",
+                                        &unique_count,
+                                    )
                                     .context("draviavemal-openxml_office::Failed to set uniqueCount attribute")?;
                                 }
                             }

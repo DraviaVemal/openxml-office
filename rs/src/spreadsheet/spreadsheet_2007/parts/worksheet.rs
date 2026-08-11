@@ -481,7 +481,7 @@ impl WorkSheet {
             if column_collection.len() > 0 {
                 let root_id = xml_doc_mut.get_root_id();
                 let cols_id = xml_doc_mut
-                    .inser_child_element_after_last_tag_mut(root_id, "cols", "sheetFormatPr", None)
+                    .insert_child_element_after_last_tag_mut(root_id, "cols", "sheetFormatPr", None)
                     .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
                 loop {
                     if let Some(item) = column_collection.pop_front() {
@@ -525,7 +525,7 @@ impl WorkSheet {
     fn serialize_sheet_views(&mut self, xml_doc_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
         let root_id = xml_doc_mut.get_root_id();
         let sheet_views_id = xml_doc_mut
-            .inser_child_element_after_last_tag_mut(root_id, "sheetViews", "dimension", None)
+            .insert_child_element_after_last_tag_mut(root_id, "sheetViews", "dimension", None)
             .context("draviavemal-openxml_office::Failed to Insert Sheet Views Element")?;
         loop {
             if let Some(sheet_view) = self.sheet_views.view_collection.pop() {
@@ -644,7 +644,7 @@ impl WorkSheet {
         if let Some(sheet_data) = self.sheet_data.take() {
             let root_id = xml_doc_mut.get_root_id();
             let sheet_data_id = xml_doc_mut
-                .inser_child_element_after_last_tag_mut(root_id, "sheetData", "cols", None)
+                .insert_child_element_after_last_tag_mut(root_id, "sheetData", "cols", None)
                 .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
             for (row_index, db_row) in sheet_data {
                 let mut row_attribute = HashMap::new();
@@ -787,17 +787,14 @@ impl WorkSheet {
         if let Some(merge_cells) = self.merge_cells.take() {
             let root_id = xml_doc_mut.get_root_id();
             let merge_cells_id = xml_doc_mut
-                .inser_child_element_after_last_tag_mut(root_id, "mergeCells", "sheetData", None)
+                .insert_child_element_after_last_tag_mut(root_id, "mergeCells", "sheetData", None)
                 .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
             {
                 let merge_cells_element = xml_doc_mut
                     .get_element_mut(merge_cells_id)
                     .context("draviavemal-openxml_office::Failed to get element")?;
                 merge_cells_element
-                    .add_attribute_mut(XmlAttribute::new(
-                        "count".to_string(),
-                        merge_cells.len().to_string(),
-                    ))
+                    .add_attribute_mut("count", &merge_cells.len().to_string())
                     .context("draviavemal-openxml_office::Failed to set Merge Cells Attribute")?;
             }
             for merge_cell in merge_cells {
@@ -847,7 +844,7 @@ impl WorkSheet {
         if let Some(hyperlinks) = self.hyperlinks.take() {
             let root_id = xml_doc_mut.get_root_id();
             let hyperlinks_id = xml_doc_mut
-                .inser_child_element_after_last_tag_mut(root_id, "hyperlinks", "mergeCells", None)
+                .insert_child_element_after_last_tag_mut(root_id, "hyperlinks", "mergeCells", None)
                 .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
             for hyperlink in hyperlinks {
                 let mut attributes = HashMap::new();

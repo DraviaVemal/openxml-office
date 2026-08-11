@@ -108,7 +108,7 @@ impl XmlDocumentPartClose for WorkbookPart {
                     if let Some(workbook_view) = &self.workbook_view {
                         // Create and Set BookViews
                         let book_views_id = xml_doc_mut
-                            .inser_child_element_after_last_tag_mut(
+                            .insert_child_element_after_last_tag_mut(
                                 root_id,
                                 "bookViews",
                                 "fileVersion",
@@ -198,7 +198,7 @@ impl XmlDocumentPartClose for WorkbookPart {
                     }
                     // Create and set Sheets
                     let sheets_id = xml_doc_mut
-                        .inser_child_element_after_last_tag_mut(
+                        .insert_child_element_after_last_tag_mut(
                             root_id,
                             "sheets",
                             "bookViews",
