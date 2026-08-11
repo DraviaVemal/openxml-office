@@ -446,7 +446,7 @@ impl StylePart {
             // Number Formats
             {
                 let num_formats_id = xml_doc_mut
-                    .inser_child_element_before_first_tag_mut(
+                    .insert_child_element_before_first_tag_mut(
                         root_id,
                         "numFmts",
                         "cellStyles",
@@ -480,7 +480,7 @@ impl StylePart {
             // Fonts
             {
                 let fonts_id = xml_doc_mut
-                    .inser_child_element_after_last_tag_mut(
+                    .insert_child_element_after_last_tag_mut(
                         root_id,
                         "fonts",
                         "numFmts",
@@ -573,7 +573,7 @@ impl StylePart {
             // Fills
             {
                 let fills_id = xml_doc_mut
-                    .inser_child_element_after_last_tag_mut(
+                    .insert_child_element_after_last_tag_mut(
                         root_id,
                         "fills",
                         "fonts",
@@ -630,7 +630,7 @@ impl StylePart {
             // Borders
             {
                 let borders_id = xml_doc_mut
-                    .inser_child_element_after_last_tag_mut(
+                    .insert_child_element_after_last_tag_mut(
                         root_id,
                         "borders",
                         "fills",
@@ -877,7 +877,7 @@ impl StylePart {
     ) -> Result<(), AnyError> {
         let root_id = xml_doc_mut.get_root_id();
         let cell_style_xfs_id = xml_doc_mut
-            .inser_child_element_after_last_tag_mut(
+            .insert_child_element_after_last_tag_mut(
                 root_id,
                 if enable_format_id {
                     "cellXfs"
