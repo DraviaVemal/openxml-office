@@ -5,9 +5,10 @@ use crate::global_2007::traits::{
     XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
 };
 use crate::log_elapsed;
+use crate::namespaces::SPREADSHEET_NS;
 use crate::{files::OfficeDocument, global_2007::traits::XmlDocumentPart};
-use anyhow::{anyhow, Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{XmlAttribute, XmlDocument};
+use anyhow::{Context, Error as AnyError, Result as AnyResult};
+use draviavemal_xml_rs::{NamespaceDeclaration, XmlAttribute, XmlDocument};
 use std::{cell::RefCell, rc::Weak};
 
 #[derive(Debug)]
@@ -123,18 +124,17 @@ impl XmlDocumentPartInitializing for CalculationChainPart {
         let content = EXCEL_TYPE_COLLECTION
             .get("calc_chain")
             .context("Failed to read Excel type collection")?;
-        let mut attributes: Vec<XmlAttribute> = Vec::new();
-        attributes.push(XmlAttribute::new(
-            "xmlns".to_string(),
-            EXCEL_TYPE_COLLECTION
-                .get("calc_chain")
-                .context("Failed to read Excel type collection")?
-                .schemas_namespace
-                .to_string(),
-        ));
         let mut xml_document = XmlDocument::new();
         xml_document
-            .create_root_element_mut("calcChain", Some(attributes))
+            .create_root_element_ns_mut(
+                "calcChain",
+                &NamespaceDeclaration {
+                    default_alias: SPREADSHEET_NS.default_alias,
+                    uri: SPREADSHEET_NS.uri,
+                    alias_override: Some(""),
+                },
+                None,
+            )
             .context("draviavemal-openxml_office::Create XML Root Element Failed")?;
         Ok((
             xml_document,

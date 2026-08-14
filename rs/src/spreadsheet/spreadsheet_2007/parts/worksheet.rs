@@ -15,7 +15,7 @@ use crate::{
         traits::{Enum, XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing},
     },
     log_elapsed,
-    namespaces::{RELATIONSHIPS_NS, RELATIONSHIP_PKG_NS, SPREADSHEET_NS},
+    namespaces::{RELATIONSHIP_OFFICE_DOC_NS, SPREADSHEET_NS},
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
         models::{
@@ -27,7 +27,9 @@ use crate::{
     },
 };
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{NodeId, XmlAttribute, XmlDocument, XmlElementContentType};
+use draviavemal_xml_rs::{
+    NamespaceDeclaration, NodeId, XmlAttribute, XmlDocument, XmlElementContentType,
+};
 use log::debug;
 use std::{
     cell::RefCell,
@@ -253,17 +255,20 @@ impl XmlDocumentPartInitializing for WorkSheet {
             .context("Type Collection Missing key value")?;
         let mut template_core_properties = XmlDocument::new();
         let root_id = template_core_properties
-            .create_root_element_mut(
+            .create_root_element_ns_mut(
                 "worksheet",
-                Some(vec![
-                    XmlAttribute::new("xmlns".to_string(), SPREADSHEET_NS.uri.to_string()),
-                    XmlAttribute::new(
-                        format!("xmlns:{}", RELATIONSHIP_PKG_NS.default_alias),
-                        RELATIONSHIP_PKG_NS.uri.to_string(),
-                    ),
-                ]),
+                &NamespaceDeclaration {
+                    default_alias: SPREADSHEET_NS.default_alias,
+                    uri: SPREADSHEET_NS.uri,
+                    alias_override: Some(""),
+                },
+                None,
             )
             .context("Failed to create worksheet root element")?;
+        template_core_properties
+            .get_element_mut(root_id)
+            .context("draviavemal-openxml_office::Failed to fetch worksheet root element")?
+            .add_namespaces_mut(&[RELATIONSHIP_OFFICE_DOC_NS]);
         template_core_properties
             .append_child_element_mut(root_id, "sheetData", None)
             .context("Failed to add Sheet Data to the worksheet")?;
@@ -878,21 +883,23 @@ impl WorkSheet {
                     attributes.insert("display".to_string(), display_value);
                 }
                 // Insert Relationship link
+                let mut relationship_id = None;
                 if hyperlink.id.is_some() {
                     let content = COMMON_TYPE_COLLECTION
                         .get("hyperlink")
                         .context("Failed to read Common type collection")?;
-                    let r_id = relationship_part
-                        .borrow_mut()
-                        .set_new_relationship_mut(&content, hyperlink.link)
-                        .context(
-                            "draviavemal-openxml_office::Failed to Create Hyperlink Relationship",
-                        )?;
-                    attributes.insert("r:id".to_string(), r_id);
+                    relationship_id = Some(
+                        relationship_part
+                            .borrow_mut()
+                            .set_new_relationship_mut(&content, hyperlink.link)
+                            .context(
+                                "draviavemal-openxml_office::Failed to Create Hyperlink Relationship",
+                            )?,
+                    );
                 } else {
                     attributes.insert("location".to_string(), hyperlink.link);
                 }
-                xml_doc_mut
+                let hyperlink_id = xml_doc_mut
                     .append_child_element_mut(
                         hyperlinks_id,
                         "hyperlink",
@@ -904,6 +911,15 @@ impl WorkSheet {
                         ),
                     )
                     .context("draviavemal-openxml_office::Failed tp Add element")?;
+                if let Some(r_id) = relationship_id {
+                    xml_doc_mut
+                        .get_element_mut(hyperlink_id)
+                        .context("draviavemal-openxml_office::Failed to fetch hyperlink element")?
+                        .add_attribute_ns_mut("id", &RELATIONSHIP_OFFICE_DOC_NS, &r_id)
+                        .context(
+                            "draviavemal-openxml_office::Failed to set hyperlink relationship id",
+                        )?;
+                }
             }
         }
         Ok(())
@@ -1610,7 +1626,7 @@ impl WorkSheet {
                     .map(|attribute| attribute.get_value())
                     .context("draviavemal-openxml_office::Failed to get hyperlink ref")?;
                 let hyperlink_id = hyperlink_element
-                    .get_attribute_by_uri(RELATIONSHIPS_NS.uri, "id")
+                    .get_attribute_by_uri(RELATIONSHIP_OFFICE_DOC_NS.uri, "id")
                     .map(|attribute| attribute.get_value().to_string());
                 let range_reference = if hyperlink_ref.contains(':') {
                     let range: Vec<&str> = hyperlink_ref.split(':').collect();

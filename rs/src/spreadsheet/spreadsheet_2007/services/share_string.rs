@@ -4,9 +4,10 @@ use crate::global_2007::traits::{
     XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
 };
 use crate::log_elapsed;
+use crate::namespaces::SPREADSHEET_NS;
 use crate::{files::OfficeDocument, global_2007::traits::XmlDocumentPart};
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{XmlAttribute, XmlDocument, XmlElementContentType};
+use draviavemal_xml_rs::{NamespaceDeclaration, XmlDocument, XmlElementContentType};
 use std::{cell::RefCell, collections::HashSet, rc::Weak};
 
 #[derive(Debug)]
@@ -111,18 +112,17 @@ impl XmlDocumentPartInitializing for ShareStringPart {
         let content = EXCEL_TYPE_COLLECTION
             .get("share_string")
             .context("Failed to read Excel type collection")?;
-        let mut attributes: Vec<XmlAttribute> = Vec::new();
-        attributes.push(XmlAttribute::new(
-            "xmlns".to_string(),
-            EXCEL_TYPE_COLLECTION
-                .get("share_string")
-                .unwrap()
-                .schemas_namespace
-                .to_string(),
-        ));
         let mut xml_document = XmlDocument::new();
         xml_document
-            .create_root_element_mut("sst", Some(attributes))
+            .create_root_element_ns_mut(
+                "sst",
+                &NamespaceDeclaration {
+                    default_alias: SPREADSHEET_NS.default_alias,
+                    uri: SPREADSHEET_NS.uri,
+                    alias_override: Some(""),
+                },
+                None,
+            )
             .context("draviavemal-openxml_office::Create Root Element Failed")?;
         Ok((
             xml_document,

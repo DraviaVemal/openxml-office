@@ -55,7 +55,7 @@ pub(crate) static COMMON_TYPE_COLLECTION: Map<&'static str, &'static Content> = 
         extension_type:"application/xml",
         default_path:"docProps",
         default_name:"core",
-        is_unique:&false
+        is_unique:&true
     },
     "hyperlink"=>&Content{
         schemas_namespace:"http://schemas.openxmlformats.org/officeDocument/2006",

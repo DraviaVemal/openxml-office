@@ -4,10 +4,11 @@ use crate::{
     global_2007::traits::{
         XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
     },
+    namespaces::RELATIONSHIP_PKG_NS,
     utils,
 };
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{XmlAttribute, XmlDocument};
+use draviavemal_xml_rs::{NamespaceDeclaration, XmlAttribute, XmlDocument};
 use std::{cell::RefCell, path::Path, rc::Weak};
 
 #[derive(Debug)]
@@ -64,14 +65,17 @@ impl XmlDocumentPartInitializing for RelationsPart {
         let relationship_content = COMMON_TYPE_COLLECTION
             .get("rels")
             .context("Failed to read Common type collection")?;
-        let mut attributes = Vec::new();
-        attributes.push(XmlAttribute::new(
-            "xmlns".to_string(),
-            relationship_content.schemas_namespace.to_string(),
-        ));
         let mut xml_document = XmlDocument::new();
         xml_document
-            .create_root_element_mut("Relationships", Some(attributes))
+            .create_root_element_ns_mut(
+                "Relationships",
+                &NamespaceDeclaration {
+                    default_alias: RELATIONSHIP_PKG_NS.default_alias,
+                    uri: RELATIONSHIP_PKG_NS.uri,
+                    alias_override: Some(""),
+                },
+                None,
+            )
             .context("draviavemal-openxml_office::Create XML Root Element Failed")?;
         Ok((
             xml_document,

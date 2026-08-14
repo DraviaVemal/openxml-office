@@ -8,6 +8,7 @@ use crate::{
             XmlDocumentPartInitializing,
         },
     },
+    namespaces::DCTERMS_NS,
 };
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use chrono::Utc;
@@ -41,7 +42,7 @@ impl XmlDocumentPartClose for CorePropertiesPart {
                 .context("draviavemal-openxml_office::Failed to Pull Office document")?;
             let root_id = xml_document.get_root_id();
             if let Ok(Some(modified_id)) =
-                xml_document.find_first_child_ns(root_id, "dcterms:modified")
+                xml_document.find_first_child_ns(root_id, "modified", &DCTERMS_NS)
             {
                 xml_document
                     .clear_element_content_mut(modified_id)
@@ -55,7 +56,7 @@ impl XmlDocumentPartClose for CorePropertiesPart {
                 }
             }
             if let Ok(Some(created_id)) =
-                xml_document.find_first_child_ns(root_id, "dcterms:created")
+                xml_document.find_first_child_ns(root_id, "created", &DCTERMS_NS)
             {
                 let has_value = xml_document
                     .get_element(created_id)
