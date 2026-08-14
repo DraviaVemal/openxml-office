@@ -1,6 +1,8 @@
-use crate::element_dictionary::COMMON_TYPE_COLLECTION;
+use crate::namespaces::CONTENT_TYPES_NS;
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{XmlAttribute, XmlDeserializer, XmlDocument, XmlSerializer};
+use draviavemal_xml_rs::{
+    NamespaceDeclaration, XmlAttribute, XmlDeserializer, XmlDocument, XmlSerializer,
+};
 
 #[derive(Debug)]
 pub(crate) struct ContentTypesPart {
@@ -84,17 +86,16 @@ impl ContentTypesPart {
         overrides: Vec<(String, String)>,
     ) -> AnyResult<Vec<u8>, AnyError> {
         let mut document = XmlDocument::new();
-        let mut attributes = Vec::new();
-        attributes.push(XmlAttribute::new(
-            "xmlns".to_string(),
-            COMMON_TYPE_COLLECTION
-                .get("content_type")
-                .context("Failed to load common type collection")?
-                .schemas_namespace
-                .to_string(),
-        ));
         let root_element_id = document
-            .create_root_element_mut("Types", Some(attributes))
+            .create_root_element_ns_mut(
+                "Types",
+                &NamespaceDeclaration {
+                    default_alias: CONTENT_TYPES_NS.default_alias,
+                    uri: CONTENT_TYPES_NS.uri,
+                    alias_override: Some(""),
+                },
+                None,
+            )
             .context("draviavemal-openxml_office::Failed to Create Root Element")?;
         // Load Default Elements
         {

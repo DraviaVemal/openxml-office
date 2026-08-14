@@ -13,7 +13,7 @@ use crate::{
         },
     },
     log_elapsed,
-    namespaces::{RELATIONSHIPS_NS, RELATIONSHIP_OFFICE_DOC_NS, SPREADSHEET_NS},
+    namespaces::{RELATIONSHIP_OFFICE_DOC_NS, SPREADSHEET_NS},
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::{
         models::{CellStyleSetting, StyleId},
@@ -22,7 +22,9 @@ use crate::{
     },
 };
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
-use draviavemal_xml_rs::{NodeId, XmlAttribute, XmlDocument, XmlElementContentType};
+use draviavemal_xml_rs::{
+    NamespaceDeclaration, NodeId, XmlAttribute, XmlDocument, XmlElementContentType,
+};
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -271,17 +273,20 @@ impl XmlDocumentPartInitializing for WorkbookPart {
             .context("Failed to read excel type collection")?;
         let mut template_core_properties = XmlDocument::new();
         let root_id = template_core_properties
-            .create_root_element_mut(
+            .create_root_element_ns_mut(
                 "workbook",
-                Some(vec![
-                    XmlAttribute::new("xmlns".to_string(), SPREADSHEET_NS.uri.to_string()),
-                    XmlAttribute::new(
-                        format!("xmlns:{}", RELATIONSHIP_OFFICE_DOC_NS.default_alias),
-                        RELATIONSHIP_OFFICE_DOC_NS.uri.to_string(),
-                    ),
-                ]),
+                &NamespaceDeclaration {
+                    uri: SPREADSHEET_NS.uri,
+                    default_alias: SPREADSHEET_NS.default_alias,
+                    alias_override: Some(""),
+                },
+                None,
             )
             .context("draviavemal-openxml_office::Initializing Workbook Failed")?;
+        template_core_properties
+            .get_element_mut(root_id)
+            .context("draviavemal-openxml_office::Failed to fetch workbook root element")?
+            .add_namespaces_mut(&[RELATIONSHIP_OFFICE_DOC_NS]);
         template_core_properties
             .append_child_element_mut(
                 root_id,
@@ -515,7 +520,7 @@ impl WorkbookPart {
                                 .get_attribute("name")
                                 .context("draviavemal-openxml_office::Error When Trying to read Sheet Details.")?;
                             let r_id = sheet
-                                .get_attribute_by_uri(RELATIONSHIPS_NS.uri, "id")
+                                .get_attribute_by_uri(RELATIONSHIP_OFFICE_DOC_NS.uri, "id")
                                 .context("draviavemal-openxml_office::Error When Trying to read Sheet Details.")?;
                             let state = sheet.get_attribute("state");
                             sheet_collection.push((

@@ -19,7 +19,7 @@ use crate::{
         traits::{Enum, XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing},
     },
     log_elapsed,
-    namespaces::{CHART_NS, DRAWINGML_NS, RELATIONSHIPS_NS, SPREADSHEET_DRAWING_NS},
+    namespaces::{CHART_NS, DRAWINGML_NS, RELATIONSHIP_OFFICE_DOC_NS, SPREADSHEET_DRAWING_NS},
     spreadsheet_2007::{
         models::{
             AbsoluteAnchor, AnchorContent, BlipFillMode, ConnectorShape, ContentPart,
@@ -716,7 +716,7 @@ impl DrawingPart {
                             .get_element(*element_id)
                             .context("draviavemal-openxml_office::Failed to get blip element")?;
                         if let Some(relationship_id) =
-                            blip_element.get_attribute_by_ns(&RELATIONSHIPS_NS, "embed")
+                            blip_element.get_attribute_ns("embed", &RELATIONSHIP_OFFICE_DOC_NS)
                         {
                             picture.relationship_id = relationship_id.get_value().to_string();
                         }
@@ -1092,7 +1092,7 @@ impl DrawingPart {
                             .get_element(*element_id)
                             .context("draviavemal-openxml_office::Failed to get chart element")?;
                         if let Some(chart_relationship_id) =
-                            chart_element.get_attribute_by_ns(&RELATIONSHIPS_NS, "id")
+                            chart_element.get_attribute_ns("id", &RELATIONSHIP_OFFICE_DOC_NS)
                         {
                             graphic_frame.relationship_id =
                                 chart_relationship_id.get_value().to_string();
@@ -1477,7 +1477,11 @@ impl DrawingPart {
         xml_doc_mut
             .get_element_mut(blip_id)
             .context("draviavemal-openxml_office::Failed to get blip element")?
-            .add_attribute_ns_mut("embed", &RELATIONSHIPS_NS, &picture.relationship_id)
+            .add_attribute_ns_mut(
+                "embed",
+                &RELATIONSHIP_OFFICE_DOC_NS,
+                &picture.relationship_id,
+            )
             .context("draviavemal-openxml_office::Failed to add blip relationship")?;
         if let Some(source_rectangle) = picture.source_rectangle {
             DrawingPart::serialize_relative_rect(
@@ -1770,7 +1774,11 @@ impl DrawingPart {
         xml_doc_mut
             .get_element_mut(chart_id)
             .context("draviavemal-openxml_office::Failed to get chart element")?
-            .add_attribute_ns_mut("id", &RELATIONSHIPS_NS, &graphic_frame.relationship_id)
+            .add_attribute_ns_mut(
+                "id",
+                &RELATIONSHIP_OFFICE_DOC_NS,
+                &graphic_frame.relationship_id,
+            )
             .context("draviavemal-openxml_office::Failed to add chart relationship")?;
         Ok(())
     }
