@@ -18,7 +18,7 @@ class Excel:
         out_error = ffi.new("const char**")  # Pointer to error message (const char**)
 
         # Call the function
-        result = draviavemal_openxml_office_ffi.excel_create(file_name, buffer, buffer_size, out_excel, out_error)
+        result = draviavemal_openxml_office_ffi.Excel_create(file_name, buffer, buffer_size, out_excel, out_error)
         pass
     
     def SaveAs(self):

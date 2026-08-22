@@ -1,7 +1,7 @@
 use crate::{
     openxml_office_fbs::document::{
-        word_create, word_create_return, word_create_returnArgs, word_save_as,
-        word_save_as_return, word_save_as_returnArgs,
+        Word_create, Word_create_return, Word_create_returnArgs, Word_save_as, Word_save_as_return,
+        Word_save_as_returnArgs,
     },
     root_from_raw, set_error, write_buffer, StatusCode,
 };
@@ -13,7 +13,7 @@ use std::ffi::c_char;
 ///
 /// Returns a pointer to the newly created Word object.
 /// If an error occurs, returns a null pointer.
-pub extern "C" fn word_create(
+pub extern "C" fn Word_create(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -21,7 +21,7 @@ pub extern "C" fn word_create(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_word_create =
-        match unsafe { root_from_raw::<word_create>(in_buffer, in_buffer_size, out_error) } {
+        match unsafe { root_from_raw::<Word_create>(in_buffer, in_buffer_size, out_error) } {
             Ok(root) => root,
             Err(status) => return status,
         };
@@ -34,9 +34,9 @@ pub extern "C" fn word_create(
         Ok(word) => {
             let word_ptr = Box::into_raw(Box::new(word)) as u64;
             let mut builder = flatbuffers::FlatBufferBuilder::new();
-            let word_create_return = word_create_return::create(
+            let word_create_return = Word_create_return::create(
                 &mut builder,
-                &word_create_returnArgs { word_ptr: word_ptr },
+                &Word_create_returnArgs { word_ptr: word_ptr },
             );
             builder.finish(word_create_return, None);
             unsafe { write_buffer(builder.finished_data(), out_buffer, out_buffer_size) };
@@ -50,7 +50,7 @@ pub extern "C" fn word_create(
 /// Saves the Word object to the target file path.
 ///
 /// Consumes the Word object referenced by the incoming pointer.
-pub extern "C" fn word_save_as(
+pub extern "C" fn Word_save_as(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -58,7 +58,7 @@ pub extern "C" fn word_save_as(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_save_as =
-        match unsafe { root_from_raw::<word_save_as>(in_buffer, in_buffer_size, out_error) } {
+        match unsafe { root_from_raw::<Word_save_as>(in_buffer, in_buffer_size, out_error) } {
             Ok(root) => root,
             Err(status) => return status,
         };
@@ -74,9 +74,9 @@ pub extern "C" fn word_save_as(
         Ok(full_path) => {
             let mut builder = flatbuffers::FlatBufferBuilder::new();
             let full_path_offset = builder.create_string(&full_path);
-            let word_save_as_return = word_save_as_return::create(
+            let word_save_as_return = Word_save_as_return::create(
                 &mut builder,
-                &word_save_as_returnArgs {
+                &Word_save_as_returnArgs {
                     full_path: Some(full_path_offset),
                 },
             );

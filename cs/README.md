@@ -21,7 +21,7 @@ My mission is to provide a seamless and efficient .NET interface for OpenXML doc
 ## Working Samples
 
 To see sample code and working tests, please refer to the test files:
-[GitHub: Alpha Test Files](https://github.com/DraviaVemal/openxml-office/tree/alpha/cs/test)
+[GitHub: Alpha Test Files](https://github.com/DraviaVemal/openxml-office/tree/release/tests/cs)
 
 These tests demonstrate various use cases and can serve as a starting point for integrating the wrapper into your .NET projects.
 
@@ -29,14 +29,13 @@ These tests demonstrate various use cases and can serve as a starting point for 
 
 This C# wrapper is located in the `cs` directory and serves as a .NET interface for the OpenXML Office project. It supports:
 
-- **.NET 6.0** (minimum)
-- **.NET Standard 2.1** (minimum)
+- **.NET 10.0** (minimum)
 
 ### Platform Support
 
 - **Windows:** Supported
 - **Linux:** Supported
-- **Mac:** Support in progress
+- **Mac:** Supported
 
 For more information on the overarching project, visit the main repository:
 [GitHub: OpenXML Office Main Repository](https://github.com/DraviaVemal/openxml-office)
@@ -47,7 +46,7 @@ This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/
 
 ## Contributing
 
-Contributions are welcome! Whether it’s reporting bugs, suggesting improvements, or submitting pull requests, your help is greatly appreciated. For more details, see our [CONTRIBUTING](https://github.com/DraviaVemal/openxml-office/blob/main/CONTRIBUTING.md) guidelines.
+Contributions are welcome! Whether it’s reporting bugs, suggesting improvements, or submitting pull requests, your help is greatly appreciated. For more details, see our [CONTRIBUTING](https://github.com/DraviaVemal/openxml-office/blob/release/CONTRIBUTING.md) guidelines.
 
 ---
 

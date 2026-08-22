@@ -1,74 +1,74 @@
 namespace openxml_office_fbs.spreadsheet;
 
-// excel_create - Start
+// Excel_create - Start
 
-table excel_create {
+table Excel_create {
     file_name: string;
-    excel_settings: excel_settings(required);
+    excel_settings: Excel_settings(required);
 }
 
-table excel_settings {
+table Excel_settings {
     is_editable: bool;
 }
 
-table excel_create_return {
+table Excel_create_return {
     excel_ptr: uint64;
 }
 
-// excel_create - End
+// Excel_create - End
 
-// excel_add_sheet - Start
+// Excel_add_sheet - Start
 
-table excel_add_sheet {
+table Excel_add_sheet {
     excel_ptr: uint64;
     sheet_name: string;
 }
 
-table excel_add_sheet_return {
+table Excel_add_sheet_return {
     worksheet_ptr: uint64;
 }
 
-// excel_add_sheet - End
+// Excel_add_sheet - End
 
-// excel_rename_sheet - Start
+// Excel_rename_sheet - Start
 
-table excel_rename_sheet{
+table Excel_rename_sheet{
     excel_ptr: uint64;
     old_sheet_name: string;
     new_sheet_name: string;
 }
 
-// excel_rename_sheet - End
+// Excel_rename_sheet - End
 
 
 // excel_get_sheet - Start
 
-table excel_get_sheet{
+table Excel_get_sheet{
     excel_ptr: uint64;
     sheet_name: string;
 }
 
-table excel_get_sheet_return {
+table Excel_get_sheet_return {
     worksheet_ptr: uint64;
 }
 
 // excel_get_sheet - End
 
-// excel_list_sheet - Start
+// Excel_list_sheet - Start
 
-table excel_list_sheet{
+table Excel_list_sheet{
     excel_ptr: uint64;
 }
 
-table excel_list_sheet_return {
+table Excel_list_sheet_return {
     sheet_names: [string];
 }
 
-// excel_list_sheet - End
+// Excel_list_sheet - End
 
-// excel_get_style_id - Start
+// Excel_get_style_id - Start
 
-enum number_format_values: int {
+enum Number_format_values: int {
     general = 0,
     integer = 1,
     decimal_two_places = 2,
@@ -108,7 +108,7 @@ enum number_format_values: int {
     custom = 36,
 }
 
-enum horizontal_alignment_values: int {
+enum Horizontal_alignment_values: int {
     none = 0,
     left = 1,
     center = 2,
@@ -116,14 +116,14 @@ enum horizontal_alignment_values: int {
     justify = 4,
 }
 
-enum vertical_alignment_values: int {
+enum Vertical_alignment_values: int {
     none=0,
     top = 1,
     middle = 2,
     bottom = 3,
 }
 
-enum border_style_values: int {
+enum Border_style_values: int {
     none = 0,
     thin = 1,
     thick = 2,
@@ -139,36 +139,36 @@ enum border_style_values: int {
     slant_dash_dot = 12
 }
 
-enum color_setting_type_values: int {
+enum Color_setting_type_values: int {
     indexed = 0,
     theme = 1,
     rgb = 2,
 }
 
-table excel_color_setting{
-    color_setting_type:color_setting_type_values;
+table Excel_color_setting{
+    color_setting_type:Color_setting_type_values;
     value: string;
 }
 
-table excel_border_settings{
-    border_color: excel_color_setting;
-    style: border_style_values;
+table Excel_border_settings{
+    border_color: Excel_color_setting;
+    style: Border_style_values;
 }
 
-table excel_style_setting {
+table Excel_style_setting {
     // num format
-    number_format: number_format_values;
+    number_format: Number_format_values;
     custom_number_format: string;
     // border
-    border_left: excel_border_settings(required);
-    border_top: excel_border_settings(required);
-    border_right: excel_border_settings(required);
-    border_bottom: excel_border_settings(required);
-    border_diagonal: excel_border_settings(required);
+    border_left: Excel_border_settings(required);
+    border_top: Excel_border_settings(required);
+    border_right: Excel_border_settings(required);
+    border_bottom: Excel_border_settings(required);
+    border_diagonal: Excel_border_settings(required);
     // font
     font_family: string;
     font_size: uint8;
-    text_color: excel_color_setting(required);
+    text_color: Excel_color_setting(required);
     is_bold: bool;
     is_italic: bool;
     is_underline: bool;
@@ -178,93 +178,93 @@ table excel_style_setting {
     background_color: string;
     foreground_color: string;
     // xfs
-    horizontal_alignment: horizontal_alignment_values;
-    vertical_alignment: vertical_alignment_values;
+    horizontal_alignment: Horizontal_alignment_values;
+    vertical_alignment: Vertical_alignment_values;
 }
 
-table excel_get_style_id{
+table Excel_get_style_id{
     excel_ptr: uint64;
-    style_setting: excel_style_setting(required);
+    style_setting: Excel_style_setting(required);
 }
 
-table excel_get_style_id_return {
+table Excel_get_style_id_return {
     style_id_ptr: uint64;
 }
 
-// excel_get_style_id - End
+// Excel_get_style_id - End
 
-// excel_save_as - Start
+// Excel_save_as - Start
 
-table excel_save_as {
+table Excel_save_as {
     excel_ptr: uint64;
     file_name: string;
 }
 
-table excel_save_as_return {
+table Excel_save_as_return {
     full_path: string;
 }
 
-// excel_save_as - End
+// Excel_save_as - End
 
-// excel_set_active_sheet - Start
+// Excel_set_active_sheet - Start
 
-table excel_set_active_sheet {
+table Excel_set_active_sheet {
     excel_ptr: uint64;
     sheet_name: string;
 }
 
-// excel_set_active_sheet - End
+// Excel_set_active_sheet - End
 
-// excel_set_visibility - Start
+// Excel_set_visibility - Start
 
-table excel_set_visibility {
+table Excel_set_visibility {
     excel_ptr: uint64;
     is_visible: bool;
 }
 
-// excel_set_visibility - End
+// Excel_set_visibility - End
 
-// excel_minimize_workbook - Start
+// Excel_minimize_workbook - Start
 
-table excel_minimize_workbook {
+table Excel_minimize_workbook {
     excel_ptr: uint64;
     is_minimized: bool;
 }
 
-// excel_minimize_workbook - End
+// Excel_minimize_workbook - End
 
-// excel_hide_sheet_tabs - Start
+// Excel_hide_sheet_tabs - Start
 
-table excel_hide_sheet_tabs {
+table Excel_hide_sheet_tabs {
     excel_ptr: uint64;
     hide_tab: bool;
 }
 
-// excel_hide_sheet_tabs - End
+// Excel_hide_sheet_tabs - End
 
-// excel_hide_vertical_scroll - Start
+// Excel_hide_vertical_scroll - Start
 
-table excel_hide_vertical_scroll {
+table Excel_hide_vertical_scroll {
     excel_ptr: uint64;
     hide_vertical_scroll: bool;
 }
 
-// excel_hide_vertical_scroll - End
+// Excel_hide_vertical_scroll - End
 
-// excel_hide_horizontal_scroll - Start
+// Excel_hide_horizontal_scroll - Start
 
-table excel_hide_horizontal_scroll {
+table Excel_hide_horizontal_scroll {
     excel_ptr: uint64;
     hide_horizontal_scroll: bool;
 }
 
-// excel_hide_horizontal_scroll - End
+// Excel_hide_horizontal_scroll - End
 
-// excel_hide_sheet - Start
+// Excel_hide_sheet - Start
 
-table excel_hide_sheet {
+table Excel_hide_sheet {
     excel_ptr: uint64;
     sheet_name: string;
 }
 
-// excel_hide_sheet - End
+// Excel_hide_sheet - End

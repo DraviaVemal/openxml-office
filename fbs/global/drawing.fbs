@@ -1,6 +1,6 @@
 namespace openxml_office_fbs.global;
 
-enum global_image_type: byte {
+enum Global_image_type: byte {
     jpeg = 0,
     png = 1,
     gif = 2,
@@ -8,6 +8,6 @@ enum global_image_type: byte {
     tiff = 4,
 }
 
-table global_picture_settings{
-    image_type: global_image_type;
+table Global_picture_settings{
+    image_type: Global_image_type;
 }

@@ -32,7 +32,7 @@ func (worksheet *Worksheet) Flush() error {
 	builder.Finish(offset)
 	buffer := builder.FinishedBytes()
 	var outError *C.char
-	code := C.worksheet_flush(
+	code := C.Worksheet_flush(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
 		C.uintptr_t(len(buffer)),
 		&outError,
@@ -58,7 +58,7 @@ func (worksheet *Worksheet) SetColumnRefProperties(cellRef string, props *Column
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.set_column_ref_properties((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Set_column_ref_properties((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -78,7 +78,7 @@ func (worksheet *Worksheet) SetColumnIndexProperties(columnIndex uint16, props *
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.set_column_index_properties((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Set_column_index_properties((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -112,7 +112,7 @@ func (worksheet *Worksheet) SetRowIndexProperties(rowIndex uint32, props RowProp
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.set_row_index_properties((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Set_row_index_properties((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -139,7 +139,7 @@ func (worksheet *Worksheet) SetCellRefValues(cellRef string, cells []CellPropert
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.set_cell_ref_value((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Set_cell_ref_value((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -166,7 +166,7 @@ func (worksheet *Worksheet) SetCellIndexValues(rowIndex uint32, columnIndex uint
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.set_cell_index_value((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Set_cell_index_value((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -185,7 +185,7 @@ func (worksheet *Worksheet) SetMergeCell(refRange ReferenceRange) error {
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.worksheet_set_merge_cell((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Worksheet_set_merge_cell((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -204,7 +204,7 @@ func (worksheet *Worksheet) RemoveMergeCell(refRange ReferenceRange) error {
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.worksheet_remove_merge_cell((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Worksheet_remove_merge_cell((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -232,7 +232,7 @@ func (worksheet *Worksheet) SetHyperlink(link string, refRange ReferenceRange, d
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.worksheet_set_hyperlink((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Worksheet_set_hyperlink((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -251,7 +251,7 @@ func (worksheet *Worksheet) RemoveHyperlink(refRange ReferenceRange) error {
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.worksheet_remove_hyperlink((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Worksheet_remove_hyperlink((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -268,7 +268,7 @@ func (worksheet *Worksheet) DeleteSheet() error {
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.worksheet_delete_sheet((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Worksheet_delete_sheet((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -290,7 +290,7 @@ func (worksheet *Worksheet) GetRangeCellProperties(refRange ReferenceRange) ([]C
 	var outBuffer *C.uint8_t
 	var outBufferSize C.uintptr_t
 	var outError *C.char
-	code := C.worksheet_get_range_cell_properties(
+	code := C.Worksheet_get_range_cell_properties(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
 		C.uintptr_t(len(buffer)),
 		&outBuffer,
@@ -338,7 +338,7 @@ func (worksheet *Worksheet) ListMergeCell() ([]ReferenceRange, error) {
 	var outBuffer *C.uint8_t
 	var outBufferSize C.uintptr_t
 	var outError *C.char
-	code := C.worksheet_list_merge_cell(
+	code := C.Worksheet_list_merge_cell(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
 		C.uintptr_t(len(buffer)),
 		&outBuffer,
@@ -377,7 +377,7 @@ func (worksheet *Worksheet) ListHyperlinks() ([]HyperlinkInfo, error) {
 	var outBuffer *C.uint8_t
 	var outBufferSize C.uintptr_t
 	var outError *C.char
-	code := C.worksheet_list_hyperlinks(
+	code := C.Worksheet_list_hyperlinks(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
 		C.uintptr_t(len(buffer)),
 		&outBuffer,
@@ -453,7 +453,7 @@ func (worksheet *Worksheet) AddPicture(imagePath string, setting ExcelPictureSet
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.worksheet_add_picture((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Worksheet_add_picture((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil

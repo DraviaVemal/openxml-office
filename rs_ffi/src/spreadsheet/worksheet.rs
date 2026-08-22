@@ -2,22 +2,22 @@ use std::{ffi::c_char, mem::ManuallyDrop};
 
 use crate::{
     openxml_office_fbs::{
-        global::global_image_type,
+        global::Global_image_type,
         spreadsheet::{
-            worksheet_add_picture, worksheet_cell_data_type, worksheet_cell_package,
-            worksheet_cell_packageArgs, worksheet_cell_property as fbs_cell_property,
-            worksheet_cell_propertyArgs, worksheet_delete_sheet, worksheet_excel_hyperlink_type,
-            worksheet_flush, worksheet_get_range_cell_properties,
-            worksheet_get_range_cell_properties_return,
-            worksheet_get_range_cell_properties_returnArgs, worksheet_hyperlink as fbs_hyperlink,
-            worksheet_hyperlinkArgs, worksheet_list_hyperlinks, worksheet_list_hyperlinks_return,
-            worksheet_list_hyperlinks_returnArgs, worksheet_list_merge_cell,
-            worksheet_list_merge_cell_return, worksheet_list_merge_cell_returnArgs,
-            worksheet_reference_range as fbs_reference_range, worksheet_reference_rangeArgs,
-            worksheet_remove_hyperlink, worksheet_remove_merge_cell,
-            worksheet_set_cell_index_value, worksheet_set_cell_ref_value,
-            worksheet_set_column_index_properties, worksheet_set_column_ref_properties,
-            worksheet_set_hyperlink, worksheet_set_merge_cell, worksheet_set_row_index_properties,
+            Worksheet_add_picture, Worksheet_cell_data_type, Worksheet_cell_package,
+            Worksheet_cell_packageArgs, Worksheet_cell_property as fbs_cell_property,
+            Worksheet_cell_propertyArgs, Worksheet_delete_sheet, Worksheet_excel_hyperlink_type,
+            Worksheet_flush, Worksheet_get_range_cell_properties,
+            Worksheet_get_range_cell_properties_return,
+            Worksheet_get_range_cell_properties_returnArgs, Worksheet_hyperlink as fbs_hyperlink,
+            Worksheet_hyperlinkArgs, Worksheet_list_hyperlinks, Worksheet_list_hyperlinks_return,
+            Worksheet_list_hyperlinks_returnArgs, Worksheet_list_merge_cell,
+            Worksheet_list_merge_cell_return, Worksheet_list_merge_cell_returnArgs,
+            Worksheet_reference_range as fbs_reference_range, Worksheet_reference_rangeArgs,
+            Worksheet_remove_hyperlink, Worksheet_remove_merge_cell,
+            Worksheet_set_cell_index_value, Worksheet_set_cell_ref_value,
+            Worksheet_set_column_index_properties, Worksheet_set_column_ref_properties,
+            Worksheet_set_hyperlink, Worksheet_set_merge_cell, Worksheet_set_row_index_properties,
         },
     },
     root_from_raw, set_error, write_buffer, StatusCode,
@@ -38,13 +38,13 @@ use draviavemal_openxml_office::{
 };
 
 #[no_mangle]
-pub extern "C" fn set_column_ref_properties(
+pub extern "C" fn Set_column_ref_properties(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_set_column_ref_properties = match unsafe {
-        root_from_raw::<worksheet_set_column_ref_properties>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_set_column_ref_properties>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -85,13 +85,13 @@ pub extern "C" fn set_column_ref_properties(
 }
 
 #[no_mangle]
-pub extern "C" fn set_column_index_properties(
+pub extern "C" fn Set_column_index_properties(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_set_column_index_properties = match unsafe {
-        root_from_raw::<worksheet_set_column_index_properties>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_set_column_index_properties>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -122,13 +122,13 @@ pub extern "C" fn set_column_index_properties(
 }
 
 #[no_mangle]
-pub extern "C" fn set_row_index_properties(
+pub extern "C" fn Set_row_index_properties(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_set_row_index_properties = match unsafe {
-        root_from_raw::<worksheet_set_row_index_properties>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_set_row_index_properties>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -155,13 +155,13 @@ pub extern "C" fn set_row_index_properties(
 }
 
 #[no_mangle]
-pub extern "C" fn set_cell_ref_value(
+pub extern "C" fn Set_cell_ref_value(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_set_cell_ref_value = match unsafe {
-        root_from_raw::<worksheet_set_cell_ref_value>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_set_cell_ref_value>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -187,16 +187,16 @@ pub extern "C" fn set_cell_ref_value(
         cell_property.value = column_cell.value().map(|item| item.to_string());
         cell_property.formula = column_cell.formula().map(|item| item.to_string());
         match column_cell.data_type() {
-            worksheet_cell_data_type::string => cell_property.data_type = CellDataType::String,
-            worksheet_cell_data_type::number => cell_property.data_type = CellDataType::Number,
-            worksheet_cell_data_type::boolean => cell_property.data_type = CellDataType::Boolean,
-            worksheet_cell_data_type::shared_string => {
+            Worksheet_cell_data_type::string => cell_property.data_type = CellDataType::String,
+            Worksheet_cell_data_type::number => cell_property.data_type = CellDataType::Number,
+            Worksheet_cell_data_type::boolean => cell_property.data_type = CellDataType::Boolean,
+            Worksheet_cell_data_type::shared_string => {
                 cell_property.data_type = CellDataType::ShareString
             }
-            worksheet_cell_data_type::inline_string => {
+            Worksheet_cell_data_type::inline_string => {
                 cell_property.data_type = CellDataType::InlineString
             }
-            worksheet_cell_data_type::error => cell_property.data_type = CellDataType::Error,
+            Worksheet_cell_data_type::error => cell_property.data_type = CellDataType::Error,
             _ => cell_property.data_type = CellDataType::Auto,
         }
         cell_property.style_id = if let Some(style_id_ptr) = column_cell.style_id_ptr() {
@@ -218,13 +218,13 @@ pub extern "C" fn set_cell_ref_value(
 }
 
 #[no_mangle]
-pub extern "C" fn set_cell_index_value(
+pub extern "C" fn Set_cell_index_value(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_set_cell_index_value = match unsafe {
-        root_from_raw::<worksheet_set_cell_index_value>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_set_cell_index_value>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -238,16 +238,16 @@ pub extern "C" fn set_cell_index_value(
         cell_property.value = column_cell.value().map(|item| item.to_string());
         cell_property.formula = column_cell.formula().map(|item| item.to_string());
         match column_cell.data_type() {
-            worksheet_cell_data_type::string => cell_property.data_type = CellDataType::String,
-            worksheet_cell_data_type::number => cell_property.data_type = CellDataType::Number,
-            worksheet_cell_data_type::boolean => cell_property.data_type = CellDataType::Boolean,
-            worksheet_cell_data_type::shared_string => {
+            Worksheet_cell_data_type::string => cell_property.data_type = CellDataType::String,
+            Worksheet_cell_data_type::number => cell_property.data_type = CellDataType::Number,
+            Worksheet_cell_data_type::boolean => cell_property.data_type = CellDataType::Boolean,
+            Worksheet_cell_data_type::shared_string => {
                 cell_property.data_type = CellDataType::ShareString
             }
-            worksheet_cell_data_type::inline_string => {
+            Worksheet_cell_data_type::inline_string => {
                 cell_property.data_type = CellDataType::InlineString
             }
-            worksheet_cell_data_type::error => cell_property.data_type = CellDataType::Error,
+            Worksheet_cell_data_type::error => cell_property.data_type = CellDataType::Error,
             _ => cell_property.data_type = CellDataType::Auto,
         }
         cell_property.style_id = if let Some(style_id_ptr) = column_cell.style_id_ptr() {
@@ -273,13 +273,13 @@ pub extern "C" fn set_cell_index_value(
 }
 
 #[no_mangle]
-pub extern "C" fn worksheet_flush(
+pub extern "C" fn Worksheet_flush(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_set_cell_index_value =
-        match unsafe { root_from_raw::<worksheet_flush>(in_buffer, in_buffer_size, out_error) } {
+        match unsafe { root_from_raw::<Worksheet_flush>(in_buffer, in_buffer_size, out_error) } {
             Ok(root) => root,
             Err(status) => return status,
         };
@@ -302,13 +302,13 @@ fn fbs_to_reference_range(fbs: &fbs_reference_range) -> ReferenceRange {
 
 #[no_mangle]
 /// Merge a range of cells in the worksheet
-pub extern "C" fn worksheet_set_merge_cell(
+pub extern "C" fn Worksheet_set_merge_cell(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<worksheet_set_merge_cell>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_set_merge_cell>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -324,13 +324,13 @@ pub extern "C" fn worksheet_set_merge_cell(
 
 #[no_mangle]
 /// Remove a merged cell range from the worksheet
-pub extern "C" fn worksheet_remove_merge_cell(
+pub extern "C" fn Worksheet_remove_merge_cell(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<worksheet_remove_merge_cell>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_remove_merge_cell>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -346,13 +346,13 @@ pub extern "C" fn worksheet_remove_merge_cell(
 
 #[no_mangle]
 /// Add a hyperlink to a range of cells
-pub extern "C" fn worksheet_set_hyperlink(
+pub extern "C" fn Worksheet_set_hyperlink(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<worksheet_set_hyperlink>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_set_hyperlink>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -381,13 +381,13 @@ pub extern "C" fn worksheet_set_hyperlink(
 
 #[no_mangle]
 /// Remove a hyperlink from a cell range
-pub extern "C" fn worksheet_remove_hyperlink(
+pub extern "C" fn Worksheet_remove_hyperlink(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<worksheet_remove_hyperlink>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_remove_hyperlink>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -403,13 +403,13 @@ pub extern "C" fn worksheet_remove_hyperlink(
 
 #[no_mangle]
 /// Delete the worksheet and all its components
-pub extern "C" fn worksheet_delete_sheet(
+pub extern "C" fn Worksheet_delete_sheet(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<worksheet_delete_sheet>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_delete_sheet>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -424,7 +424,7 @@ pub extern "C" fn worksheet_delete_sheet(
 
 #[no_mangle]
 /// Get cell properties for a range of cells
-pub extern "C" fn worksheet_get_range_cell_properties(
+pub extern "C" fn Worksheet_get_range_cell_properties(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -432,7 +432,7 @@ pub extern "C" fn worksheet_get_range_cell_properties(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<worksheet_get_range_cell_properties>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_get_range_cell_properties>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -459,21 +459,21 @@ pub extern "C" fn worksheet_get_range_cell_properties(
                         .map(|f| builder.create_string(f));
                     let cell_prop = fbs_cell_property::create(
                         &mut builder,
-                        &worksheet_cell_propertyArgs {
+                        &Worksheet_cell_propertyArgs {
                             value: value_offset,
                             formula: formula_offset,
                             data_type: match pkg.cell_property.data_type {
-                                CellDataType::Number => worksheet_cell_data_type::number,
-                                CellDataType::Boolean => worksheet_cell_data_type::boolean,
-                                CellDataType::String => worksheet_cell_data_type::string,
+                                CellDataType::Number => Worksheet_cell_data_type::number,
+                                CellDataType::Boolean => Worksheet_cell_data_type::boolean,
+                                CellDataType::String => Worksheet_cell_data_type::string,
                                 CellDataType::ShareString => {
-                                    worksheet_cell_data_type::shared_string
+                                    Worksheet_cell_data_type::shared_string
                                 }
                                 CellDataType::InlineString => {
-                                    worksheet_cell_data_type::inline_string
+                                    Worksheet_cell_data_type::inline_string
                                 }
-                                CellDataType::Error => worksheet_cell_data_type::error,
-                                _ => worksheet_cell_data_type::auto,
+                                CellDataType::Error => Worksheet_cell_data_type::error,
+                                _ => Worksheet_cell_data_type::auto,
                             },
                             style_id_ptr: pkg
                                 .cell_property
@@ -482,9 +482,9 @@ pub extern "C" fn worksheet_get_range_cell_properties(
                                 .map(|s| Box::into_raw(Box::new(*s)) as u64),
                         },
                     );
-                    worksheet_cell_package::create(
+                    Worksheet_cell_package::create(
                         &mut builder,
-                        &worksheet_cell_packageArgs {
+                        &Worksheet_cell_packageArgs {
                             cell_ref: Some(cell_ref_offset),
                             row_index: pkg.row_index,
                             column_index: pkg.column_index,
@@ -494,9 +494,9 @@ pub extern "C" fn worksheet_get_range_cell_properties(
                 })
                 .collect();
             let packages_vector = builder.create_vector(&pkg_offsets);
-            let result = worksheet_get_range_cell_properties_return::create(
+            let result = Worksheet_get_range_cell_properties_return::create(
                 &mut builder,
-                &worksheet_get_range_cell_properties_returnArgs {
+                &Worksheet_get_range_cell_properties_returnArgs {
                     cell_packages: Some(packages_vector),
                 },
             );
@@ -510,7 +510,7 @@ pub extern "C" fn worksheet_get_range_cell_properties(
 
 #[no_mangle]
 /// List all merged cell ranges in the worksheet
-pub extern "C" fn worksheet_list_merge_cell(
+pub extern "C" fn Worksheet_list_merge_cell(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -518,7 +518,7 @@ pub extern "C" fn worksheet_list_merge_cell(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<worksheet_list_merge_cell>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_list_merge_cell>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -532,7 +532,7 @@ pub extern "C" fn worksheet_list_merge_cell(
         .map(|r| {
             fbs_reference_range::create(
                 &mut builder,
-                &worksheet_reference_rangeArgs {
+                &Worksheet_reference_rangeArgs {
                     column_start: r.column_start,
                     column_end: r.column_end,
                     row_start: r.row_start,
@@ -542,9 +542,9 @@ pub extern "C" fn worksheet_list_merge_cell(
         })
         .collect();
     let ranges_vector = builder.create_vector(&range_offsets);
-    let result = worksheet_list_merge_cell_return::create(
+    let result = Worksheet_list_merge_cell_return::create(
         &mut builder,
-        &worksheet_list_merge_cell_returnArgs {
+        &Worksheet_list_merge_cell_returnArgs {
             ranges: Some(ranges_vector),
         },
     );
@@ -555,7 +555,7 @@ pub extern "C" fn worksheet_list_merge_cell(
 
 #[no_mangle]
 /// List all hyperlinks in the worksheet
-pub extern "C" fn worksheet_list_hyperlinks(
+pub extern "C" fn Worksheet_list_hyperlinks(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -563,7 +563,7 @@ pub extern "C" fn worksheet_list_hyperlinks(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<worksheet_list_hyperlinks>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_list_hyperlinks>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -579,7 +579,7 @@ pub extern "C" fn worksheet_list_hyperlinks(
             let link_offset = builder.create_string(link);
             let range_offset = fbs_reference_range::create(
                 &mut builder,
-                &worksheet_reference_rangeArgs {
+                &Worksheet_reference_rangeArgs {
                     column_start: range.column_start,
                     column_end: range.column_end,
                     row_start: range.row_start,
@@ -588,7 +588,7 @@ pub extern "C" fn worksheet_list_hyperlinks(
             );
             fbs_hyperlink::create(
                 &mut builder,
-                &worksheet_hyperlinkArgs {
+                &Worksheet_hyperlinkArgs {
                     display: display_offset,
                     link: Some(link_offset),
                     ref_range: Some(range_offset),
@@ -597,9 +597,9 @@ pub extern "C" fn worksheet_list_hyperlinks(
         })
         .collect();
     let links_vector = builder.create_vector(&link_offsets);
-    let result = worksheet_list_hyperlinks_return::create(
+    let result = Worksheet_list_hyperlinks_return::create(
         &mut builder,
-        &worksheet_list_hyperlinks_returnArgs {
+        &Worksheet_list_hyperlinks_returnArgs {
             hyperlinks: Some(links_vector),
         },
     );
@@ -610,7 +610,7 @@ pub extern "C" fn worksheet_list_hyperlinks(
 
 #[no_mangle]
 /// Add a picture to the worksheet at the specified anchor positions
-pub extern "C" fn worksheet_add_picture(
+pub extern "C" fn Worksheet_add_picture(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
@@ -619,7 +619,7 @@ pub extern "C" fn worksheet_add_picture(
         global_2007::models::ImageType, spreadsheet_2007::models::ExcelPictureSetting,
     };
     let fbs = match unsafe {
-        root_from_raw::<worksheet_add_picture>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Worksheet_add_picture>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -644,8 +644,8 @@ pub extern "C" fn worksheet_add_picture(
     let hyperlink_properties = setting.hyperlink().map(|h| ExcelHyperlinkProperties {
         display: h.display().map(|s| s.to_string()),
         link_type: match h.link_type() {
-            worksheet_excel_hyperlink_type::web_url => ExcelHyperlinkPropertyTypeValues::WEB_URL,
-            worksheet_excel_hyperlink_type::target_sheet => {
+            Worksheet_excel_hyperlink_type::web_url => ExcelHyperlinkPropertyTypeValues::WEB_URL,
+            Worksheet_excel_hyperlink_type::target_sheet => {
                 ExcelHyperlinkPropertyTypeValues::TARGET_SHEET
             }
             _ => ExcelHyperlinkPropertyTypeValues::EXISTING_FILE,
@@ -657,10 +657,10 @@ pub extern "C" fn worksheet_add_picture(
         hyperlink_properties,
         picture_setting: PictureSetting {
             image_type: match setting.picture_settings().image_type() {
-                global_image_type::png => ImageType::PNG,
-                global_image_type::gif => ImageType::GIF,
-                global_image_type::bmp => ImageType::BMP,
-                global_image_type::tiff => ImageType::TIFF,
+                Global_image_type::png => ImageType::PNG,
+                Global_image_type::gif => ImageType::GIF,
+                Global_image_type::bmp => ImageType::BMP,
+                Global_image_type::tiff => ImageType::TIFF,
                 _ => ImageType::JPEG,
             },
         },
