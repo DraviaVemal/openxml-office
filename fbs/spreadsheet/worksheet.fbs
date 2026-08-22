@@ -1,3 +1,5 @@
+include "../global/drawing.fbs";
+
 namespace openxml_office_fbs.spreadsheet;
 
 // Common worksheet properties - Start
@@ -205,14 +207,6 @@ table worksheet_list_hyperlinks_return {
 
 // worksheet_add_picture - Start
 
-enum worksheet_image_type: byte {
-    jpeg = 0,
-    png = 1,
-    gif = 2,
-    bmp = 3,
-    tiff = 4,
-}
-
 table worksheet_anchor_position {
     column: uint16;
     column_offset: uint64;
@@ -233,7 +227,7 @@ table worksheet_excel_hyperlink {
 }
 
 table worksheet_picture_setting {
-    image_type: worksheet_image_type;
+    picture_settings: openxml_office_fbs.global.global_picture_settings(required);
     from: worksheet_anchor_position(required);
     to: worksheet_anchor_position(required);
     hyperlink: worksheet_excel_hyperlink;

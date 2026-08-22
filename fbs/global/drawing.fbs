@@ -1,0 +1,13 @@
+namespace openxml_office_fbs.global;
+
+enum global_image_type: byte {
+    jpeg = 0,
+    png = 1,
+    gif = 2,
+    bmp = 3,
+    tiff = 4,
+}
+
+table global_picture_settings{
+    image_type: global_image_type;
+}

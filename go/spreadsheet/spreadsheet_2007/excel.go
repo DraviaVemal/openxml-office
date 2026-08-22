@@ -13,8 +13,9 @@ import (
 	"errors"
 	"unsafe"
 
-	flatbuffers "github.com/google/flatbuffers/go"
 	fbs "draviavemal_openxml_office/internal/openxml_office_fbs/spreadsheet"
+
+	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 type Excel struct {
@@ -62,8 +63,8 @@ func NewExcel(fileName ...string) (Excel, error) {
 }
 
 // AddSheet adds a new worksheet with an optional name.
-func (e *Excel) AddSheet(sheetName ...string) (*Worksheet, error) {
-	if e == nil {
+func (excel *Excel) AddSheet(sheetName ...string) (*Worksheet, error) {
+	if excel == nil {
 		return nil, errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(128)
@@ -75,7 +76,7 @@ func (e *Excel) AddSheet(sheetName ...string) (*Worksheet, error) {
 	}
 
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	if hasName {
 		builder.PrependUOffsetTSlot(1, nameOffset, 0)
 	}
@@ -101,15 +102,15 @@ func (e *Excel) AddSheet(sheetName ...string) (*Worksheet, error) {
 }
 
 // GetWorksheet retrieves an existing worksheet by name.
-func (e *Excel) GetWorksheet(sheetName string) (*Worksheet, error) {
-	if e == nil {
+func (excel *Excel) GetWorksheet(sheetName string) (*Worksheet, error) {
+	if excel == nil {
 		return nil, errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(128)
 	nameOffset := builder.CreateString(sheetName)
 
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	builder.PrependUOffsetTSlot(1, nameOffset, 0)
 	offset := builder.EndObject()
 	builder.Finish(offset)
@@ -133,8 +134,8 @@ func (e *Excel) GetWorksheet(sheetName string) (*Worksheet, error) {
 }
 
 // RenameSheet renames an existing worksheet.
-func (e *Excel) RenameSheet(oldName, newName string) error {
-	if e == nil {
+func (excel *Excel) RenameSheet(oldName, newName string) error {
+	if excel == nil {
 		return errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(128)
@@ -142,7 +143,7 @@ func (e *Excel) RenameSheet(oldName, newName string) error {
 	newOffset := builder.CreateString(newName)
 
 	builder.StartObject(3)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	builder.PrependUOffsetTSlot(1, oldOffset, 0)
 	builder.PrependUOffsetTSlot(2, newOffset, 0)
 	offset := builder.EndObject()
@@ -163,14 +164,14 @@ func (e *Excel) RenameSheet(oldName, newName string) error {
 }
 
 // ListSheetNames returns the names of all worksheets in the workbook.
-func (e *Excel) ListSheetNames() ([]string, error) {
-	if e == nil {
+func (excel *Excel) ListSheetNames() ([]string, error) {
+	if excel == nil {
 		return nil, errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(64)
 
 	builder.StartObject(1)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	offset := builder.EndObject()
 	builder.Finish(offset)
 
@@ -199,8 +200,8 @@ func (e *Excel) ListSheetNames() ([]string, error) {
 }
 
 // GetStyleId creates or retrieves a style ID for the given cell style settings.
-func (e *Excel) GetStyleId(setting CellStyleSetting) (StyleId, error) {
-	if e == nil {
+func (excel *Excel) GetStyleId(setting CellStyleSetting) (StyleId, error) {
+	if excel == nil {
 		return StyleId{}, errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(512)
@@ -226,12 +227,12 @@ func (e *Excel) GetStyleId(setting CellStyleSetting) (StyleId, error) {
 		return builder.EndObject()
 	}
 
-	borderLeft     := buildBorder(setting.BorderLeft)
-	borderTop      := buildBorder(setting.BorderTop)
-	borderRight    := buildBorder(setting.BorderRight)
-	borderBottom   := buildBorder(setting.BorderBottom)
+	borderLeft := buildBorder(setting.BorderLeft)
+	borderTop := buildBorder(setting.BorderTop)
+	borderRight := buildBorder(setting.BorderRight)
+	borderBottom := buildBorder(setting.BorderBottom)
 	borderDiagonal := buildBorder(setting.BorderDiagonal)
-	textColor      := buildColorSetting(setting.TextColor)
+	textColor := buildColorSetting(setting.TextColor)
 
 	fontFamilyOffset := builder.CreateString(setting.FontFamily)
 	var customFmtOffset, bgColorOffset, fgColorOffset flatbuffers.UOffsetT
@@ -268,7 +269,7 @@ func (e *Excel) GetStyleId(setting CellStyleSetting) (StyleId, error) {
 	styleSettingOffset := builder.EndObject()
 
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	builder.PrependUOffsetTSlot(1, styleSettingOffset, 0)
 	offset := builder.EndObject()
 	builder.Finish(offset)
@@ -292,15 +293,15 @@ func (e *Excel) GetStyleId(setting CellStyleSetting) (StyleId, error) {
 }
 
 // SaveAs saves the workbook to the specified file path.
-func (e *Excel) SaveAs(fileName string) error {
-	if e == nil {
+func (excel *Excel) SaveAs(fileName string) error {
+	if excel == nil {
 		return errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(256)
 	fileNameOffset := builder.CreateString(fileName)
 
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	builder.PrependUOffsetTSlot(1, fileNameOffset, 0)
 	saveOffset := builder.EndObject()
 	builder.Finish(saveOffset)
@@ -327,14 +328,14 @@ func (e *Excel) SaveAs(fileName string) error {
 }
 
 // SetActiveSheet sets the sheet that is active when the workbook opens.
-func (e *Excel) SetActiveSheet(sheetName string) error {
-	if e == nil {
+func (excel *Excel) SetActiveSheet(sheetName string) error {
+	if excel == nil {
 		return errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(128)
 	v := builder.CreateString(sheetName)
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	builder.PrependUOffsetTSlot(1, v, 0)
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
@@ -346,13 +347,13 @@ func (e *Excel) SetActiveSheet(sheetName string) error {
 }
 
 // SetVisibility shows or hides the workbook window.
-func (e *Excel) SetVisibility(isVisible bool) error {
-	if e == nil {
+func (excel *Excel) SetVisibility(isVisible bool) error {
+	if excel == nil {
 		return errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(64)
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	builder.PrependBoolSlot(1, isVisible, false)
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
@@ -364,13 +365,13 @@ func (e *Excel) SetVisibility(isVisible bool) error {
 }
 
 // MinimizeWorkbook minimizes or restores the workbook window.
-func (e *Excel) MinimizeWorkbook(isMinimized bool) error {
-	if e == nil {
+func (excel *Excel) MinimizeWorkbook(isMinimized bool) error {
+	if excel == nil {
 		return errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(64)
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	builder.PrependBoolSlot(1, isMinimized, false)
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
@@ -382,13 +383,13 @@ func (e *Excel) MinimizeWorkbook(isMinimized bool) error {
 }
 
 // HideSheetTabs shows or hides the sheet tab bar.
-func (e *Excel) HideSheetTabs(hide bool) error {
-	if e == nil {
+func (excel *Excel) HideSheetTabs(hide bool) error {
+	if excel == nil {
 		return errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(64)
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	builder.PrependBoolSlot(1, hide, false)
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
@@ -400,13 +401,13 @@ func (e *Excel) HideSheetTabs(hide bool) error {
 }
 
 // HideVerticalScroll shows or hides the vertical scroll bar.
-func (e *Excel) HideVerticalScroll(hide bool) error {
-	if e == nil {
+func (excel *Excel) HideVerticalScroll(hide bool) error {
+	if excel == nil {
 		return errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(64)
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	builder.PrependBoolSlot(1, hide, false)
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
@@ -418,13 +419,13 @@ func (e *Excel) HideVerticalScroll(hide bool) error {
 }
 
 // HideHorizontalScroll shows or hides the horizontal scroll bar.
-func (e *Excel) HideHorizontalScroll(hide bool) error {
-	if e == nil {
+func (excel *Excel) HideHorizontalScroll(hide bool) error {
+	if excel == nil {
 		return errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(64)
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	builder.PrependBoolSlot(1, hide, false)
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
@@ -436,14 +437,14 @@ func (e *Excel) HideHorizontalScroll(hide bool) error {
 }
 
 // HideSheet hides the named worksheet.
-func (e *Excel) HideSheet(sheetName string) error {
-	if e == nil {
+func (excel *Excel) HideSheet(sheetName string) error {
+	if excel == nil {
 		return errors.New("nil Excel")
 	}
 	builder := flatbuffers.NewBuilder(128)
 	v := builder.CreateString(sheetName)
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, e.excelPtr, 0)
+	builder.PrependUint64Slot(0, excel.excelPtr, 0)
 	builder.PrependUOffsetTSlot(1, v, 0)
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()

@@ -1,4 +1,4 @@
-use crate::global_2007::models::{AnchorPosition, GraphPosition};
+use crate::global_2007::models::{AnchorPosition, GraphPosition, Picture, Transform};
 use crate::global_2007::traits::Enum;
 
 #[derive(Debug)]
@@ -61,68 +61,6 @@ pub(crate) struct Shape {}
 pub(crate) struct GroupShape {}
 
 #[derive(Debug, Default)]
-pub(crate) struct Offset {
-    pub(crate) x: i64,
-    pub(crate) y: i64,
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct Extent {
-    pub(crate) width: i64,
-    pub(crate) height: i64,
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct Transform {
-    pub(crate) rotation: Option<i64>,
-    pub(crate) flip_horizontal: bool,
-    pub(crate) flip_vertical: bool,
-    pub(crate) offset: Option<Offset>,
-    pub(crate) extent: Option<Extent>,
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct PresetGeometry {
-    pub(crate) preset: String,
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct ShapeProperties {
-    pub(crate) transform: Option<Transform>,
-    pub(crate) preset_geometry: Option<PresetGeometry>,
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct RelativeRect {
-    pub(crate) left: Option<i32>,
-    pub(crate) top: Option<i32>,
-    pub(crate) right: Option<i32>,
-    pub(crate) bottom: Option<i32>,
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct TileProperties {
-    pub(crate) offset_x: Option<i64>,
-    pub(crate) offset_y: Option<i64>,
-    pub(crate) scale_x: Option<i32>,
-    pub(crate) scale_y: Option<i32>,
-    pub(crate) flip: Option<String>,
-    pub(crate) alignment: Option<String>,
-}
-
-#[derive(Debug)]
-pub(crate) enum BlipFillMode {
-    Stretch(RelativeRect),
-    Tile(TileProperties),
-}
-
-impl Default for BlipFillMode {
-    fn default() -> Self {
-        BlipFillMode::Stretch(RelativeRect::default())
-    }
-}
-
-#[derive(Debug, Default)]
 pub(crate) struct GraphicFrame {
     pub(crate) id: u32,
     pub(crate) name: String,
@@ -134,37 +72,6 @@ pub(crate) struct GraphicFrame {
 
 #[derive(Debug)]
 pub(crate) struct ConnectorShape {}
-
-#[derive(Debug)]
-pub(crate) struct Picture {
-    pub(crate) id: u32,
-    pub(crate) name: String,
-    pub(crate) description: Option<String>,
-    pub(crate) hidden: bool,
-    pub(crate) aspect_ratio: bool,
-    pub(crate) relationship_id: String,
-    pub(crate) compression_state: Option<String>,
-    pub(crate) source_rectangle: Option<RelativeRect>,
-    pub(crate) fill_mode: BlipFillMode,
-    pub(crate) shape_properties: ShapeProperties,
-}
-
-impl Default for Picture {
-    fn default() -> Self {
-        Self {
-            id: 0,
-            name: "Picture 1".to_string(),
-            description: None,
-            hidden: false,
-            aspect_ratio: true,
-            relationship_id: "rId1".to_string(),
-            compression_state: None,
-            source_rectangle: None,
-            fill_mode: BlipFillMode::default(),
-            shape_properties: ShapeProperties::default(),
-        }
-    }
-}
 
 #[derive(Debug)]
 pub(crate) struct ContentPart {}
@@ -191,4 +98,17 @@ pub(crate) struct TwoCellAnchor {
     pub(crate) to: AnchorPosition,
     pub(crate) anchor_content: AnchorContent,
     pub(crate) client_data: Option<AnchorClientData>,
+}
+
+#[derive(Debug, Clone)]
+pub enum ExcelHyperlinkPropertyTypeValues {
+    EXISTING_FILE,
+    WEB_URL,
+    TARGET_SHEET,
+}
+#[derive(Debug, Clone)]
+pub struct ExcelHyperlinkProperties {
+    pub display: Option<String>,
+    pub link_type: ExcelHyperlinkPropertyTypeValues,
+    pub link: String,
 }

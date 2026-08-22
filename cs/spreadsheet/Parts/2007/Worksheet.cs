@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using draviavemal.openxml_office.global_2007;
 using Google.FlatBuffers;
+using openxml_office_fbs.global;
 using openxml_office_fbs.spreadsheet;
 
 namespace draviavemal.openxml_office.spreadsheet_2007
@@ -410,9 +411,13 @@ namespace draviavemal.openxml_office.spreadsheet_2007
                     (worksheet_excel_hyperlink_type)pictureSetting.HyperlinkProperties.LinkType,
                     hlLink);
             }
+            Offset<global_picture_settings> pictureSettingOffset = global_picture_settings.Createglobal_picture_settings(
+                builder,
+                (global_image_type)pictureSetting.ImageType
+            );
             Offset<worksheet_picture_setting> settingOffset = worksheet_picture_setting.Createworksheet_picture_setting(
                 builder,
-                (worksheet_image_type)pictureSetting.ImageType,
+                pictureSettingOffset,
                 fromOffset,
                 toOffset,
                 hyperlinkOffset);

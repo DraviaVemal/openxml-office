@@ -1851,11 +1851,18 @@ impl WorkSheet {
     /// Set Active cell of the current sheet
     pub(crate) fn set_active_cell_mut(&mut self, _selected_range: Vec<&str>) {}
 
-    pub fn add_picture(
+    pub fn add_picture_mut(
         &mut self,
         image_path: &str,
         picture_setting: ExcelPictureSetting,
     ) -> Result<(), AnyError> {
+        let mut drawing_part = self
+            .drawing_part
+            .try_borrow_mut()
+            .context("Failed to get Drawing part")?;
+        drawing_part
+            .add_picture_mut(image_path, picture_setting)
+            .context("Failed to add picture to drawing")?;
         Ok(())
     }
 
