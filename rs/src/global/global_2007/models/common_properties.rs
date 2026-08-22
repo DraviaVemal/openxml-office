@@ -10,13 +10,6 @@ pub enum PowerPointHyperlinkPropertyTypeValues {
 }
 
 #[derive(Debug, Clone)]
-pub enum ExcelHyperlinkPropertyTypeValues {
-    EXISTING_FILE,
-    WEB_URL,
-    TARGET_SHEET,
-}
-
-#[derive(Debug, Clone)]
 pub enum UnderLineValues {
     NONE,
     DASH,
@@ -43,13 +36,6 @@ pub enum StrikeValues {
     NO_STRIKE,
     SINGLE_STRIKE,
     DOUBLE_STRIKE,
-}
-
-#[derive(Debug, Clone)]
-pub struct ExcelHyperlinkProperties {
-    pub display: Option<String>,
-    pub link_type: ExcelHyperlinkPropertyTypeValues,
-    pub link: String,
 }
 
 #[derive(Debug, Clone)]

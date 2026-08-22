@@ -4,6 +4,8 @@ package spreadsheet
 
 import (
 	flatbuffers "github.com/google/flatbuffers/go"
+
+	openxml_office_fbs__global "openxml_office_fbs/global"
 )
 
 type worksheet_picture_setting struct {
@@ -41,16 +43,17 @@ func (rcv *worksheet_picture_setting) Table() flatbuffers.Table {
 	return rcv._tab
 }
 
-func (rcv *worksheet_picture_setting) ImageType() worksheet_image_type {
+func (rcv *worksheet_picture_setting) PictureSettings(obj *openxml_office_fbs__global.global_picture_settings) *openxml_office_fbs__global.global_picture_settings {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
-		return worksheet_image_type(rcv._tab.GetInt8(o + rcv._tab.Pos))
+		x := rcv._tab.Indirect(o + rcv._tab.Pos)
+		if obj == nil {
+			obj = new(openxml_office_fbs__global.global_picture_settings)
+		}
+		obj.Init(rcv._tab.Bytes, x)
+		return obj
 	}
-	return 0
-}
-
-func (rcv *worksheet_picture_setting) MutateImageType(n worksheet_image_type) bool {
-	return rcv._tab.MutateInt8Slot(4, int8(n))
+	return nil
 }
 
 func (rcv *worksheet_picture_setting) From(obj *worksheet_anchor_position) *worksheet_anchor_position {
@@ -95,8 +98,8 @@ func (rcv *worksheet_picture_setting) Hyperlink(obj *worksheet_excel_hyperlink) 
 func worksheet_picture_settingStart(builder *flatbuffers.Builder) {
 	builder.StartObject(4)
 }
-func worksheet_picture_settingAddImageType(builder *flatbuffers.Builder, imageType worksheet_image_type) {
-	builder.PrependInt8Slot(0, int8(imageType), 0)
+func worksheet_picture_settingAddPictureSettings(builder *flatbuffers.Builder, pictureSettings flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(pictureSettings), 0)
 }
 func worksheet_picture_settingAddFrom(builder *flatbuffers.Builder, from flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(from), 0)

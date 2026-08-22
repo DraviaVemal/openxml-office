@@ -101,4 +101,15 @@ fn main() {
         .generate()
         .unwrap();
     headers.write_to_file(Path::new("../target").join("headers.h"));
+
+    let generated_file = Path::new("src/consolidated_generated.rs");
+    let content = fs::read_to_string(&generated_file).expect("Failed to read generated file");
+    let header = r#"#![allow(warnings)]
+#![allow(dead_code)]
+#![allow(non_camel_case_types)]
+#![allow(unused_imports)]
+
+"#;
+    let content = format!("{}{}", header, content);
+    fs::write(&generated_file, content).expect("Failed to write generated file");
 }

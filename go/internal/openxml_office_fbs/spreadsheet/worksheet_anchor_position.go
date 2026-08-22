@@ -53,16 +53,16 @@ func (rcv *worksheet_anchor_position) MutateColumn(n uint16) bool {
 	return rcv._tab.MutateUint16Slot(4, n)
 }
 
-func (rcv *worksheet_anchor_position) ColumnOffset() uint16 {
+func (rcv *worksheet_anchor_position) ColumnOffset() uint64 {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
-		return rcv._tab.GetUint16(o + rcv._tab.Pos)
+		return rcv._tab.GetUint64(o + rcv._tab.Pos)
 	}
 	return 0
 }
 
-func (rcv *worksheet_anchor_position) MutateColumnOffset(n uint16) bool {
-	return rcv._tab.MutateUint16Slot(6, n)
+func (rcv *worksheet_anchor_position) MutateColumnOffset(n uint64) bool {
+	return rcv._tab.MutateUint64Slot(6, n)
 }
 
 func (rcv *worksheet_anchor_position) Row() uint32 {
@@ -77,16 +77,16 @@ func (rcv *worksheet_anchor_position) MutateRow(n uint32) bool {
 	return rcv._tab.MutateUint32Slot(8, n)
 }
 
-func (rcv *worksheet_anchor_position) RowOffset() uint32 {
+func (rcv *worksheet_anchor_position) RowOffset() uint64 {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
 	if o != 0 {
-		return rcv._tab.GetUint32(o + rcv._tab.Pos)
+		return rcv._tab.GetUint64(o + rcv._tab.Pos)
 	}
 	return 0
 }
 
-func (rcv *worksheet_anchor_position) MutateRowOffset(n uint32) bool {
-	return rcv._tab.MutateUint32Slot(10, n)
+func (rcv *worksheet_anchor_position) MutateRowOffset(n uint64) bool {
+	return rcv._tab.MutateUint64Slot(10, n)
 }
 
 func worksheet_anchor_positionStart(builder *flatbuffers.Builder) {
@@ -95,14 +95,14 @@ func worksheet_anchor_positionStart(builder *flatbuffers.Builder) {
 func worksheet_anchor_positionAddColumn(builder *flatbuffers.Builder, column uint16) {
 	builder.PrependUint16Slot(0, column, 0)
 }
-func worksheet_anchor_positionAddColumnOffset(builder *flatbuffers.Builder, columnOffset uint16) {
-	builder.PrependUint16Slot(1, columnOffset, 0)
+func worksheet_anchor_positionAddColumnOffset(builder *flatbuffers.Builder, columnOffset uint64) {
+	builder.PrependUint64Slot(1, columnOffset, 0)
 }
 func worksheet_anchor_positionAddRow(builder *flatbuffers.Builder, row uint32) {
 	builder.PrependUint32Slot(2, row, 0)
 }
-func worksheet_anchor_positionAddRowOffset(builder *flatbuffers.Builder, rowOffset uint32) {
-	builder.PrependUint32Slot(3, rowOffset, 0)
+func worksheet_anchor_positionAddRowOffset(builder *flatbuffers.Builder, rowOffset uint64) {
+	builder.PrependUint64Slot(3, rowOffset, 0)
 }
 func worksheet_anchor_positionEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

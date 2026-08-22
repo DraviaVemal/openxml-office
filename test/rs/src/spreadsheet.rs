@@ -743,7 +743,7 @@ mod spreadsheet_test {
                 .get_worksheet_mut("image".to_string())
                 .expect("Failed to get sheet");
             sheet
-                .add_picture(
+                .add_picture_mut(
                     "../edit_test_files/tom_and_jerry.jpg",
                     ExcelPictureSetting::default(),
                 )

@@ -21,13 +21,13 @@ type Worksheet struct {
 }
 
 // Flush persists changes and frees the native worksheet object.
-func (ws *Worksheet) Flush() error {
-	if ws == nil {
+func (worksheet *Worksheet) Flush() error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(64)
 	builder.StartObject(1)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	offset := builder.EndObject()
 	builder.Finish(offset)
 	buffer := builder.FinishedBytes()
@@ -44,15 +44,15 @@ func (ws *Worksheet) Flush() error {
 }
 
 // SetColumnRefProperties sets column properties identified by a cell reference (e.g. "A1").
-func (ws *Worksheet) SetColumnRefProperties(cellRef string, props *ColumnProperties) error {
-	if ws == nil {
+func (worksheet *Worksheet) SetColumnRefProperties(cellRef string, props *ColumnProperties) error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(128)
 	cellRefOffset := builder.CreateString(cellRef)
 	propsOffset := buildColumnProperties(builder, props)
 	builder.StartObject(3)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.PrependUOffsetTSlot(1, cellRefOffset, 0)
 	builder.PrependUOffsetTSlot(2, propsOffset, 0)
 	builder.Finish(builder.EndObject())
@@ -65,14 +65,14 @@ func (ws *Worksheet) SetColumnRefProperties(cellRef string, props *ColumnPropert
 }
 
 // SetColumnIndexProperties sets column properties by numeric column index (1-based).
-func (ws *Worksheet) SetColumnIndexProperties(columnIndex uint16, props *ColumnProperties) error {
-	if ws == nil {
+func (worksheet *Worksheet) SetColumnIndexProperties(columnIndex uint16, props *ColumnProperties) error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(128)
 	propsOffset := buildColumnProperties(builder, props)
 	builder.StartObject(3)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.PrependUint16Slot(1, columnIndex, 0)
 	builder.PrependUOffsetTSlot(2, propsOffset, 0)
 	builder.Finish(builder.EndObject())
@@ -85,8 +85,8 @@ func (ws *Worksheet) SetColumnIndexProperties(columnIndex uint16, props *ColumnP
 }
 
 // SetRowIndexProperties sets row properties by numeric row index (1-based).
-func (ws *Worksheet) SetRowIndexProperties(rowIndex uint32, props RowProperties) error {
-	if ws == nil {
+func (worksheet *Worksheet) SetRowIndexProperties(rowIndex uint32, props RowProperties) error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(128)
@@ -106,7 +106,7 @@ func (ws *Worksheet) SetRowIndexProperties(rowIndex uint32, props RowProperties)
 	rowPropsOffset := builder.EndObject()
 
 	builder.StartObject(3)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.PrependUint32Slot(1, rowIndex, 0)
 	builder.PrependUOffsetTSlot(2, rowPropsOffset, 0)
 	builder.Finish(builder.EndObject())
@@ -119,8 +119,8 @@ func (ws *Worksheet) SetRowIndexProperties(rowIndex uint32, props RowProperties)
 }
 
 // SetCellRefValues sets cell values starting at the given cell reference.
-func (ws *Worksheet) SetCellRefValues(cellRef string, cells []CellProperty) error {
-	if ws == nil {
+func (worksheet *Worksheet) SetCellRefValues(cellRef string, cells []CellProperty) error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(256)
@@ -133,7 +133,7 @@ func (ws *Worksheet) SetCellRefValues(cellRef string, cells []CellProperty) erro
 	cellsVector := builder.EndVector(len(cellOffsets))
 
 	builder.StartObject(3)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.PrependUOffsetTSlot(1, cellRefOffset, 0)
 	builder.PrependUOffsetTSlot(2, cellsVector, 0)
 	builder.Finish(builder.EndObject())
@@ -146,8 +146,8 @@ func (ws *Worksheet) SetCellRefValues(cellRef string, cells []CellProperty) erro
 }
 
 // SetCellIndexValues sets cell values at the given row/column position.
-func (ws *Worksheet) SetCellIndexValues(rowIndex uint32, columnIndex uint16, cells []CellProperty) error {
-	if ws == nil {
+func (worksheet *Worksheet) SetCellIndexValues(rowIndex uint32, columnIndex uint16, cells []CellProperty) error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(256)
@@ -159,7 +159,7 @@ func (ws *Worksheet) SetCellIndexValues(rowIndex uint32, columnIndex uint16, cel
 	cellsVector := builder.EndVector(len(cellOffsets))
 
 	builder.StartObject(4)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.PrependUint32Slot(1, rowIndex, 0)
 	builder.PrependUint16Slot(2, columnIndex, 0)
 	builder.PrependUOffsetTSlot(3, cellsVector, 0)
@@ -173,14 +173,14 @@ func (ws *Worksheet) SetCellIndexValues(rowIndex uint32, columnIndex uint16, cel
 }
 
 // SetMergeCell merges the cells in the given range.
-func (ws *Worksheet) SetMergeCell(refRange ReferenceRange) error {
-	if ws == nil {
+func (worksheet *Worksheet) SetMergeCell(refRange ReferenceRange) error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(128)
 	rangeOffset := buildReferenceRange(builder, refRange)
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.PrependUOffsetTSlot(1, rangeOffset, 0)
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
@@ -192,14 +192,14 @@ func (ws *Worksheet) SetMergeCell(refRange ReferenceRange) error {
 }
 
 // RemoveMergeCell removes the merge from the given cell range.
-func (ws *Worksheet) RemoveMergeCell(refRange ReferenceRange) error {
-	if ws == nil {
+func (worksheet *Worksheet) RemoveMergeCell(refRange ReferenceRange) error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(128)
 	rangeOffset := buildReferenceRange(builder, refRange)
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.PrependUOffsetTSlot(1, rangeOffset, 0)
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
@@ -212,8 +212,8 @@ func (ws *Worksheet) RemoveMergeCell(refRange ReferenceRange) error {
 
 // SetHyperlink adds a hyperlink to the specified cell range.
 // display is optional; pass "" to use the link URL as the display text.
-func (ws *Worksheet) SetHyperlink(link string, refRange ReferenceRange, display string) error {
-	if ws == nil {
+func (worksheet *Worksheet) SetHyperlink(link string, refRange ReferenceRange, display string) error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(256)
@@ -225,7 +225,7 @@ func (ws *Worksheet) SetHyperlink(link string, refRange ReferenceRange, display 
 	rangeOffset := buildReferenceRange(builder, refRange)
 
 	builder.StartObject(4)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.PrependUOffsetTSlot(1, displayOffset, 0)
 	builder.PrependUOffsetTSlot(2, linkOffset, 0)
 	builder.PrependUOffsetTSlot(3, rangeOffset, 0)
@@ -239,14 +239,14 @@ func (ws *Worksheet) SetHyperlink(link string, refRange ReferenceRange, display 
 }
 
 // RemoveHyperlink removes the hyperlink from the given cell range.
-func (ws *Worksheet) RemoveHyperlink(refRange ReferenceRange) error {
-	if ws == nil {
+func (worksheet *Worksheet) RemoveHyperlink(refRange ReferenceRange) error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(128)
 	rangeOffset := buildReferenceRange(builder, refRange)
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.PrependUOffsetTSlot(1, rangeOffset, 0)
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
@@ -258,13 +258,13 @@ func (ws *Worksheet) RemoveHyperlink(refRange ReferenceRange) error {
 }
 
 // DeleteSheet permanently removes this worksheet from the workbook.
-func (ws *Worksheet) DeleteSheet() error {
-	if ws == nil {
+func (worksheet *Worksheet) DeleteSheet() error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(64)
 	builder.StartObject(1)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
@@ -275,14 +275,14 @@ func (ws *Worksheet) DeleteSheet() error {
 }
 
 // GetRangeCellProperties returns the cell values and properties for the given range.
-func (ws *Worksheet) GetRangeCellProperties(refRange ReferenceRange) ([]CellPackage, error) {
-	if ws == nil {
+func (worksheet *Worksheet) GetRangeCellProperties(refRange ReferenceRange) ([]CellPackage, error) {
+	if worksheet == nil {
 		return nil, errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(128)
 	rangeOffset := buildReferenceRange(builder, refRange)
 	builder.StartObject(2)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.PrependUOffsetTSlot(1, rangeOffset, 0)
 	builder.Finish(builder.EndObject())
 	buffer := builder.FinishedBytes()
@@ -325,13 +325,13 @@ func (ws *Worksheet) GetRangeCellProperties(refRange ReferenceRange) ([]CellPack
 }
 
 // ListMergeCell returns all merged cell ranges in the worksheet.
-func (ws *Worksheet) ListMergeCell() ([]ReferenceRange, error) {
-	if ws == nil {
+func (worksheet *Worksheet) ListMergeCell() ([]ReferenceRange, error) {
+	if worksheet == nil {
 		return nil, errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(64)
 	builder.StartObject(1)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.Finish(builder.EndObject())
 	buffer := builder.FinishedBytes()
 
@@ -364,13 +364,13 @@ func (ws *Worksheet) ListMergeCell() ([]ReferenceRange, error) {
 }
 
 // ListHyperlinks returns all hyperlinks defined in the worksheet.
-func (ws *Worksheet) ListHyperlinks() ([]HyperlinkInfo, error) {
-	if ws == nil {
+func (worksheet *Worksheet) ListHyperlinks() ([]HyperlinkInfo, error) {
+	if worksheet == nil {
 		return nil, errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(64)
 	builder.StartObject(1)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.Finish(builder.EndObject())
 	buffer := builder.FinishedBytes()
 
@@ -412,8 +412,8 @@ func (ws *Worksheet) ListHyperlinks() ([]HyperlinkInfo, error) {
 }
 
 // AddPicture inserts an image file into the worksheet at the specified anchor positions.
-func (ws *Worksheet) AddPicture(imagePath string, setting ExcelPictureSetting) error {
-	if ws == nil {
+func (worksheet *Worksheet) AddPicture(imagePath string, setting ExcelPictureSetting) error {
+	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
 	builder := flatbuffers.NewBuilder(512)
@@ -447,7 +447,7 @@ func (ws *Worksheet) AddPicture(imagePath string, setting ExcelPictureSetting) e
 	pictureSettingOffset := builder.EndObject()
 
 	builder.StartObject(3)
-	builder.PrependUint64Slot(0, ws.worksheetPtr, 0)
+	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
 	builder.PrependUOffsetTSlot(1, imagePathOffset, 0)
 	builder.PrependUOffsetTSlot(2, pictureSettingOffset, 0)
 	builder.Finish(builder.EndObject())

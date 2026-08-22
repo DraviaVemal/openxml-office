@@ -1,33 +1,37 @@
 use std::{ffi::c_char, mem::ManuallyDrop};
 
 use crate::{
-    openxml_office_fbs::spreadsheet::{
-        worksheet_add_picture, worksheet_cell_data_type, worksheet_cell_package,
-        worksheet_cell_packageArgs, worksheet_cell_property as fbs_cell_property,
-        worksheet_cell_propertyArgs, worksheet_delete_sheet, worksheet_excel_hyperlink_type,
-        worksheet_flush, worksheet_get_range_cell_properties,
-        worksheet_get_range_cell_properties_return, worksheet_get_range_cell_properties_returnArgs,
-        worksheet_hyperlink as fbs_hyperlink, worksheet_hyperlinkArgs, worksheet_image_type,
-        worksheet_list_hyperlinks, worksheet_list_hyperlinks_return,
-        worksheet_list_hyperlinks_returnArgs, worksheet_list_merge_cell,
-        worksheet_list_merge_cell_return, worksheet_list_merge_cell_returnArgs,
-        worksheet_reference_range as fbs_reference_range, worksheet_reference_rangeArgs,
-        worksheet_remove_hyperlink, worksheet_remove_merge_cell, worksheet_set_cell_index_value,
-        worksheet_set_cell_ref_value, worksheet_set_column_index_properties,
-        worksheet_set_column_ref_properties, worksheet_set_hyperlink, worksheet_set_merge_cell,
-        worksheet_set_row_index_properties,
+    openxml_office_fbs::{
+        global::global_image_type,
+        spreadsheet::{
+            worksheet_add_picture, worksheet_cell_data_type, worksheet_cell_package,
+            worksheet_cell_packageArgs, worksheet_cell_property as fbs_cell_property,
+            worksheet_cell_propertyArgs, worksheet_delete_sheet, worksheet_excel_hyperlink_type,
+            worksheet_flush, worksheet_get_range_cell_properties,
+            worksheet_get_range_cell_properties_return,
+            worksheet_get_range_cell_properties_returnArgs, worksheet_hyperlink as fbs_hyperlink,
+            worksheet_hyperlinkArgs, worksheet_list_hyperlinks, worksheet_list_hyperlinks_return,
+            worksheet_list_hyperlinks_returnArgs, worksheet_list_merge_cell,
+            worksheet_list_merge_cell_return, worksheet_list_merge_cell_returnArgs,
+            worksheet_reference_range as fbs_reference_range, worksheet_reference_rangeArgs,
+            worksheet_remove_hyperlink, worksheet_remove_merge_cell,
+            worksheet_set_cell_index_value, worksheet_set_cell_ref_value,
+            worksheet_set_column_index_properties, worksheet_set_column_ref_properties,
+            worksheet_set_hyperlink, worksheet_set_merge_cell, worksheet_set_row_index_properties,
+        },
     },
     root_from_raw, set_error, write_buffer, StatusCode,
 };
 use anyhow::Error as AnyError;
 use draviavemal_openxml_office::{
     global_2007::{
-        models::{AnchorPosition, ExcelHyperlinkProperties, ExcelHyperlinkPropertyTypeValues},
+        models::{AnchorPosition, PictureSetting},
         traits::XmlDocumentPartFlush,
     },
     spreadsheet_2007::{
         models::{
-            CellDataType, CellProperty, ColumnProperties, ReferenceRange, RowProperties, StyleId,
+            CellDataType, CellProperty, ColumnProperties, ExcelHyperlinkProperties,
+            ExcelHyperlinkPropertyTypeValues, ReferenceRange, RowProperties, StyleId,
         },
         WorkSheet,
     },
@@ -648,14 +652,17 @@ pub extern "C" fn worksheet_add_picture(
         },
         link: h.link().unwrap_or("").to_string(),
     });
+
     let picture_setting = ExcelPictureSetting {
         hyperlink_properties,
-        image_type: match setting.image_type() {
-            worksheet_image_type::png => ImageType::PNG,
-            worksheet_image_type::gif => ImageType::GIF,
-            worksheet_image_type::bmp => ImageType::BMP,
-            worksheet_image_type::tiff => ImageType::TIFF,
-            _ => ImageType::JPEG,
+        picture_setting: PictureSetting {
+            image_type: match setting.picture_settings().image_type() {
+                global_image_type::png => ImageType::PNG,
+                global_image_type::gif => ImageType::GIF,
+                global_image_type::bmp => ImageType::BMP,
+                global_image_type::tiff => ImageType::TIFF,
+                _ => ImageType::JPEG,
+            },
         },
         from: AnchorPosition {
             column: from_fbs.column(),
@@ -670,7 +677,7 @@ pub extern "C" fn worksheet_add_picture(
             row_offset: to_fbs.row_offset(),
         },
     };
-    match worksheet.add_picture(image_path, picture_setting) {
+    match worksheet.add_picture_mut(image_path, picture_setting) {
         Ok(()) => StatusCode::Success as i8,
         Err(e) => unsafe { set_error(out_error, &e, StatusCode::UnknownError) },
     }
