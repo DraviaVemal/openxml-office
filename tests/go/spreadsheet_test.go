@@ -9,7 +9,7 @@ import (
 	"draviavemal_openxml_office/spreadsheet/spreadsheet_2007"
 )
 
-// resultPath mirrors the C# test project layout (test/cs/test_results).
+// resultPath mirrors the C# test project layout (tests/cs/test_results).
 const resultPath = "./test_results"
 
 func TestMain(m *testing.M) {

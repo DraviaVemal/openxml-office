@@ -21,7 +21,7 @@ import (
 )
 
 // Standalone benchmark that compares the current package against the published
-// github.com/xuri/excelize v2 package. It mirrors the C# benchmark (test/cs/benchmark.cs):
+// github.com/xuri/excelize v2 package. It mirrors the C# benchmark (tests/cs/benchmark.cs):
 // it measures execution time, managed allocations, retained/peak heap, CPU and GC
 // pressure for a range of cell counts and writes a Markdown + CSV report.
 // It is fully self contained and does not touch the existing functional tests.

@@ -96,7 +96,7 @@ Desktop.ini
 target
 
 # CS
-!cd/test/test_files/**
+!cd/tests/test_files/**
 
 # Python
 
