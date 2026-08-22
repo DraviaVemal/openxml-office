@@ -303,7 +303,7 @@ go: ffi
 	@echo " Go Test"
 	@echo "========================================"
 
-	cd test/go && \
+	cd tests/go && \
 	CGO_ENABLED=1 go test ./...
 
 

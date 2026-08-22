@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["rs", "test/rs", "rs_ffi", "rs_api"]
+members = ["rs", "tests/rs", "rs_ffi", "rs_api"]
 package.authors = ["Dravia Vemal <contact@draviavemal.com>"]
 
 [workspace.dependencies]

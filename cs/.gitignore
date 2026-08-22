@@ -1,4 +1,4 @@
-!test/test_files/**
+!tests/test_files/**
 **/test_results
 nupkgs
 runtimes/
