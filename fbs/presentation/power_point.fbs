@@ -1,31 +1,31 @@
 namespace openxml_office_fbs.presentation;
 
-// power_point_create - Start
+// Power_point_create - Start
 
-table power_point_create {
+table Power_point_create {
     file_name: string;
-    power_point_settings: power_point_settings(required);
+    power_point_settings: Power_point_settings(required);
 }
 
-table power_point_settings {
+table Power_point_settings {
     is_editable: bool;
 }
 
-table power_point_create_return {
+table Power_point_create_return {
     power_point_ptr: uint64;
 }
 
-// power_point_create - End
+// Power_point_create - End
 
-// power_point_save_as - Start
+// Power_point_save_as - Start
 
-table power_point_save_as {
+table Power_point_save_as {
     power_point_ptr: uint64;
     file_name: string;
 }
 
-table power_point_save_as_return {
+table Power_point_save_as_return {
     full_path: string;
 }
 
-// power_point_save_as - End
+// Power_point_save_as - End

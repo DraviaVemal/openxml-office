@@ -141,6 +141,7 @@ flatc:
 	done
 
 	flatc -g --gen-all \
+		--go-module-name draviavemal_openxml_office/internal \
 		-o $(GO_DIR)/internal \
 		$(FBS_DIR)/consolidated.fbs
 

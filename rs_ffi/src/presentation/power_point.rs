@@ -1,7 +1,7 @@
 use crate::{
     openxml_office_fbs::presentation::{
-        power_point_create, power_point_create_return, power_point_create_returnArgs,
-        power_point_save_as, power_point_save_as_return, power_point_save_as_returnArgs,
+        Power_point_create, Power_point_create_return, Power_point_create_returnArgs,
+        Power_point_save_as, Power_point_save_as_return, Power_point_save_as_returnArgs,
     },
     root_from_raw, set_error, write_buffer, StatusCode,
 };
@@ -13,7 +13,7 @@ use std::ffi::c_char;
 ///
 /// Returns a pointer to the newly created Presentation object.
 /// If an error occurs, returns a null pointer.
-pub extern "C" fn presentation_create(
+pub extern "C" fn Presentation_create(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -21,7 +21,7 @@ pub extern "C" fn presentation_create(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_presentation_create = match unsafe {
-        root_from_raw::<power_point_create>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Power_point_create>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -37,9 +37,9 @@ pub extern "C" fn presentation_create(
         Ok(presentation) => {
             let presentation_ptr = Box::into_raw(Box::new(presentation)) as u64;
             let mut builder = flatbuffers::FlatBufferBuilder::new();
-            let presentation_create_return = power_point_create_return::create(
+            let presentation_create_return = Power_point_create_return::create(
                 &mut builder,
-                &power_point_create_returnArgs {
+                &Power_point_create_returnArgs {
                     power_point_ptr: presentation_ptr,
                 },
             );
@@ -55,19 +55,19 @@ pub extern "C" fn presentation_create(
 /// Saves the Presentation object to the target file path.
 ///
 /// Consumes the Presentation object referenced by the incoming pointer.
-pub extern "C" fn presentation_save_as(
+pub extern "C" fn Presentation_save_as(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
     out_buffer_size: *mut usize,
     out_error: *mut *const c_char,
 ) -> i8 {
-    let fbs_save_as = match unsafe {
-        root_from_raw::<power_point_save_as>(in_buffer, in_buffer_size, out_error)
-    } {
-        Ok(root) => root,
-        Err(status) => return status,
-    };
+    let fbs_save_as =
+        match unsafe { root_from_raw::<Power_point_save_as>(in_buffer, in_buffer_size, out_error) }
+        {
+            Ok(root) => root,
+            Err(status) => return status,
+        };
     let presentation_ptr = fbs_save_as.power_point_ptr() as *mut PowerPoint;
     let presentation = unsafe { *Box::from_raw(presentation_ptr) };
     match presentation.save_as(
@@ -80,9 +80,9 @@ pub extern "C" fn presentation_save_as(
         Ok(full_path) => {
             let mut builder = flatbuffers::FlatBufferBuilder::new();
             let full_path_offset = builder.create_string(&full_path);
-            let presentation_save_as_return = power_point_save_as_return::create(
+            let presentation_save_as_return = Power_point_save_as_return::create(
                 &mut builder,
-                &power_point_save_as_returnArgs {
+                &Power_point_save_as_returnArgs {
                     full_path: Some(full_path_offset),
                 },
             );

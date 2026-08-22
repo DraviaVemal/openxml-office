@@ -12,7 +12,7 @@ namespace draviavemal.openxml_office.global_2007
     /// This class deals with anonymized data collection status flags and code flow details.
     /// User can opt-out any part of data collection and help us to understand the product use by sharing the data they are willing to share.
     /// No data will be used in marketing, sales or personal identification now or ever by this package
-    /// Read Privacy Details document at https://openxml-office.draviavemal.com/privacy-policy
+    /// Read Privacy Details document at https://docs.draviavemal.com/openxml-office/privacy-policy
     /// </summary>
     public class PrivacyProperties
     {

@@ -18,7 +18,7 @@ This crate aims to provide a high-performance, flexible C FFI interface to the O
 
 - **Crate Name**: `draviavemal-openxml_office_ffi`
 - **Crate Documentation**: [Docs.rs: draviavemal-openxml_office_ffi](https://docs.rs/draviavemal-openxml_office_ffi)
-- **Repository**: [GitHub: OpenXML Office](https://github.com/DraviaVemal/openxml-office/tree/alpha/rs_ffi)
+- **Repository**: [GitHub: OpenXML Office](https://github.com/DraviaVemal/openxml-office/tree/release/rs_ffi)
 
 The `rs_ffi` directory of the OpenXML Office repository contains the Rust FFI crate and serves as the foundational layer for exposing the core OpenXML Office functionality to various languages.
 
@@ -36,11 +36,11 @@ For language-specific integration guides and documentation, refer to the respect
 
 ## License
 
-This project is This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/main/LICENSE) file for details.
+This project is This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/release/LICENSE) file for details.
 
 ## Contributing
 
-Contributions are welcome! You can help by reporting issues, suggesting improvements, or submitting pull requests. Please follow the [CONTRIBUTING](https://github.com/DraviaVemal/openxml-office/blob/main/CONTRIBUTING.md) guidelines.
+Contributions are welcome! You can help by reporting issues, suggesting improvements, or submitting pull requests. Please follow the [CONTRIBUTING](https://github.com/DraviaVemal/openxml-office/blob/release/CONTRIBUTING.md) guidelines.
 
 ---
 

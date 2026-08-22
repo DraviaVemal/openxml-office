@@ -1,6 +1,6 @@
 <Project>
     <PropertyGroup>
-        <PackageProjectUrl>https://draviavemal.gitbook.io/openxml-office/</PackageProjectUrl>
+        <PackageProjectUrl>https://docs.draviavemal.com/openxml-office/</PackageProjectUrl>
         <RepositoryUrl>https://github.com/DraviaVemal/OpenXML-Office</RepositoryUrl>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>

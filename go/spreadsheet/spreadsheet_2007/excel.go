@@ -49,7 +49,7 @@ func NewExcel(fileName ...string) (Excel, error) {
 	var outBufferSize C.uintptr_t
 	var outError *C.char
 
-	code := C.excel_create(
+	code := C.Excel_create(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
 		C.uintptr_t(len(buffer)),
 		&outBuffer,
@@ -88,7 +88,7 @@ func (excel *Excel) AddSheet(sheetName ...string) (*Worksheet, error) {
 	var outBufferSize C.uintptr_t
 	var outError *C.char
 
-	code := C.excel_add_sheet(
+	code := C.Excel_add_sheet(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
 		C.uintptr_t(len(buffer)),
 		&outBuffer,
@@ -120,7 +120,7 @@ func (excel *Excel) GetWorksheet(sheetName string) (*Worksheet, error) {
 	var outBufferSize C.uintptr_t
 	var outError *C.char
 
-	code := C.excel_get_sheet(
+	code := C.Excel_get_sheet(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
 		C.uintptr_t(len(buffer)),
 		&outBuffer,
@@ -152,7 +152,7 @@ func (excel *Excel) RenameSheet(oldName, newName string) error {
 	buffer := builder.FinishedBytes()
 	var outError *C.char
 
-	code := C.excel_rename_sheet(
+	code := C.Excel_rename_sheet(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
 		C.uintptr_t(len(buffer)),
 		&outError,
@@ -180,7 +180,7 @@ func (excel *Excel) ListSheetNames() ([]string, error) {
 	var outBufferSize C.uintptr_t
 	var outError *C.char
 
-	code := C.excel_list_sheet_name(
+	code := C.Excel_list_sheet_name(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
 		C.uintptr_t(len(buffer)),
 		&outBuffer,
@@ -191,7 +191,7 @@ func (excel *Excel) ListSheetNames() ([]string, error) {
 		return nil, ffiError(outError)
 	}
 	data := consumeBuffer(outBuffer, outBufferSize)
-	resp := fbs.GetRootAsexcel_list_sheet_return(data, 0)
+	resp := fbs.GetRootAsExcel_list_sheet_return(data, 0)
 	names := make([]string, resp.SheetNamesLength())
 	for i := range names {
 		names[i] = string(resp.SheetNames(i))
@@ -279,7 +279,7 @@ func (excel *Excel) GetStyleId(setting CellStyleSetting) (StyleId, error) {
 	var outBufferSize C.uintptr_t
 	var outError *C.char
 
-	code := C.excel_get_style_id(
+	code := C.Excel_get_style_id(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
 		C.uintptr_t(len(buffer)),
 		&outBuffer,
@@ -311,7 +311,7 @@ func (excel *Excel) SaveAs(fileName string) error {
 	var outBufferSize C.uintptr_t
 	var outError *C.char
 
-	code := C.excel_save_as(
+	code := C.Excel_save_as(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
 		C.uintptr_t(len(buffer)),
 		&outBuffer,
@@ -340,7 +340,7 @@ func (excel *Excel) SetActiveSheet(sheetName string) error {
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.excel_set_active_sheet((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Excel_set_active_sheet((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -358,7 +358,7 @@ func (excel *Excel) SetVisibility(isVisible bool) error {
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.excel_set_visibility((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Excel_set_visibility((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -376,7 +376,7 @@ func (excel *Excel) MinimizeWorkbook(isMinimized bool) error {
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.excel_minimize_workbook((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Excel_minimize_workbook((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -394,7 +394,7 @@ func (excel *Excel) HideSheetTabs(hide bool) error {
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.excel_hide_sheet_tabs((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Excel_hide_sheet_tabs((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -412,7 +412,7 @@ func (excel *Excel) HideVerticalScroll(hide bool) error {
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.excel_hide_vertical_scroll((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Excel_hide_vertical_scroll((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -430,7 +430,7 @@ func (excel *Excel) HideHorizontalScroll(hide bool) error {
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.excel_hide_horizontal_scroll((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Excel_hide_horizontal_scroll((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil
@@ -449,7 +449,7 @@ func (excel *Excel) HideSheet(sheetName string) error {
 	builder.Finish(builder.EndObject())
 	buf := builder.FinishedBytes()
 	var outError *C.char
-	if code := C.excel_hide_sheet((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+	if code := C.Excel_hide_sheet((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
 	}
 	return nil

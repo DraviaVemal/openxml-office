@@ -1,31 +1,31 @@
 namespace openxml_office_fbs.document;
 
-// word_create - Start
+// Word_create - Start
 
-table word_create {
+table Word_create {
     file_name: string;
-    word_settings: word_settings(required);
+    word_settings: Word_settings(required);
 }
 
-table word_settings {
+table Word_settings {
     is_editable: bool;
 }
 
-table word_create_return {
+table Word_create_return {
     word_ptr: uint64;
 }
 
 // document_create - End
 
-// word_save_as - Start
+// Word_save_as - Start
 
-table word_save_as {
+table Word_save_as {
     word_ptr: uint64;
     file_name: string;
 }
 
-table word_save_as_return {
+table Word_save_as_return {
     full_path: string;
 }
 
-// word_save_as - End
+// Word_save_as - End

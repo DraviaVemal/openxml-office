@@ -1,14 +1,14 @@
 use crate::{
     openxml_office_fbs::spreadsheet::{
-        border_style_values, color_setting_type_values, excel_add_sheet, excel_add_sheet_return,
-        excel_add_sheet_returnArgs, excel_create, excel_create_return, excel_create_returnArgs,
-        excel_get_sheet_return, excel_get_sheet_returnArgs, excel_get_style_id,
-        excel_get_style_id_return, excel_get_style_id_returnArgs, excel_list_sheet,
-        excel_list_sheet_return, excel_list_sheet_returnArgs, excel_rename_sheet, excel_save_as,
-        excel_save_as_return, excel_save_as_returnArgs, horizontal_alignment_values,
-        number_format_values, vertical_alignment_values, excel_set_active_sheet,
-        excel_set_visibility, excel_minimize_workbook, excel_hide_sheet_tabs,
-        excel_hide_vertical_scroll, excel_hide_horizontal_scroll, excel_hide_sheet,
+        Border_style_values, Color_setting_type_values, Excel_add_sheet, Excel_add_sheet_return,
+        Excel_add_sheet_returnArgs, Excel_create, Excel_create_return, Excel_create_returnArgs,
+        Excel_get_sheet_return, Excel_get_sheet_returnArgs, Excel_get_style_id,
+        Excel_get_style_id_return, Excel_get_style_id_returnArgs, Excel_list_sheet,
+        Excel_list_sheet_return, Excel_list_sheet_returnArgs, Excel_rename_sheet, Excel_save_as,
+        Excel_save_as_return, Excel_save_as_returnArgs, Horizontal_alignment_values,
+        Number_format_values, Vertical_alignment_values, Excel_set_active_sheet,
+        Excel_set_visibility, Excel_minimize_workbook, Excel_hide_sheet_tabs,
+        Excel_hide_vertical_scroll, Excel_hide_horizontal_scroll, Excel_hide_sheet,
     },
     root_from_raw, set_error, write_buffer, StatusCode,
 };
@@ -27,7 +27,7 @@ use std::{ffi::c_char, mem::ManuallyDrop};
 ///
 /// Returns a pointer to the newly created Excel object.
 /// If an error occurs, returns a null pointer.
-pub extern "C" fn excel_create(
+pub extern "C" fn Excel_create(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -35,7 +35,7 @@ pub extern "C" fn excel_create(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_excel_create =
-        match unsafe { root_from_raw::<excel_create>(in_buffer, in_buffer_size, out_error) } {
+        match unsafe { root_from_raw::<Excel_create>(in_buffer, in_buffer_size, out_error) } {
             Ok(root) => root,
             Err(status) => return status,
         };
@@ -47,9 +47,9 @@ pub extern "C" fn excel_create(
         Ok(excel) => {
             let excel_ptr = Box::into_raw(Box::new(excel)) as u64;
             let mut builder = flatbuffers::FlatBufferBuilder::new();
-            let excel_create_return = excel_create_return::create(
+            let excel_create_return = Excel_create_return::create(
                 &mut builder,
-                &excel_create_returnArgs {
+                &Excel_create_returnArgs {
                     excel_ptr: excel_ptr,
                 },
             );
@@ -63,7 +63,7 @@ pub extern "C" fn excel_create(
 
 #[no_mangle]
 /// Add New Sheet to the Excel
-pub extern "C" fn excel_add_sheet(
+pub extern "C" fn Excel_add_sheet(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -71,7 +71,7 @@ pub extern "C" fn excel_add_sheet(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_add_sheet =
-        match unsafe { root_from_raw::<excel_add_sheet>(in_buffer, in_buffer_size, out_error) } {
+        match unsafe { root_from_raw::<Excel_add_sheet>(in_buffer, in_buffer_size, out_error) } {
             Ok(root) => root,
             Err(status) => return status,
         };
@@ -81,9 +81,9 @@ pub extern "C" fn excel_add_sheet(
         Ok(worksheet) => {
             let worksheet_ptr = Box::into_raw(Box::new(worksheet)) as u64;
             let mut builder = flatbuffers::FlatBufferBuilder::new();
-            let excel_add_sheet = excel_add_sheet_return::create(
+            let excel_add_sheet = Excel_add_sheet_return::create(
                 &mut builder,
-                &excel_add_sheet_returnArgs {
+                &Excel_add_sheet_returnArgs {
                     worksheet_ptr: worksheet_ptr,
                 },
             );
@@ -97,13 +97,13 @@ pub extern "C" fn excel_add_sheet(
 
 #[no_mangle]
 /// Get Existing Sheet from Excel
-pub extern "C" fn excel_rename_sheet(
+pub extern "C" fn Excel_rename_sheet(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_excel_rename_sheet = match unsafe {
-        root_from_raw::<excel_rename_sheet>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Excel_rename_sheet>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -127,7 +127,7 @@ pub extern "C" fn excel_rename_sheet(
 
 #[no_mangle]
 /// Get Existing Sheet from Excel
-pub extern "C" fn excel_get_sheet(
+pub extern "C" fn Excel_get_sheet(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -135,7 +135,7 @@ pub extern "C" fn excel_get_sheet(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_add_sheet =
-        match unsafe { root_from_raw::<excel_add_sheet>(in_buffer, in_buffer_size, out_error) } {
+        match unsafe { root_from_raw::<Excel_add_sheet>(in_buffer, in_buffer_size, out_error) } {
             Ok(root) => root,
             Err(status) => return status,
         };
@@ -150,9 +150,9 @@ pub extern "C" fn excel_get_sheet(
         Ok(worksheet) => {
             let worksheet_ptr = Box::into_raw(Box::new(worksheet)) as u64;
             let mut builder = flatbuffers::FlatBufferBuilder::new();
-            let excel_get_sheet_return = excel_get_sheet_return::create(
+            let excel_get_sheet_return = Excel_get_sheet_return::create(
                 &mut builder,
-                &excel_get_sheet_returnArgs {
+                &Excel_get_sheet_returnArgs {
                     worksheet_ptr: worksheet_ptr,
                 },
             );
@@ -166,7 +166,7 @@ pub extern "C" fn excel_get_sheet(
 
 #[no_mangle]
 /// List Sheet Name from Excel
-pub extern "C" fn excel_list_sheet_name(
+pub extern "C" fn Excel_list_sheet_name(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -174,7 +174,7 @@ pub extern "C" fn excel_list_sheet_name(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_list_sheet_name =
-        match unsafe { root_from_raw::<excel_list_sheet>(in_buffer, in_buffer_size, out_error) } {
+        match unsafe { root_from_raw::<Excel_list_sheet>(in_buffer, in_buffer_size, out_error) } {
             Ok(root) => root,
             Err(status) => return status,
         };
@@ -188,9 +188,9 @@ pub extern "C" fn excel_list_sheet_name(
                 .map(|name| builder.create_string(name))
                 .collect();
             let sheet_names_vector = builder.create_vector(&sheet_names_offsets);
-            let excel_list_sheet_return = excel_list_sheet_return::create(
+            let excel_list_sheet_return = Excel_list_sheet_return::create(
                 &mut builder,
-                &excel_list_sheet_returnArgs {
+                &Excel_list_sheet_returnArgs {
                     sheet_names: Some(sheet_names_vector),
                 },
             );
@@ -204,7 +204,7 @@ pub extern "C" fn excel_list_sheet_name(
 
 #[no_mangle]
 /// Get Style ID from Excel
-pub extern "C" fn excel_get_style_id(
+pub extern "C" fn Excel_get_style_id(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -212,7 +212,7 @@ pub extern "C" fn excel_get_style_id(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_get_style_id = match unsafe {
-        root_from_raw::<excel_get_style_id>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Excel_get_style_id>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -223,66 +223,66 @@ pub extern "C" fn excel_get_style_id(
     let mut style_setting = CellStyleSetting::default();
     // num format
     style_setting.number_format = match fbs_get_style_id.style_setting().number_format() {
-        number_format_values::integer => NumberFormatValues::Integer,
-        number_format_values::decimal_two_places => NumberFormatValues::DecimalTwoPlaces,
-        number_format_values::thousands_separator => NumberFormatValues::ThousandsSeparator,
-        number_format_values::thousands_separator_two_decimals => {
+        Number_format_values::integer => NumberFormatValues::Integer,
+        Number_format_values::decimal_two_places => NumberFormatValues::DecimalTwoPlaces,
+        Number_format_values::thousands_separator => NumberFormatValues::ThousandsSeparator,
+        Number_format_values::thousands_separator_two_decimals => {
             NumberFormatValues::ThousandsSeparatorTwoDecimals
         }
-        number_format_values::currency_no_decimals => NumberFormatValues::CurrencyNoDecimals,
-        number_format_values::currency_no_decimals_red => NumberFormatValues::CurrencyNoDecimalsRed,
-        number_format_values::currency_two_decimals => NumberFormatValues::CurrencyTwoDecimals,
-        number_format_values::currency_two_decimals_red => {
+        Number_format_values::currency_no_decimals => NumberFormatValues::CurrencyNoDecimals,
+        Number_format_values::currency_no_decimals_red => NumberFormatValues::CurrencyNoDecimalsRed,
+        Number_format_values::currency_two_decimals => NumberFormatValues::CurrencyTwoDecimals,
+        Number_format_values::currency_two_decimals_red => {
             NumberFormatValues::CurrencyTwoDecimalsRed
         }
-        number_format_values::percentage => NumberFormatValues::Percentage,
-        number_format_values::percentage_two_decimals => NumberFormatValues::PercentageTwoDecimals,
-        number_format_values::scientific => NumberFormatValues::Scientific,
-        number_format_values::fraction_one_digit => NumberFormatValues::FractionOneDigit,
-        number_format_values::fraction_two_digits => NumberFormatValues::FractionTwoDigits,
-        number_format_values::date_mmddyy => NumberFormatValues::DateMMDDYY,
-        number_format_values::date_dmmmyy => NumberFormatValues::DateDMmmYY,
-        number_format_values::date_dmmm => NumberFormatValues::DateDMmm,
-        number_format_values::date_mmmyy => NumberFormatValues::DateMmmYY,
-        number_format_values::time_12_hour => NumberFormatValues::Time12Hour,
-        number_format_values::time_12_hour_with_seconds => {
+        Number_format_values::percentage => NumberFormatValues::Percentage,
+        Number_format_values::percentage_two_decimals => NumberFormatValues::PercentageTwoDecimals,
+        Number_format_values::scientific => NumberFormatValues::Scientific,
+        Number_format_values::fraction_one_digit => NumberFormatValues::FractionOneDigit,
+        Number_format_values::fraction_two_digits => NumberFormatValues::FractionTwoDigits,
+        Number_format_values::date_mmddyy => NumberFormatValues::DateMMDDYY,
+        Number_format_values::date_dmmmyy => NumberFormatValues::DateDMmmYY,
+        Number_format_values::date_dmmm => NumberFormatValues::DateDMmm,
+        Number_format_values::date_mmmyy => NumberFormatValues::DateMmmYY,
+        Number_format_values::time_12_hour => NumberFormatValues::Time12Hour,
+        Number_format_values::time_12_hour_with_seconds => {
             NumberFormatValues::Time12HourWithSeconds
         }
-        number_format_values::time_24_hour => NumberFormatValues::Time24Hour,
-        number_format_values::time_24_hour_with_seconds => {
+        Number_format_values::time_24_hour => NumberFormatValues::Time24Hour,
+        Number_format_values::time_24_hour_with_seconds => {
             NumberFormatValues::Time24HourWithSeconds
         }
-        number_format_values::date_time_mmddyy => NumberFormatValues::DateTimeMMDDYY,
-        number_format_values::accounting_no_decimals => NumberFormatValues::AccountingNoDecimals,
-        number_format_values::accounting_no_decimals_red => {
+        Number_format_values::date_time_mmddyy => NumberFormatValues::DateTimeMMDDYY,
+        Number_format_values::accounting_no_decimals => NumberFormatValues::AccountingNoDecimals,
+        Number_format_values::accounting_no_decimals_red => {
             NumberFormatValues::AccountingNoDecimalsRed
         }
-        number_format_values::accounting_two_decimals => NumberFormatValues::AccountingTwoDecimals,
-        number_format_values::accounting_two_decimals_red => {
+        Number_format_values::accounting_two_decimals => NumberFormatValues::AccountingTwoDecimals,
+        Number_format_values::accounting_two_decimals_red => {
             NumberFormatValues::AccountingTwoDecimalsRed
         }
-        number_format_values::accounting_negative_in_parentheses => {
+        Number_format_values::accounting_negative_in_parentheses => {
             NumberFormatValues::AccountingNegativeInParentheses
         }
-        number_format_values::accounting_two_decimals_negative_in_parentheses => {
+        Number_format_values::accounting_two_decimals_negative_in_parentheses => {
             NumberFormatValues::AccountingTwoDecimalsNegativeInParentheses
         }
-        number_format_values::accounting_aligned_symbols => {
+        Number_format_values::accounting_aligned_symbols => {
             NumberFormatValues::AccountingAlignedSymbols
         }
-        number_format_values::accounting_aligned_symbols_two_decimals => {
+        Number_format_values::accounting_aligned_symbols_two_decimals => {
             NumberFormatValues::AccountingAlignedSymbolsTwoDecimals
         }
-        number_format_values::time_minutes_seconds => NumberFormatValues::TimeMinutesSeconds,
-        number_format_values::time_hours_minutes_seconds => {
+        Number_format_values::time_minutes_seconds => NumberFormatValues::TimeMinutesSeconds,
+        Number_format_values::time_hours_minutes_seconds => {
             NumberFormatValues::TimeHoursMinutesSeconds
         }
-        number_format_values::elapsed_time_with_fractions => {
+        Number_format_values::elapsed_time_with_fractions => {
             NumberFormatValues::ElapsedTimeWithFractions
         }
-        number_format_values::scientific_one_decimal => NumberFormatValues::ScientificOneDecimal,
-        number_format_values::text_format => NumberFormatValues::TextFormat,
-        number_format_values::custom => NumberFormatValues::Custom,
+        Number_format_values::scientific_one_decimal => NumberFormatValues::ScientificOneDecimal,
+        Number_format_values::text_format => NumberFormatValues::TextFormat,
+        Number_format_values::custom => NumberFormatValues::Custom,
         _ => NumberFormatValues::General,
     };
     style_setting.custom_number_format = fbs_get_style_id
@@ -299,15 +299,15 @@ pub extern "C" fn excel_get_style_id(
     {
         let mut clr_setting = ColorSetting::default();
         clr_setting.color_setting_type = match color_setting.color_setting_type() {
-            color_setting_type_values::rgb => Rgb,
-            color_setting_type_values::theme => Theme,
+            Color_setting_type_values::rgb => Rgb,
+            Color_setting_type_values::theme => Theme,
             _ => Indexed,
         };
         border_left.border_color = Some(clr_setting);
     }
     border_left.style = match fbs_get_style_id.style_setting().border_left().style() {
-        border_style_values::thin => BorderStyleValues::Thin,
-        border_style_values::thick => BorderStyleValues::Thick,
+        Border_style_values::thin => BorderStyleValues::Thin,
+        Border_style_values::thick => BorderStyleValues::Thick,
         _ => BorderStyleValues::None,
     };
     style_setting.border_left = border_left;
@@ -316,15 +316,15 @@ pub extern "C" fn excel_get_style_id(
     if let Some(color_setting) = fbs_get_style_id.style_setting().border_top().border_color() {
         let mut clr_setting = ColorSetting::default();
         clr_setting.color_setting_type = match color_setting.color_setting_type() {
-            color_setting_type_values::rgb => Rgb,
-            color_setting_type_values::theme => Theme,
+            Color_setting_type_values::rgb => Rgb,
+            Color_setting_type_values::theme => Theme,
             _ => Indexed,
         };
         border_top.border_color = Some(clr_setting);
     }
     border_top.style = match fbs_get_style_id.style_setting().border_top().style() {
-        border_style_values::thin => BorderStyleValues::Thin,
-        border_style_values::thick => BorderStyleValues::Thick,
+        Border_style_values::thin => BorderStyleValues::Thin,
+        Border_style_values::thick => BorderStyleValues::Thick,
         _ => BorderStyleValues::None,
     };
     style_setting.border_top = border_top;
@@ -337,15 +337,15 @@ pub extern "C" fn excel_get_style_id(
     {
         let mut clr_setting = ColorSetting::default();
         clr_setting.color_setting_type = match color_setting.color_setting_type() {
-            color_setting_type_values::rgb => Rgb,
-            color_setting_type_values::theme => Theme,
+            Color_setting_type_values::rgb => Rgb,
+            Color_setting_type_values::theme => Theme,
             _ => Indexed,
         };
         border_right.border_color = Some(clr_setting);
     }
     border_right.style = match fbs_get_style_id.style_setting().border_right().style() {
-        border_style_values::thin => BorderStyleValues::Thin,
-        border_style_values::thick => BorderStyleValues::Thick,
+        Border_style_values::thin => BorderStyleValues::Thin,
+        Border_style_values::thick => BorderStyleValues::Thick,
         _ => BorderStyleValues::None,
     };
     style_setting.border_right = border_right;
@@ -358,15 +358,15 @@ pub extern "C" fn excel_get_style_id(
     {
         let mut clr_setting = ColorSetting::default();
         clr_setting.color_setting_type = match color_setting.color_setting_type() {
-            color_setting_type_values::rgb => Rgb,
-            color_setting_type_values::theme => Theme,
+            Color_setting_type_values::rgb => Rgb,
+            Color_setting_type_values::theme => Theme,
             _ => Indexed,
         };
         border_bottom.border_color = Some(clr_setting);
     }
     border_bottom.style = match fbs_get_style_id.style_setting().border_bottom().style() {
-        border_style_values::thin => BorderStyleValues::Thin,
-        border_style_values::thick => BorderStyleValues::Thick,
+        Border_style_values::thin => BorderStyleValues::Thin,
+        Border_style_values::thick => BorderStyleValues::Thick,
         _ => BorderStyleValues::None,
     };
     style_setting.border_bottom = border_bottom;
@@ -379,15 +379,15 @@ pub extern "C" fn excel_get_style_id(
     {
         let mut clr_setting = ColorSetting::default();
         clr_setting.color_setting_type = match color_setting.color_setting_type() {
-            color_setting_type_values::rgb => Rgb,
-            color_setting_type_values::theme => Theme,
+            Color_setting_type_values::rgb => Rgb,
+            Color_setting_type_values::theme => Theme,
             _ => Indexed,
         };
         border_diagonal.border_color = Some(clr_setting);
     }
     border_diagonal.style = match fbs_get_style_id.style_setting().border_diagonal().style() {
-        border_style_values::thin => BorderStyleValues::Thin,
-        border_style_values::thick => BorderStyleValues::Thick,
+        Border_style_values::thin => BorderStyleValues::Thin,
+        Border_style_values::thick => BorderStyleValues::Thick,
         _ => BorderStyleValues::None,
     };
     style_setting.border_diagonal = border_diagonal;
@@ -416,16 +416,16 @@ pub extern "C" fn excel_get_style_id(
     // xfs
     style_setting.horizontal_alignment =
         match fbs_get_style_id.style_setting().horizontal_alignment() {
-            horizontal_alignment_values::left => HorizontalAlignmentValues::LEFT,
-            horizontal_alignment_values::center => HorizontalAlignmentValues::CENTER,
-            horizontal_alignment_values::right => HorizontalAlignmentValues::RIGHT,
-            horizontal_alignment_values::justify => HorizontalAlignmentValues::JUSTIFY,
+            Horizontal_alignment_values::left => HorizontalAlignmentValues::LEFT,
+            Horizontal_alignment_values::center => HorizontalAlignmentValues::CENTER,
+            Horizontal_alignment_values::right => HorizontalAlignmentValues::RIGHT,
+            Horizontal_alignment_values::justify => HorizontalAlignmentValues::JUSTIFY,
             _ => HorizontalAlignmentValues::None,
         };
     style_setting.vertical_alignment = match fbs_get_style_id.style_setting().vertical_alignment() {
-        vertical_alignment_values::top => VerticalAlignmentValues::Top,
-        vertical_alignment_values::middle => VerticalAlignmentValues::Middle,
-        vertical_alignment_values::bottom => VerticalAlignmentValues::Bottom,
+        Vertical_alignment_values::top => VerticalAlignmentValues::Top,
+        Vertical_alignment_values::middle => VerticalAlignmentValues::Middle,
+        Vertical_alignment_values::bottom => VerticalAlignmentValues::Bottom,
         _ => VerticalAlignmentValues::None,
     };
 
@@ -433,9 +433,9 @@ pub extern "C" fn excel_get_style_id(
         Ok(style_id) => {
             let style_id_ptr = Box::into_raw(Box::new(style_id)) as u64;
             let mut builder = flatbuffers::FlatBufferBuilder::new();
-            let excel_get_style_id_return = excel_get_style_id_return::create(
+            let excel_get_style_id_return = Excel_get_style_id_return::create(
                 &mut builder,
-                &excel_get_style_id_returnArgs {
+                &Excel_get_style_id_returnArgs {
                     style_id_ptr: style_id_ptr,
                 },
             );
@@ -449,7 +449,7 @@ pub extern "C" fn excel_get_style_id(
 
 #[no_mangle]
 ///Save the Excel File in provided file path
-pub extern "C" fn excel_save_as(
+pub extern "C" fn Excel_save_as(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_buffer: *mut *mut u8,
@@ -457,7 +457,7 @@ pub extern "C" fn excel_save_as(
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs_save_as =
-        match unsafe { root_from_raw::<excel_save_as>(in_buffer, in_buffer_size, out_error) } {
+        match unsafe { root_from_raw::<Excel_save_as>(in_buffer, in_buffer_size, out_error) } {
             Ok(root) => root,
             Err(status) => return status,
         };
@@ -473,9 +473,9 @@ pub extern "C" fn excel_save_as(
         Ok(full_path) => {
             let mut builder = flatbuffers::FlatBufferBuilder::new();
             let full_path_offset = builder.create_string(&full_path);
-            let excel_save_as_return = excel_save_as_return::create(
+            let excel_save_as_return = Excel_save_as_return::create(
                 &mut builder,
-                &excel_save_as_returnArgs {
+                &Excel_save_as_returnArgs {
                     full_path: Some(full_path_offset),
                 },
             );
@@ -489,13 +489,13 @@ pub extern "C" fn excel_save_as(
 
 #[no_mangle]
 /// Set the active sheet that opens by default when the workbook is opened
-pub extern "C" fn excel_set_active_sheet(
+pub extern "C" fn Excel_set_active_sheet(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<excel_set_active_sheet>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Excel_set_active_sheet>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -510,13 +510,13 @@ pub extern "C" fn excel_set_active_sheet(
 
 #[no_mangle]
 /// Set the visibility of the workbook window
-pub extern "C" fn excel_set_visibility(
+pub extern "C" fn Excel_set_visibility(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<excel_set_visibility>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Excel_set_visibility>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -531,13 +531,13 @@ pub extern "C" fn excel_set_visibility(
 
 #[no_mangle]
 /// Minimize or restore the workbook window
-pub extern "C" fn excel_minimize_workbook(
+pub extern "C" fn Excel_minimize_workbook(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<excel_minimize_workbook>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Excel_minimize_workbook>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -552,13 +552,13 @@ pub extern "C" fn excel_minimize_workbook(
 
 #[no_mangle]
 /// Show or hide the sheet tab bar
-pub extern "C" fn excel_hide_sheet_tabs(
+pub extern "C" fn Excel_hide_sheet_tabs(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<excel_hide_sheet_tabs>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Excel_hide_sheet_tabs>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -573,13 +573,13 @@ pub extern "C" fn excel_hide_sheet_tabs(
 
 #[no_mangle]
 /// Show or hide the vertical scroll bar
-pub extern "C" fn excel_hide_vertical_scroll(
+pub extern "C" fn Excel_hide_vertical_scroll(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<excel_hide_vertical_scroll>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Excel_hide_vertical_scroll>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -594,13 +594,13 @@ pub extern "C" fn excel_hide_vertical_scroll(
 
 #[no_mangle]
 /// Show or hide the horizontal scroll bar
-pub extern "C" fn excel_hide_horizontal_scroll(
+pub extern "C" fn Excel_hide_horizontal_scroll(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<excel_hide_horizontal_scroll>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Excel_hide_horizontal_scroll>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
@@ -615,13 +615,13 @@ pub extern "C" fn excel_hide_horizontal_scroll(
 
 #[no_mangle]
 /// Hide a specific sheet in the workbook
-pub extern "C" fn excel_hide_sheet(
+pub extern "C" fn Excel_hide_sheet(
     in_buffer: *const u8,
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
     let fbs = match unsafe {
-        root_from_raw::<excel_hide_sheet>(in_buffer, in_buffer_size, out_error)
+        root_from_raw::<Excel_hide_sheet>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,

@@ -1,7 +1,7 @@
 # OpenXML Office (Rust Edition)
 
 [![Crates.io](https://img.shields.io/crates/v/draviavemal-openxml_office.svg)](https://crates.io/crates/draviavemal-openxml_office)
-[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://openxml-office.draviavemal.com/v4.x-alpha)
+[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://docs.draviavemal.com/openxml-office/4.0/)
 
 ## Short Description
 OpenXML Office is a Rust-based package designed for creating, manipulating, and managing OpenXML documents such as **Word documents (.docx)**, **Excel spreadsheets (.xlsx)**, and **PowerPoint presentations (.pptx)**. This package eliminates the dependency on OpenXML-SDK, offering a blazing-fast, standalone solution for handling these document formats.
@@ -16,14 +16,14 @@ My mission is to provide a highly efficient and feature-rich Rust library for Op
 ## Package Details
 
 - **Crate:** [draviavemal-openxml_office on crates.io](https://crates.io/crates/draviavemal-openxml_office)
-- **Documentation:** [v4.x-alpha Documentation](https://openxml-office.draviavemal.com/v4.x-alpha)
+- **Documentation:** [v4.x-alpha Documentation](https://docs.draviavemal.com/openxml-office/4.0/)
 
 > **Note:** Documentation is an ongoing activity and may not yet fully reflect the implemented features. Refer to the source and tests for the latest functionality.
 
 ## Working Samples
 
 To see sample code and working tests, please refer to the test files:
-[GitHub: Alpha Test Files](https://github.com/DraviaVemal/openxml-office/tree/alpha/rs/src/tests)
+[GitHub: Alpha Test Files](https://github.com/DraviaVemal/openxml-office/tree/release/tests/rs)
 
 These tests demonstrate various use cases and can serve as a starting point for integrating the library into your projects.
 
@@ -34,11 +34,11 @@ This Rust package serves as the core implementation for the OpenXML Office proje
 
 ## License
 
-This project is This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/main/LICENSE) file for details.
+This project is This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/release/LICENSE) file for details.
 
 ## Contributing
 
-Contributions are welcome! Whether it’s reporting bugs, suggesting improvements, or submitting pull requests, your help is greatly appreciated. For more details, see our [CONTRIBUTING](https://github.com/DraviaVemal/openxml-office/blob/main/CONTRIBUTING.md) guidelines.
+Contributions are welcome! Whether it’s reporting bugs, suggesting improvements, or submitting pull requests, your help is greatly appreciated. For more details, see our [CONTRIBUTING](https://github.com/DraviaVemal/openxml-office/blob/release/CONTRIBUTING.md) guidelines.
 
 ---
 

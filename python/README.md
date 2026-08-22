@@ -22,7 +22,7 @@ My mission is to provide a seamless and efficient Python interface for OpenXML d
 ## Working Samples
 
 To see sample code and working tests, please refer to the test files:
-[GitHub: Alpha Test Files](https://github.com/DraviaVemal/openxml-office/tree/alpha/python)
+[GitHub: Alpha Test Files](https://github.com/DraviaVemal/openxml-office/tree/release/tests/python)
 
 These tests demonstrate various use cases and can serve as a starting point for integrating the wrapper into your Python projects.
 
@@ -43,11 +43,11 @@ For more information on the overarching project, visit the main repository:
 
 ## License
 
-This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/main/LICENSE) file for details.
+This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/release/LICENSE) file for details.
 
 ## Contributing
 
-Contributions are welcome! Whether it’s reporting bugs, suggesting improvements, or submitting pull requests, your help is greatly appreciated. For more details, see our [CONTRIBUTING](https://github.com/DraviaVemal/openxml-office/blob/main/CONTRIBUTING.md) guidelines.
+Contributions are welcome! Whether it’s reporting bugs, suggesting improvements, or submitting pull requests, your help is greatly appreciated. For more details, see our [CONTRIBUTING](https://github.com/DraviaVemal/openxml-office/blob/release/CONTRIBUTING.md) guidelines.
 
 ---
 
