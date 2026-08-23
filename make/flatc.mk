@@ -1,5 +1,5 @@
 .PHONY: flatc
-flatc: check
+flatc:
 	rm -rf $(CS_DIR)/openxml_office_fbs
 	rm -rf $(GO_DIR)/internal/openxml_office_fbs
 	rm -rf $(JAVA_DIR)/openxml_office_fbs
