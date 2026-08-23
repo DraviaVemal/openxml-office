@@ -7,5 +7,7 @@ edition = "2021"
 draviavemal-openxml_office.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-# todo Hyper change
-actix-web = "4.9.0"
+hyper.workspace = true
+tokio.workspace = true
+http-body-util.workspace = true
+hyper-util.workspace = true
