@@ -17,7 +17,7 @@ namespace draviavemal.openxml_office.presentation_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "presentation_create", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "Presentation_create", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_presentation_create(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -29,7 +29,7 @@ namespace draviavemal.openxml_office.presentation_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "presentation_save_as", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "Presentation_save_as", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_presentation_save_as(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,

@@ -16,7 +16,7 @@ My mission is to provide a high-performance, language-agnostic API for OpenXML d
 
 - **Crate:** `draviavemal-openxmloffice_rs_api`
 - **Container Image:** [OpenXML Office API on Docker Hub](https://hub.docker.com/r/draviavemal/openxml-office)
-- **Framework:** Built with `actix-web`.
+- **Framework:** Built with `hyper`.
 
 > **Note:** This API server wraps the Rust-based core package. Documentation is an ongoing activity and may not yet fully reflect the implemented features. Refer to the main project documentation and source for the latest functionality.
 

@@ -22,7 +22,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "set_column_ref_properties", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "Set_column_ref_properties", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_set_column_ref_properties(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -32,7 +32,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "set_column_index_properties", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "Set_column_index_properties", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_set_column_index_properties(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -42,7 +42,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "set_row_index_properties", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "Set_row_index_properties", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_set_row_index_properties(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -52,7 +52,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "set_cell_ref_value", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "Set_cell_ref_value", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_set_cell_ref_value(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
@@ -62,7 +62,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "set_cell_index_value", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "Set_cell_index_value", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_set_cell_index_value(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,

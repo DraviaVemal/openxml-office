@@ -41,7 +41,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         /// <summary>
         /// 
         /// </summary>
-        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "excel_get_sheet", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "Excel_get_sheet", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_get_sheet(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
