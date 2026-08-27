@@ -28,11 +28,24 @@ pub(crate) struct DrawingPartGlobal {
 }
 
 impl DrawingPartGlobal {
-    pub(crate) fn new(drawing_relationship_part: Rc<RefCell<RelationsPart>>) -> DrawingPartGlobal {
-        Self {
+    pub(crate) fn new(
+        drawing_relationship_part: Rc<RefCell<RelationsPart>>,
+    ) -> Result<DrawingPartGlobal, AnyError> {
+        let medias = DrawingPartGlobal::deserialise_hash_media(drawing_relationship_part.clone())
+            .context("Failed To hash media files")?;
+        Ok(DrawingPartGlobal {
+            medias: medias,
             drawing_relationship_part,
-            medias: vec![],
-        }
+        })
+    }
+
+    pub(crate) fn deserialise_hash_media(
+        drawing_relationship_part: Rc<RefCell<RelationsPart>>,
+    ) -> Result<Vec<MediaGlobal>, AnyError> {
+        let rel_part = drawing_relationship_part
+            .try_borrow()
+            .context("Failed to get Drawing part")?;
+        Ok(vec![])
     }
 
     pub(crate) fn deserialise_blip_fill(
@@ -216,6 +229,7 @@ impl DrawingPartGlobal {
         }
         Ok(tile)
     }
+
     pub(crate) fn deserialise_transform(
         xml_doc_mut: &RefMut<'_, XmlDocument>,
         transform_element: &XmlElement,

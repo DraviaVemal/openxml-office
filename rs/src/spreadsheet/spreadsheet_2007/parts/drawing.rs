@@ -177,8 +177,10 @@ impl DrawingPart {
             },
             "drawing Initialize Time"
         )?;
+        let drawing_global = DrawingPartGlobal::new(drawing_relationship_part.clone())
+            .context("Failed to create drawing global")?;
         Ok(DrawingPart {
-            drawing_global: DrawingPartGlobal::new(drawing_relationship_part.clone()),
+            drawing_global,
             office_document,
             xml_document,
             common_service,
