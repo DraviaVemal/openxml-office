@@ -209,6 +209,7 @@ impl RelationsPart {
 
     /// Get Relation Target based on Type
     /// Note: This will get the first element match the criteria
+    /// FIXME: Assumed implementation for Gen1 need to be cleaned up for standardized usecase
     pub(crate) fn get_relationship_target_path_by_type_mut(
         &mut self,
         content_type: &str,
