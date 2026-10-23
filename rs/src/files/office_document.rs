@@ -1,5 +1,6 @@
 // TODO
 // Update tokio task based read write in background without blocking user main program
+// Read From Zip Only requred dont load every file into archive_collection to reduce Memory use
 use crate::{
     file_handling::{compress_content, decompress_content},
     global_2007::parts::ContentTypesPart,

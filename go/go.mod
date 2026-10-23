@@ -1,4 +1,4 @@
-module draviavemal_openxml_office
+module github.com/DraviaVemal/openxml-office/go
 
 go 1.22.5
 
