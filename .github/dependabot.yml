@@ -1,6 +1,72 @@
 version: 2
 updates:
   - package-ecosystem: "nuget"
-    directory: "/"
+    directory: "/cs"
+    exclude-paths: ["test", "tests"]
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      nuget-security:
+        applies-to: security-updates
+        patterns: ["*"]
+      nuget-minor-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+        patterns: ["*"]
+  - package-ecosystem: "cargo"
+    directory: "/rs"
+    exclude-paths: ["test", "tests"]
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      cargo-security:
+        applies-to: security-updates
+        patterns: ["*"]
+      cargo-minor-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+        patterns: ["*"]
+  - package-ecosystem: "cargo"
+    directory: "/rs_api"
+    exclude-paths: ["test", "tests"]
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      cargo-security:
+        applies-to: security-updates
+        patterns: ["*"]
+      cargo-minor-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+        patterns: ["*"]
+  - package-ecosystem: "cargo"
+    directory: "/rs_ffi"
+    exclude-paths: ["test", "tests"]
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      cargo-security:
+        applies-to: security-updates
+        patterns: ["*"]
+      cargo-minor-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+        patterns: ["*"]
+  - package-ecosystem: "go"
+    directory: "/go"
+    exclude-paths: ["test", "tests"]
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      go-security:
+        applies-to: security-updates
+        patterns: ["*"]
+      go-minor-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+        patterns: ["*"]
