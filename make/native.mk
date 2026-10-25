@@ -6,18 +6,20 @@ rust-core: check
 .PHONY: native
 native: check
 	DEVOPS_BUILD=$(DEVOPS_BUILD) $(CARGO) build $(CARGO_FLAG) \
-		-p $(FFI_PACKAGE) \
-		--target $(NATIVE_TARGET)
+		-p $(CORE_PACKAGE) \
+		--features ffi --target $(NATIVE_TARGET)
 
 	rm -rf $(NATIVE_DIST_DIR)/$(NATIVE_TARGET)
 	mkdir -p $(NATIVE_DIST_DIR)/$(NATIVE_TARGET) $(NATIVE_DIST_DIR)/include
 
 	@build_dir="$(TARGET_DIR)/$(NATIVE_TARGET)/$(CARGO_PROFILE)"; \
 	dest_dir="$(NATIVE_DIST_DIR)/$(NATIVE_TARGET)"; \
-	for lib_file in \
-		"lib$(FFI_LIB_NAME).so" "lib$(FFI_LIB_NAME).dylib" "$(FFI_LIB_NAME).dll" \
-		"lib$(FFI_LIB_NAME).a" "$(FFI_LIB_NAME).lib" "lib$(FFI_LIB_NAME).lib"; do \
-		[ -f "$$build_dir/$$lib_file" ] && cp "$$build_dir/$$lib_file" "$$dest_dir/" && echo "  + $$lib_file"; \
+	for ext in so dylib dll a; do \
+		for prefix in lib ""; do \
+			source="$$build_dir/$${prefix}$(RUST_LIB_NAME).$$ext"; \
+			dest="$$dest_dir/$${prefix}$(FFI_LIB_NAME).$$ext"; \
+			[ -f "$$source" ] && cp "$$source" "$$dest" && echo "  + $$(basename "$$dest")"; \
+		done; \
 	done; \
 	true
 
@@ -27,7 +29,7 @@ native: check
 	@find $(NATIVE_DIST_DIR) -type f | sort
 
 .PHONY: ffi
-ffi: flatc rust-core ffi-prep $(FFI_PLATFORM_TARGETS)
+ffi: flatc ffi-prep $(FFI_PLATFORM_TARGETS)
 	cp $(TARGET_DIR)/headers.h \
 		$(GO_DIR)/lib/headers.h
 
@@ -53,7 +55,7 @@ ffi-prep:
 .PHONY: ffi-linux
 ffi-linux: check ffi-prep
 	$(CARGO) build $(CARGO_FLAG) \
-		--target $(LINUX_TARGET)
+		-p $(CORE_PACKAGE) --features ffi --target $(LINUX_TARGET)
 
 	cp $(LINUX_SO) \
 		$(CS_DIR)/runtimes/linux-x64/native/lib$(FFI_LIB_NAME).so
@@ -70,7 +72,7 @@ ffi-linux: check ffi-prep
 .PHONY: ffi-windows
 ffi-windows: check ffi-prep
 	$(CARGO) build $(CARGO_FLAG) \
-		--target $(WINDOWS_GNU_TARGET)
+		-p $(CORE_PACKAGE) --features ffi --target $(WINDOWS_GNU_TARGET)
 
 	cp $(WINDOWS_DLL) \
 		$(CS_DIR)/runtimes/win-x64/native/$(FFI_LIB_NAME).dll
@@ -88,4 +90,4 @@ ffi-windows: check ffi-prep
 .PHONY: windows-msvc
 windows-msvc: check
 	$(CARGO) build $(CARGO_FLAG) \
-		--target $(WINDOWS_MSVC_TARGET)
+		-p $(CORE_PACKAGE) --features ffi --target $(WINDOWS_MSVC_TARGET)

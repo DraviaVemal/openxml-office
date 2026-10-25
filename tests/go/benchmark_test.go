@@ -17,7 +17,7 @@ import (
 
 	"github.com/xuri/excelize/v2"
 
-	"draviavemal_openxml_office/spreadsheet/spreadsheet_2007"
+	"github.com/DraviaVemal/openxml-office/go/spreadsheet/spreadsheet_2007"
 )
 
 // Standalone benchmark that compares the current package against the published

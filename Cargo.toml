@@ -1,7 +1,13 @@
 [workspace]
 resolver = "2"
-members = ["rs", "tests/rs", "rs_ffi", "rs_api"]
+members = ["rs", "tests/rs", "rs_api"]
 package.authors = ["Dravia Vemal <contact@draviavemal.com>"]
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
 
 [workspace.dependencies]
 uuid = { version = "1.11.0", features = [

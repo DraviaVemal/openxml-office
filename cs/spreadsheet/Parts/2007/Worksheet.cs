@@ -163,7 +163,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         {
             FlatBufferBuilder builder = new(1024);
             StringOffset fbsCellRef = builder.CreateString(cellRef);
-            Offset<Worksheet_column_properties> fbsColumnRefProperties = Worksheet_column_properties.CreateWorksheet_column_properties(builder, columnRefProperties.Min, columnRefProperties.Max, columnRefProperties.Width, columnRefProperties.Hidden);
+            Offset<Worksheet_column_properties> fbsColumnRefProperties = Worksheet_column_properties.CreateWorksheet_column_properties(builder, columnRefProperties.Min, columnRefProperties.Max, columnRefProperties.Width, columnRefProperties.Hidden, columnRefProperties.BestFit, columnRefProperties.StyleId?.FfiStyleIdPtr);
             Offset<Worksheet_set_column_ref_properties> fbsSetColumnRefProperties = Worksheet_set_column_ref_properties.CreateWorksheet_set_column_ref_properties(builder, ffiWorksheet, fbsCellRef, fbsColumnRefProperties);
             builder.Finish(fbsSetColumnRefProperties.Value);
             FfiInterop.InvokeVoidFfi(ffi_set_column_ref_properties, builder);
@@ -172,7 +172,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         public void SetColumnindexProperties(ushort cellIndex, ColumnProperties columnRefProperties)
         {
             FlatBufferBuilder builder = new(1024);
-            Offset<Worksheet_column_properties> fbsColumnRefProperties = Worksheet_column_properties.CreateWorksheet_column_properties(builder, columnRefProperties.Min, columnRefProperties.Max, columnRefProperties.Width, columnRefProperties.Hidden);
+            Offset<Worksheet_column_properties> fbsColumnRefProperties = Worksheet_column_properties.CreateWorksheet_column_properties(builder, columnRefProperties.Min, columnRefProperties.Max, columnRefProperties.Width, columnRefProperties.Hidden, columnRefProperties.BestFit, columnRefProperties.StyleId?.FfiStyleIdPtr);
             Offset<Worksheet_set_column_index_properties> fbsSetColumnIndexProperties = Worksheet_set_column_index_properties.CreateWorksheet_set_column_index_properties(builder, ffiWorksheet, cellIndex, fbsColumnRefProperties);
             builder.Finish(fbsSetColumnIndexProperties.Value);
             FfiInterop.InvokeVoidFfi(ffi_set_column_index_properties, builder);
@@ -181,7 +181,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         public void SetRowindexProperties(ushort cellIndex, RowProperties rowRefProperties)
         {
             FlatBufferBuilder builder = new(1024);
-            Offset<Worksheet_row_properties> fbsRowRefProperties = Worksheet_row_properties.CreateWorksheet_row_properties(builder, rowRefProperties.Height, rowRefProperties.Hidden, rowRefProperties.TickTop, rowRefProperties.ThickBottom);
+            Offset<Worksheet_row_properties> fbsRowRefProperties = Worksheet_row_properties.CreateWorksheet_row_properties(builder, rowRefProperties.Height, rowRefProperties.Hidden, rowRefProperties.TickTop, rowRefProperties.ThickBottom, rowRefProperties.StyleId?.FfiStyleIdPtr);
             Offset<Worksheet_set_row_index_properties> fbsSetRowIndexProperties = Worksheet_set_row_index_properties.CreateWorksheet_set_row_index_properties(builder, ffiWorksheet, cellIndex, fbsRowRefProperties);
             builder.Finish(fbsSetRowIndexProperties.Value);
             FfiInterop.InvokeVoidFfi(ffi_set_row_index_properties, builder);
@@ -214,7 +214,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
                 CellProperty cellProperty = cellProperties[index];
                 StringOffset fbsValue = cellProperty.Value != null ? builder.CreateString(cellProperty.Value) : default;
                 StringOffset fbsFormula = cellProperty.Formula != null ? builder.CreateString(cellProperty.Formula) : default;
-                cellOffsets[index] = Worksheet_cell_property.CreateWorksheet_cell_property(builder, fbsValue, fbsFormula, MapCellDataType(cellProperty.DataType));
+                cellOffsets[index] = Worksheet_cell_property.CreateWorksheet_cell_property(builder, fbsValue, fbsFormula, MapCellDataType(cellProperty.DataType), cellProperty.StyleId?.FfiStyleIdPtr);
             }
             return cellOffsets;
         }
@@ -317,6 +317,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
                         Value = prop.Value.Value,
                         Formula = prop.Value.Formula,
                         DataType = (CellDataType)(sbyte)prop.Value.DataType,
+                        StyleId = prop.Value.StyleIdPtr.HasValue ? new StyleId(prop.Value.StyleIdPtr.Value) : null,
                     } : null,
                 });
             }

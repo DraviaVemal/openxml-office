@@ -300,7 +300,8 @@ func (worksheet *Worksheet) GetRangeCellProperties(refRange ReferenceRange) ([]C
 	if code != 0 {
 		return nil, ffiError(outError)
 	}
-	data := consumeBuffer(outBuffer, outBufferSize)
+	data := bufferView(outBuffer, outBufferSize)
+	defer C.free_buffer(outBuffer, outBufferSize)
 
 	rootPos := flatbuffers.GetUOffsetT(data)
 	root := flatbuffers.Table{Bytes: data, Pos: rootPos}
@@ -317,6 +318,7 @@ func (worksheet *Worksheet) GetRangeCellProperties(refRange ReferenceRange) ([]C
 				Value:    fbsReadString(prop, 4),
 				Formula:  fbsReadString(prop, 6),
 				DataType: CellDataType(prop.GetInt8Slot(8, 0)),
+				StyleId:  readStyleId(prop, 10),
 			}
 		}
 		return cp
@@ -348,7 +350,8 @@ func (worksheet *Worksheet) ListMergeCell() ([]ReferenceRange, error) {
 	if code != 0 {
 		return nil, ffiError(outError)
 	}
-	data := consumeBuffer(outBuffer, outBufferSize)
+	data := bufferView(outBuffer, outBufferSize)
+	defer C.free_buffer(outBuffer, outBufferSize)
 
 	rootPos := flatbuffers.GetUOffsetT(data)
 	root := flatbuffers.Table{Bytes: data, Pos: rootPos}
@@ -387,7 +390,8 @@ func (worksheet *Worksheet) ListHyperlinks() ([]HyperlinkInfo, error) {
 	if code != 0 {
 		return nil, ffiError(outError)
 	}
-	data := consumeBuffer(outBuffer, outBufferSize)
+	data := bufferView(outBuffer, outBufferSize)
+	defer C.free_buffer(outBuffer, outBufferSize)
 
 	rootPos := flatbuffers.GetUOffsetT(data)
 	root := flatbuffers.Table{Bytes: data, Pos: rootPos}
@@ -544,4 +548,12 @@ func fbsReadString(t flatbuffers.Table, vtableOff flatbuffers.VOffsetT) string {
 		return ""
 	}
 	return string(t.ByteVector(o + t.Pos))
+}
+
+func readStyleId(t flatbuffers.Table, vtableOff flatbuffers.VOffsetT) *StyleId {
+	o := flatbuffers.UOffsetT(t.Offset(vtableOff))
+	if o == 0 {
+		return nil
+	}
+	return &StyleId{ptr: t.GetUint64(o + t.Pos)}
 }

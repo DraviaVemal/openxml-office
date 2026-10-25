@@ -27,15 +27,16 @@ TESTS_DIR  := tests
 JAVA_RESOURCE_DIR := java/draviavemal_openxml_office/src/main/resources/lib
 
 FFI_LIB_NAME := draviavemal_openxml_office_ffi
-FFI_PACKAGE  := draviavemal-openxml_office_ffi
+CORE_PACKAGE := draviavemal-openxml_office
+RUST_LIB_NAME := draviavemal_openxml_office
 
 WINDOWS_BUILD_DIR := $(TARGET_DIR)/$(WINDOWS_GNU_TARGET)/$(CARGO_PROFILE)
 LINUX_BUILD_DIR   := $(TARGET_DIR)/$(LINUX_TARGET)/$(CARGO_PROFILE)
 
-WINDOWS_DLL     := $(WINDOWS_BUILD_DIR)/$(FFI_LIB_NAME).dll
-WINDOWS_ARCHIVE := $(WINDOWS_BUILD_DIR)/lib$(FFI_LIB_NAME).a
-LINUX_SO        := $(LINUX_BUILD_DIR)/lib$(FFI_LIB_NAME).so
-LINUX_ARCHIVE   := $(LINUX_BUILD_DIR)/lib$(FFI_LIB_NAME).a
+WINDOWS_DLL     := $(WINDOWS_BUILD_DIR)/$(RUST_LIB_NAME).dll
+WINDOWS_ARCHIVE := $(WINDOWS_BUILD_DIR)/lib$(RUST_LIB_NAME).a
+LINUX_SO        := $(LINUX_BUILD_DIR)/lib$(RUST_LIB_NAME).so
+LINUX_ARCHIVE   := $(LINUX_BUILD_DIR)/lib$(RUST_LIB_NAME).a
 
 HOST_KERNEL := $(shell uname -s 2>/dev/null)
 HOST_ARCH   := $(shell uname -m 2>/dev/null)
