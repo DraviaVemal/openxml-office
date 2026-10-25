@@ -168,14 +168,7 @@ func (excel *Excel) ListSheetNames() ([]string, error) {
 	if excel == nil {
 		return nil, errors.New("nil Excel")
 	}
-	builder := flatbuffers.NewBuilder(64)
-
-	builder.StartObject(1)
-	builder.PrependUint64Slot(0, excel.excelPtr, 0)
-	offset := builder.EndObject()
-	builder.Finish(offset)
-
-	buffer := builder.FinishedBytes()
+	buffer := buildPointerRequest(excel.excelPtr)
 	var outBuffer *C.uint8_t
 	var outBufferSize C.uintptr_t
 	var outError *C.char
