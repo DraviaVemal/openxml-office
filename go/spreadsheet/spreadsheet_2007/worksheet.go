@@ -25,12 +25,7 @@ func (worksheet *Worksheet) Flush() error {
 	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
-	builder := flatbuffers.NewBuilder(64)
-	builder.StartObject(1)
-	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
-	offset := builder.EndObject()
-	builder.Finish(offset)
-	buffer := builder.FinishedBytes()
+	buffer := buildPointerRequest(worksheet.worksheetPtr)
 	var outError *C.char
 	code := C.Worksheet_flush(
 		(*C.uint8_t)(unsafe.Pointer(&buffer[0])),
@@ -262,11 +257,7 @@ func (worksheet *Worksheet) DeleteSheet() error {
 	if worksheet == nil {
 		return errors.New("nil Worksheet")
 	}
-	builder := flatbuffers.NewBuilder(64)
-	builder.StartObject(1)
-	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
-	builder.Finish(builder.EndObject())
-	buf := builder.FinishedBytes()
+	buf := buildPointerRequest(worksheet.worksheetPtr)
 	var outError *C.char
 	if code := C.Worksheet_delete_sheet((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
 		return ffiError(outError)
@@ -331,11 +322,7 @@ func (worksheet *Worksheet) ListMergeCell() ([]ReferenceRange, error) {
 	if worksheet == nil {
 		return nil, errors.New("nil Worksheet")
 	}
-	builder := flatbuffers.NewBuilder(64)
-	builder.StartObject(1)
-	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
-	builder.Finish(builder.EndObject())
-	buffer := builder.FinishedBytes()
+	buffer := buildPointerRequest(worksheet.worksheetPtr)
 
 	var outBuffer *C.uint8_t
 	var outBufferSize C.uintptr_t
@@ -371,11 +358,7 @@ func (worksheet *Worksheet) ListHyperlinks() ([]HyperlinkInfo, error) {
 	if worksheet == nil {
 		return nil, errors.New("nil Worksheet")
 	}
-	builder := flatbuffers.NewBuilder(64)
-	builder.StartObject(1)
-	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)
-	builder.Finish(builder.EndObject())
-	buffer := builder.FinishedBytes()
+	buffer := buildPointerRequest(worksheet.worksheetPtr)
 
 	var outBuffer *C.uint8_t
 	var outBufferSize C.uintptr_t
@@ -524,6 +507,14 @@ func buildCellProperties(builder *flatbuffers.Builder, cells []CellProperty) []f
 		offsets[i] = builder.EndObject()
 	}
 	return offsets
+}
+
+func buildPointerRequest(pointer uint64) []byte {
+	builder := flatbuffers.NewBuilder(64)
+	builder.StartObject(1)
+	builder.PrependUint64Slot(0, pointer, 0)
+	builder.Finish(builder.EndObject())
+	return builder.FinishedBytes()
 }
 
 func fbsReadTableVector[T any](root flatbuffers.Table, vtableOff flatbuffers.VOffsetT, fn func(flatbuffers.Table) T) []T {

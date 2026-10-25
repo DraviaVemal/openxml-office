@@ -1,0 +1,5 @@
+---
+engines:
+  duplication:
+    exclude_paths:
+      - "go/internal/openxml_office_fbs/**"

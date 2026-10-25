@@ -163,7 +163,14 @@ namespace draviavemal.openxml_office.spreadsheet_2007
         {
             FlatBufferBuilder builder = new(1024);
             StringOffset fbsCellRef = builder.CreateString(cellRef);
-            Offset<Worksheet_column_properties> fbsColumnRefProperties = Worksheet_column_properties.CreateWorksheet_column_properties(builder, columnRefProperties.Min, columnRefProperties.Max, columnRefProperties.Width, columnRefProperties.Hidden, columnRefProperties.BestFit, columnRefProperties.StyleId?.FfiStyleIdPtr);
+            Offset<Worksheet_column_properties> fbsColumnRefProperties = Worksheet_column_properties.CreateWorksheet_column_properties(
+                builder,
+                columnRefProperties.Min,
+                columnRefProperties.Max,
+                columnRefProperties.Width,
+                columnRefProperties.Hidden,
+                columnRefProperties.BestFit,
+                columnRefProperties.StyleId?.FfiStyleIdPtr);
             Offset<Worksheet_set_column_ref_properties> fbsSetColumnRefProperties = Worksheet_set_column_ref_properties.CreateWorksheet_set_column_ref_properties(builder, ffiWorksheet, fbsCellRef, fbsColumnRefProperties);
             builder.Finish(fbsSetColumnRefProperties.Value);
             FfiInterop.InvokeVoidFfi(ffi_set_column_ref_properties, builder);
@@ -307,6 +314,11 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             {
                 Worksheet_cell_package pkg = response.CellPackages(i).Value;
                 Worksheet_cell_property? prop = pkg.CellProperty;
+                StyleId styleId = null;
+                if (prop.HasValue && prop.Value.StyleIdPtr.HasValue)
+                {
+                    styleId = new StyleId(prop.Value.StyleIdPtr.Value);
+                }
                 result.Add(new CellPackage
                 {
                     CellRef = pkg.CellRef,
@@ -317,7 +329,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
                         Value = prop.Value.Value,
                         Formula = prop.Value.Formula,
                         DataType = (CellDataType)(sbyte)prop.Value.DataType,
-                        StyleId = prop.Value.StyleIdPtr.HasValue ? new StyleId(prop.Value.StyleIdPtr.Value) : null,
+                        StyleId = styleId,
                     } : null,
                 });
             }
