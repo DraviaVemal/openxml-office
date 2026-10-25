@@ -3,7 +3,7 @@ module openxml_office_go_test
 go 1.25.0
 
 require (
-	draviavemal_openxml_office v0.0.0
+	github.com/DraviaVemal/openxml-office/go v0.0.0
 	github.com/xuri/excelize/v2 v2.11.0
 )
 
@@ -20,4 +20,4 @@ require (
 )
 
 // Consume the in-repo Go wrapper directly instead of a published module.
-replace draviavemal_openxml_office => ../../go
+replace github.com/DraviaVemal/openxml-office/go => ../../go

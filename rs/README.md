@@ -32,6 +32,8 @@ These tests demonstrate various use cases and can serve as a starting point for 
 This Rust package serves as the core implementation for the OpenXML Office project. It is located in the `rs` directory and is designed to support other programming languages through CFFI integration. For more information on the overarching project, visit the main repository:
 [GitHub: OpenXML Office Main Repository](https://github.com/DraviaVemal/openxml-office)
 
+The C ABI is opt-in and is organized beside each owning feature. Normal Rust consumers do not compile the FFI modules or FlatBuffers dependency. Build the native bindings with `cargo build --features ffi`; use `make native` to package the platform library under the compatibility name used by language wrappers.
+
 ## License
 
 This project is This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/release/LICENSE) file for details.

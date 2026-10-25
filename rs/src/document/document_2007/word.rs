@@ -1,3 +1,7 @@
+use std::{cell::RefCell, rc::Rc};
+
+use anyhow::{Context, Error as AnyError, Ok, Result as AnyResult};
+
 use crate::{
     files::OfficeDocument,
     global_2007::{
@@ -5,8 +9,6 @@ use crate::{
         traits::{XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartFlush},
     },
 };
-use anyhow::{Context, Error as AnyError, Ok, Result as AnyResult};
-use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
 pub struct Word {

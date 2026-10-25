@@ -57,19 +57,19 @@ const (
 type BorderStyleValues int32
 
 const (
-	BorderStyleNone           BorderStyleValues = 0
-	BorderStyleThin           BorderStyleValues = 1
-	BorderStyleThick          BorderStyleValues = 2
-	BorderStyleDotted         BorderStyleValues = 3
-	BorderStyleDouble         BorderStyleValues = 4
-	BorderStyleDashed         BorderStyleValues = 5
-	BorderStyleDashDot        BorderStyleValues = 6
-	BorderStyleDashDotDot     BorderStyleValues = 7
-	BorderStyleMedium         BorderStyleValues = 8
-	BorderStyleMediumDashed   BorderStyleValues = 9
-	BorderStyleMediumDashDot  BorderStyleValues = 10
+	BorderStyleNone             BorderStyleValues = 0
+	BorderStyleThin             BorderStyleValues = 1
+	BorderStyleThick            BorderStyleValues = 2
+	BorderStyleDotted           BorderStyleValues = 3
+	BorderStyleDouble           BorderStyleValues = 4
+	BorderStyleDashed           BorderStyleValues = 5
+	BorderStyleDashDot          BorderStyleValues = 6
+	BorderStyleDashDotDot       BorderStyleValues = 7
+	BorderStyleMedium           BorderStyleValues = 8
+	BorderStyleMediumDashed     BorderStyleValues = 9
+	BorderStyleMediumDashDot    BorderStyleValues = 10
 	BorderStyleMediumDashDotDot BorderStyleValues = 11
-	BorderStyleSlantDashDot   BorderStyleValues = 12
+	BorderStyleSlantDashDot     BorderStyleValues = 12
 )
 
 type ColorSettingType int32
@@ -170,6 +170,16 @@ type RowProperties struct {
 	StyleId     *StyleId
 }
 
+type WorkbookSettings struct {
+	ActiveSheet          string
+	IsVisible            *bool
+	IsMinimized          *bool
+	HideTab              *bool
+	HideVerticalScroll   *bool
+	HideHorizontalScroll *bool
+	HideSheet            string
+}
+
 type CellProperty struct {
 	Value    string
 	Formula  string
@@ -211,8 +221,8 @@ type ExcelHyperlinkProperties struct {
 }
 
 type ExcelPictureSetting struct {
-	ImageType  ImageType
-	From       AnchorPosition
-	To         AnchorPosition
-	Hyperlink  *ExcelHyperlinkProperties
+	ImageType ImageType
+	From      AnchorPosition
+	To        AnchorPosition
+	Hyperlink *ExcelHyperlinkProperties
 }

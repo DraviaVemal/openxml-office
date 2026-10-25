@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using Google.FlatBuffers;
 using draviavemal.openxml_office.global_2007;
+using Google.FlatBuffers;
 using openxml_office_fbs.spreadsheet;
 
 namespace draviavemal.openxml_office.spreadsheet_2007
@@ -128,6 +128,13 @@ namespace draviavemal.openxml_office.spreadsheet_2007
 
         [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "Excel_hide_sheet", CallingConvention = CallingConvention.Cdecl)]
         private static extern sbyte ffi_excel_hide_sheet(
+            IntPtr in_buffer,
+            UIntPtr in_buffer_size,
+            out IntPtr error_msg
+        );
+
+        [DllImport("draviavemal_openxml_office_ffi", EntryPoint = "Excel_set_workbook_settings", CallingConvention = CallingConvention.Cdecl)]
+        private static extern sbyte ffi_excel_set_workbook_settings(
             IntPtr in_buffer,
             UIntPtr in_buffer_size,
             out IntPtr error_msg
@@ -389,6 +396,29 @@ namespace draviavemal.openxml_office.spreadsheet_2007
             Offset<Excel_hide_sheet> offset = Excel_hide_sheet.CreateExcel_hide_sheet(builder, ffiExcelPtr, sheetNameOffset);
             builder.Finish(offset.Value);
             FfiInterop.InvokeVoidFfi(ffi_excel_hide_sheet, builder);
+        }
+
+        public void SetWorkbookSettings(WorkbookSettings settings)
+        {
+            FlatBufferBuilder builder = new(256);
+            StringOffset activeSheetOffset = settings.ActiveSheet != null
+                ? builder.CreateString(settings.ActiveSheet)
+                : default;
+            StringOffset hideSheetOffset = settings.HideSheet != null
+                ? builder.CreateString(settings.HideSheet)
+                : default;
+            Offset<Excel_set_workbook_settings> offset = Excel_set_workbook_settings.CreateExcel_set_workbook_settings(
+                builder,
+                ffiExcelPtr,
+                activeSheetOffset,
+                settings.IsVisible,
+                settings.IsMinimized,
+                settings.HideTab,
+                settings.HideVerticalScroll,
+                settings.HideHorizontalScroll,
+                hideSheetOffset);
+            builder.Finish(offset.Value);
+            FfiInterop.InvokeVoidFfi(ffi_excel_set_workbook_settings, builder);
         }
     }
 }

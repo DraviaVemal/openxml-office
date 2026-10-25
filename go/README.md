@@ -14,7 +14,7 @@ My mission is to provide a seamless and efficient Go interface for OpenXML docum
 
 ## Package Details
 
-- **Module:** `draviavemal_openxml_office`
+- **Module:** `github.com/DraviaVemal/openxml-office/go`
 - **Distribution:** [GitHub](https://github.com/DraviaVemal/openxml-office)
 - **Minimum Supported Version:** Go 1.22.5
 

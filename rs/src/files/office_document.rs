@@ -1,14 +1,13 @@
 // TODO
 // Update tokio task based read write in background without blocking user main program
 // Read From Zip Only requred dont load every file into archive_collection to reduce Memory use
-use crate::{
-    file_handling::{compress_content, decompress_content},
-    global_2007::parts::ContentTypesPart,
-};
+
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use dashmap::DashMap;
 use draviavemal_xml_rs::{XmlDeserializer, XmlDocument, XmlSerializer};
 use log::debug;
+use zip::{write::SimpleFileOptions, ZipArchive, ZipWriter};
+
 use std::{
     cell::RefCell,
     collections::HashSet,
@@ -18,7 +17,11 @@ use std::{
     path::Path,
     rc::{Rc, Weak},
 };
-use zip::{write::SimpleFileOptions, ZipArchive, ZipWriter};
+
+use crate::{
+    file_handling::{compress_content, decompress_content},
+    global_2007::parts::ContentTypesPart,
+};
 
 #[derive(Debug, Clone)]
 pub(crate) struct ExtractedDocument {

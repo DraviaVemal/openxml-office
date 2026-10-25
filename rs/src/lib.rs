@@ -8,6 +8,9 @@ pub(crate) mod presentation;
 pub(crate) mod spreadsheet;
 pub(crate) mod utils;
 
+#[cfg(feature = "ffi")]
+pub mod ffi;
+
 pub use document::*;
 pub use global::*;
 pub use presentation::*;

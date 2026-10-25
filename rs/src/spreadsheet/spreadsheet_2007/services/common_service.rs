@@ -50,6 +50,10 @@ impl CommonServices {
     pub(crate) fn get_string_id_value(&self, id: String) -> AnyResult<String, AnyError> {
         self.share_string.get_string_id_value(id)
     }
+
+    pub(crate) fn get_string_id_value_ref(&self, id: &str) -> AnyResult<&str, AnyError> {
+        self.share_string.get_string_id_value_ref(id)
+    }
 }
 
 // ########################### Style ########################

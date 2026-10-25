@@ -10,6 +10,17 @@ namespace draviavemal.openxml_office.spreadsheet_2007
 		public bool isEditable = true;
 	}
 
+	public class WorkbookSettings
+	{
+		public string ActiveSheet { get; set; }
+		public bool? IsVisible { get; set; }
+		public bool? IsMinimized { get; set; }
+		public bool? HideTab { get; set; }
+		public bool? HideVerticalScroll { get; set; }
+		public bool? HideHorizontalScroll { get; set; }
+		public string HideSheet { get; set; }
+	}
+
 	public class ColumnProperties
 	{
 		public uint Min { get; set; }
@@ -17,6 +28,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
 		public float Width { get; set; }
 		public bool Hidden { get; set; }
 		public bool BestFit { get; set; }
+		public StyleId StyleId { get; set; }
 	}
 
 	public class RowProperties
@@ -25,6 +37,7 @@ namespace draviavemal.openxml_office.spreadsheet_2007
 		public bool Hidden { get; set; }
 		public bool TickTop { get; set; }
 		public bool ThickBottom { get; set; }
+		public StyleId StyleId { get; set; }
 	}
 
 	public enum CellDataType
@@ -166,11 +179,11 @@ namespace draviavemal.openxml_office.spreadsheet_2007
 
 	public class StyleId
 	{
-		private readonly ulong ffiStyleIdPtr;
+		internal ulong FfiStyleIdPtr { get; }
 
 		internal StyleId(ulong ffiStyleIdPtr)
 		{
-			this.ffiStyleIdPtr = ffiStyleIdPtr;
+			FfiStyleIdPtr = ffiStyleIdPtr;
 		}
 	}
 

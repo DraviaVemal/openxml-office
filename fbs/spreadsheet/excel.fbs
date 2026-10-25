@@ -267,4 +267,15 @@ table Excel_hide_sheet {
     sheet_name: string;
 }
 
+table Excel_set_workbook_settings {
+    excel_ptr: uint64;
+    active_sheet: string;
+    is_visible: bool = null;
+    is_minimized: bool = null;
+    hide_tab: bool = null;
+    hide_vertical_scroll: bool = null;
+    hide_horizontal_scroll: bool = null;
+    hide_sheet: string;
+}
+
 // Excel_hide_sheet - End

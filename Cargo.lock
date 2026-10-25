@@ -564,10 +564,12 @@ version = "4.0.0-alpha.22"
 dependencies = [
  "anyhow",
  "blake3",
+ "cbindgen",
  "chrono",
  "criterion",
  "dashmap",
  "draviavemal-xml_rs",
+ "flatbuffers",
  "flate2",
  "log",
  "phf",
@@ -576,17 +578,6 @@ dependencies = [
  "tokio",
  "uuid",
  "zip",
-]
-
-[[package]]
-name = "draviavemal-openxml_office_ffi"
-version = "4.0.0-alpha.18"
-dependencies = [
- "anyhow",
- "cbindgen",
- "draviavemal-openxml_office",
- "flatbuffers",
- "log",
 ]
 
 [[package]]

@@ -12,6 +12,9 @@ categories = ["filesystem", "development-tools"]
 version = "4.0.0-alpha.22"
 edition = "2021"
 
+[lib]
+crate-type = ["rlib", "cdylib", "staticlib"]
+
 [dependencies]
 uuid.workspace = true
 anyhow.workspace = true
@@ -26,13 +29,18 @@ dashmap.workspace = true
 blake3.workspace = true
 log.workspace = true
 draviavemal-xml_rs.workspace = true
+flatbuffers = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion.workspace = true
 
 [features]
-document = []
+document = ["spreadsheet"]
 spreadsheet = []
 presentation = ["spreadsheet"]
 all = ["document", "spreadsheet", "presentation"]
 default = ["all"]
+ffi = ["dep:flatbuffers", "document", "spreadsheet", "presentation"]
+
+[build-dependencies]
+cbindgen = "0.27.0"

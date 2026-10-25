@@ -13,7 +13,7 @@ import (
 	"errors"
 	"unsafe"
 
-	fbs "draviavemal_openxml_office/internal/openxml_office_fbs/spreadsheet"
+	fbs "github.com/DraviaVemal/openxml-office/go/internal/openxml_office_fbs/spreadsheet"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -190,7 +190,8 @@ func (excel *Excel) ListSheetNames() ([]string, error) {
 	if code != 0 {
 		return nil, ffiError(outError)
 	}
-	data := consumeBuffer(outBuffer, outBufferSize)
+	data := bufferView(outBuffer, outBufferSize)
+	defer C.free_buffer(outBuffer, outBufferSize)
 	resp := fbs.GetRootAsExcel_list_sheet_return(data, 0)
 	names := make([]string, resp.SheetNamesLength())
 	for i := range names {
@@ -455,11 +456,58 @@ func (excel *Excel) HideSheet(sheetName string) error {
 	return nil
 }
 
+// SetWorkbookSettings applies multiple workbook view settings in one FFI call.
+func (excel *Excel) SetWorkbookSettings(settings WorkbookSettings) error {
+	if excel == nil {
+		return errors.New("nil Excel")
+	}
+	builder := flatbuffers.NewBuilder(128)
+	var activeSheetOffset, hideSheetOffset flatbuffers.UOffsetT
+	if settings.ActiveSheet != "" {
+		activeSheetOffset = builder.CreateString(settings.ActiveSheet)
+	}
+	if settings.HideSheet != "" {
+		hideSheetOffset = builder.CreateString(settings.HideSheet)
+	}
+	fbs.Excel_set_workbook_settingsStart(builder)
+	fbs.Excel_set_workbook_settingsAddExcelPtr(builder, excel.excelPtr)
+	if activeSheetOffset != 0 {
+		fbs.Excel_set_workbook_settingsAddActiveSheet(builder, activeSheetOffset)
+	}
+	if settings.IsVisible != nil {
+		fbs.Excel_set_workbook_settingsAddIsVisible(builder, *settings.IsVisible)
+	}
+	if settings.IsMinimized != nil {
+		fbs.Excel_set_workbook_settingsAddIsMinimized(builder, *settings.IsMinimized)
+	}
+	if settings.HideTab != nil {
+		fbs.Excel_set_workbook_settingsAddHideTab(builder, *settings.HideTab)
+	}
+	if settings.HideVerticalScroll != nil {
+		fbs.Excel_set_workbook_settingsAddHideVerticalScroll(builder, *settings.HideVerticalScroll)
+	}
+	if settings.HideHorizontalScroll != nil {
+		fbs.Excel_set_workbook_settingsAddHideHorizontalScroll(builder, *settings.HideHorizontalScroll)
+	}
+	if hideSheetOffset != 0 {
+		fbs.Excel_set_workbook_settingsAddHideSheet(builder, hideSheetOffset)
+	}
+	offset := fbs.Excel_set_workbook_settingsEnd(builder)
+	builder.Finish(offset)
+	buf := builder.FinishedBytes()
+	var outError *C.char
+	if code := C.Excel_set_workbook_settings((*C.uint8_t)(unsafe.Pointer(&buf[0])), C.uintptr_t(len(buf)), &outError); code != 0 {
+		return ffiError(outError)
+	}
+	return nil
+}
+
 func readU64Response(outBuffer *C.uint8_t, outBufferSize C.uintptr_t) uint64 {
 	if outBuffer == nil {
 		return 0
 	}
-	data := consumeBuffer(outBuffer, outBufferSize)
+	data := bufferView(outBuffer, outBufferSize)
+	defer C.free_buffer(outBuffer, outBufferSize)
 	rootOffset := flatbuffers.GetUOffsetT(data)
 	table := &flatbuffers.Table{Bytes: data, Pos: rootOffset}
 	if fieldOffset := flatbuffers.UOffsetT(table.Offset(4)); fieldOffset != 0 {
@@ -468,10 +516,11 @@ func readU64Response(outBuffer *C.uint8_t, outBufferSize C.uintptr_t) uint64 {
 	return 0
 }
 
-func consumeBuffer(outBuffer *C.uint8_t, outBufferSize C.uintptr_t) []byte {
-	data := C.GoBytes(unsafe.Pointer(outBuffer), C.int(outBufferSize))
-	C.free_buffer(outBuffer, outBufferSize)
-	return data
+func bufferView(outBuffer *C.uint8_t, outBufferSize C.uintptr_t) []byte {
+	if outBuffer == nil || outBufferSize == 0 {
+		return nil
+	}
+	return unsafe.Slice((*byte)(unsafe.Pointer(outBuffer)), int(outBufferSize))
 }
 
 func ffiError(outError *C.char) error {
