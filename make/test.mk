@@ -90,3 +90,34 @@ test-python: ffi
 .PHONY: test-java
 test-java: ffi
 	@$(JAVA_TEST_CMD)
+
+# ---------------------------------------------------------------------------
+# Benchmarks. Results are appended to tests/benchmark_history/<lang>.csv keyed by the
+# package version; set BENCH_RECORD=0 to skip recording, BENCH_ITERATIONS to change runs.
+# ---------------------------------------------------------------------------
+RS_VERSION      := $(shell sed -n 's/^version = "\(.*\)"/\1/p' rs/Cargo.toml | head -1)
+BENCH_RECORD    ?= 1
+BENCH_ITERATIONS ?= 5
+BENCH_ENV       := BENCH_RECORD=$(BENCH_RECORD) BENCH_ITERATIONS=$(BENCH_ITERATIONS)
+
+.PHONY: bench-rs
+bench-rs:
+	$(BENCH_ENV) $(CARGO) bench -p draviavemal-openxml_office --bench footprint
+	$(CARGO) bench -p draviavemal-openxml_office --bench spreadsheet -- --save-baseline v$(RS_VERSION)
+
+# Compare the current code with a saved release baseline: make bench-rs-compare BENCH_BASELINE=v<version>
+.PHONY: bench-rs-compare
+bench-rs-compare:
+	@test -n "$(BENCH_BASELINE)" || { echo "Set BENCH_BASELINE=v<version> (a name used with --save-baseline)"; exit 1; }
+	$(CARGO) bench -p draviavemal-openxml_office --bench spreadsheet -- --baseline $(BENCH_BASELINE)
+
+.PHONY: bench-go
+bench-go: targets
+	cd tests/go && $(BENCH_ENV) CGO_ENABLED=1 go test -run 'TestOpenEditSavePerformance|TestCompareWritePerformance' -v -count=1 ./...
+
+.PHONY: bench-cs
+bench-cs: targets
+	cd tests/cs && $(BENCH_ENV) dotnet test $(DOTNET_CFG) --filter "FullyQualifiedName~Benchmark"
+
+.PHONY: bench
+bench: bench-rs bench-go bench-cs

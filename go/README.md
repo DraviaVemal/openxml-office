@@ -20,6 +20,13 @@ My mission is to provide a seamless and efficient Go interface for OpenXML docum
 
 > **Note:** This wrapper relies on the C FFI layer of the Rust-based core package. The Rust CFFI and Go wrapper documentation are ongoing activities and may not yet fully reflect the implemented features. Refer to the main project documentation and source for the latest functionality.
 
+## Current Status
+
+- The shared Rust archive pipeline handles DOCX, XLSX and PPTX with lazy part loading and direct copying of unchanged entries.
+- Edited parts are compressed in parallel; relationship-aware renumbering uses shared package logic with an initial spreadsheet part-family registry.
+- `make bench-go` measures the shared pipeline with spreadsheet workloads against excelize v2. Set `BENCH_ITERATIONS` to change repetitions; `BENCH_RECORD=1` records release history.
+- Parsing and serializing large XML parts remain the main cost in the measured edit workloads.
+
 ## Working Samples
 
 To see sample code and working tests, please refer to the test files:

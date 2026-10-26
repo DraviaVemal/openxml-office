@@ -28,6 +28,7 @@ zip = "2.3.0"
 phf = { version = "0.11.2", features = ["macros"] }
 rand = "0.8.5"
 dashmap = "6.1.0"
+rayon = "1.10.0"
 criterion = "0.7.0"
 log = "0.4.22"
 flatbuffers = "24.3.25"

@@ -20,6 +20,14 @@ My mission is to provide a highly efficient and feature-rich Rust library for Op
 
 > **Note:** Documentation is an ongoing activity and may not yet fully reflect the implemented features. Refer to the source and tests for the latest functionality.
 
+## Current Status
+
+- Shared ZIP handling for DOCX, XLSX and PPTX indexes packages on open and loads part data on demand.
+- Unchanged parts are copied directly on save; edited parts are compressed in parallel.
+- Relationship-aware renumbering uses shared package logic. Its initial part-family registry starts with spreadsheet parts.
+- Rust benchmarks measure the shared archive pipeline with spreadsheet workloads. Run `make bench-rs`; compare Criterion results with `make bench-rs-compare BENCH_BASELINE=v<version>`.
+- Parsing and serializing large XML parts remain the main cost in the measured edit workloads.
+
 ## Working Samples
 
 To see sample code and working tests, please refer to the test files:
@@ -49,6 +57,6 @@ For inquiries, feedback, or contributions, feel free to message me via GitHub or
 
 ## TODO
 
-[ ] DashMap optimization for parallel construct, update and deconstruct xml
 [ ] Add space to pass custom parsing in current XML deserializer to improve part specific case like SheetData
 [ ] Improve Style Options and lookups
+[ ] Register additional package part families for relationship-aware renumbering

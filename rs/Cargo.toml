@@ -19,13 +19,13 @@ crate-type = ["rlib", "cdylib", "staticlib"]
 uuid.workspace = true
 anyhow.workspace = true
 chrono.workspace = true
-flate2.workspace = true
 quick-xml.workspace = true
 zip.workspace = true
 serde.workspace = true
 phf.workspace = true
 tokio.workspace = true
-dashmap.workspace = true
+rayon.workspace = true
+tempfile.workspace = true
 blake3.workspace = true
 log.workspace = true
 draviavemal-xml_rs.workspace = true
@@ -33,6 +33,14 @@ flatbuffers = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion.workspace = true
+
+[[bench]]
+name = "spreadsheet"
+harness = false
+
+[[bench]]
+name = "footprint"
+harness = false
 
 [features]
 document = ["spreadsheet"]

@@ -46,6 +46,7 @@ type benchmarkResult struct {
 	HeapRetainedMb         float64 // heap retained afterwards (HeapAlloc delta)
 	PeakHeapMb             float64 // peak HeapInuse observed while sampling
 	PeakSysMb              float64 // peak Sys (reserved from OS) observed while sampling
+	PeakRssMb              float64 // peak process RSS (includes native Rust allocations)
 	AvgCpuPercent          float64
 	PeakCpuPercent         float64
 	NumGC                  uint32
@@ -120,6 +121,7 @@ func measure(t *testing.T, library string, cellCount int, workload func(tag stri
 
 	peakHeap := msBefore.HeapInuse
 	peakSys := msBefore.Sys
+	peakRss := processRssBytes()
 	var peakCPUPercent float64
 	stop := make(chan struct{})
 	done := make(chan struct{})
@@ -144,6 +146,9 @@ func measure(t *testing.T, library string, cellCount int, workload func(tag stri
 				}
 				if ms.Sys > peakSys {
 					peakSys = ms.Sys
+				}
+				if rss := processRssBytes(); rss > peakRss {
+					peakRss = rss
 				}
 				nowCPU := processCPUTime()
 				wallMs := now.Sub(lastWall).Seconds() * 1000.0
@@ -193,6 +198,7 @@ func measure(t *testing.T, library string, cellCount int, workload func(tag stri
 		HeapRetainedMb: float64(int64(msAfter.HeapAlloc)-int64(msBefore.HeapAlloc)) / toMb,
 		PeakHeapMb:     float64(peakHeap) / toMb,
 		PeakSysMb:      float64(peakSys) / toMb,
+		PeakRssMb:      float64(peakRss) / toMb,
 		NumGC:          msAfter.NumGC - msBefore.NumGC,
 		GcPauseMs:      gcPauseMs,
 		HeapSysMb:      float64(msAfter.HeapSys) / toMb,
@@ -213,6 +219,25 @@ func measure(t *testing.T, library string, cellCount int, workload func(tag stri
 	}
 	res.PeakCpuPercent = peakCPUPercent
 	return res, nil
+}
+
+// processRssBytes returns the resident set size of the process (Go heap + native memory).
+// Returns 0 where /proc is unavailable.
+func processRssBytes() uint64 {
+	data, err := os.ReadFile("/proc/self/status")
+	if err != nil {
+		return 0
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(line, "VmRSS:") {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				kb, _ := strconv.ParseUint(fields[1], 10, 64)
+				return kb * 1024
+			}
+		}
+	}
+	return 0
 }
 
 // processCPUTime returns the accumulated user + system CPU time of the current

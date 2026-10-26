@@ -15,70 +15,40 @@ impl ContentTypesPart {
             .context("draviavemal-openxml_office::Decoding Content Type Failed")?;
         Ok(Self { xml_document })
     }
-    pub(crate) fn get_extensions(&mut self) -> AnyResult<Option<Vec<(String, String)>>, AnyError> {
-        let mut elements: Vec<(String, String)> = Vec::new();
-        let root_id = self.xml_document.get_root_id();
-        if let Some(default_ids) = self
-            .xml_document
-            .find_all_child(root_id, "Default")
-            .context("draviavemal-openxml_office::Failed to find Default elements")?
-        {
-            for default_id in default_ids {
-                let default_element = self
-                    .xml_document
-                    .get_element(default_id)
-                    .context("draviavemal-openxml_office::Element not Found")?;
-                elements.push((
-                    default_element
-                        .get_attribute("Extension")
-                        .context(
-                            "draviavemal-openxml_office::content type default attribute missing",
-                        )?
-                        .get_value()
-                        .to_string(),
-                    default_element
-                        .get_attribute("ContentType")
-                        .context(
-                            "draviavemal-openxml_office::content type default attribute missing",
-                        )?
-                        .get_value()
-                        .to_string(),
-                ));
-                self.xml_document
-                    .remove_element_mut(default_id)
-                    .context("draviavemal-openxml_office::Falied to remove element from tree")?;
-            }
-            if elements.len() > 0 {
-                return Ok(Some(elements));
-            }
-        }
-        Ok(None)
-    }
-
-    pub(crate) fn get_override_content_type(
+    /// Read every `Default` (extension, type) and `Override` (part name, type) entry.
+    pub(crate) fn read_all(
         &mut self,
-        file_name: &str,
-    ) -> AnyResult<Option<String>, AnyError> {
+    ) -> AnyResult<(Vec<(String, String)>, Vec<(String, String)>), AnyError> {
         let root_id = self.xml_document.get_root_id();
-        if let Some(mut find_ids) = self
-            .xml_document
-            .find_all_by_attribute(root_id, "PartName", &format!("/{}", file_name))
-            .context("draviavemal-openxml_office::Failed to find override by attribute")?
-        {
-            if let Some(id) = find_ids.pop() {
-                let element = self
-                    .xml_document
-                    .get_element(id)
-                    .context("draviavemal-openxml_office::Failed to pull element")?;
-                if let Some(attribute) = element.get_attribute("ContentType") {
-                    return Ok(Some(attribute.get_value().to_string()));
+        let mut defaults: Vec<(String, String)> = Vec::new();
+        let mut overrides: Vec<(String, String)> = Vec::new();
+        for (tag, key_attribute, collection) in [
+            ("Default", "Extension", &mut defaults),
+            ("Override", "PartName", &mut overrides),
+        ] {
+            if let Some(ids) = self
+                .xml_document
+                .find_all_child(root_id, tag)
+                .context("draviavemal-openxml_office::Failed to find content type elements")?
+            {
+                for id in ids {
+                    let element = self
+                        .xml_document
+                        .get_element(id)
+                        .context("draviavemal-openxml_office::Element not Found")?;
+                    if let (Some(key), Some(content_type)) = (
+                        element.get_attribute(key_attribute),
+                        element.get_attribute("ContentType"),
+                    ) {
+                        collection.push((
+                            key.get_value().to_string(),
+                            content_type.get_value().to_string(),
+                        ));
+                    }
                 }
-                self.xml_document
-                    .remove_element_mut(id)
-                    .context("draviavemal-openxml_office::Falied to remove element from tree")?;
             }
         }
-        Ok(None)
+        Ok((defaults, overrides))
     }
 
     pub(crate) fn create_xml_file(
