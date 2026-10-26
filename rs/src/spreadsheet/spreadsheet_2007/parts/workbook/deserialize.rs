@@ -19,16 +19,16 @@ impl WorkbookPart {
                 let mut sheet_collection = Vec::new();
                 let mut workbook_view = None;
                 if let Some(xml_document) = xml_document.upgrade() {
-                    let mut xml_doc_mut = xml_document
+                    let mut xml_document_mut = xml_document
                         .try_borrow_mut()
                         .context("draviavemal-openxml_office::xml doc borrow failed")?;
-                    let root_id = xml_doc_mut.get_root_id();
+                    let root_id = xml_document_mut.get_root_id();
                     // Deconstruct Book View for sheet collection data
-                    if let Some(book_views_id) = xml_doc_mut
+                    if let Some(book_views_id) = xml_document_mut
                         .find_first_child(root_id, "bookViews")
                         .context("draviavemal-openxml_office::Failed to find bookViews element")?
                     {
-                        let workbook_view_ids: Vec<NodeId> = xml_doc_mut
+                        let workbook_view_ids: Vec<NodeId> = xml_document_mut
                             .get_element(book_views_id)
                             .context(
                                 "draviavemal-openxml_office::Failed to pull bookViews element",
@@ -46,7 +46,7 @@ impl WorkbookPart {
                             })
                             .unwrap_or_default();
                         for workbook_view_id in workbook_view_ids {
-                            let workbook_view_element = xml_doc_mut
+                            let workbook_view_element = xml_document_mut
                                 .get_element(workbook_view_id)
                                 .context(
                                 "draviavemal-openxml_office::Failed to pull workbookView element",
@@ -114,16 +114,16 @@ impl WorkbookPart {
                             })
                         }
                         // Delete Deconstructed Book View from XML
-                        xml_doc_mut.remove_element_mut(book_views_id).context(
+                        xml_document_mut.remove_element_mut(book_views_id).context(
                             "draviavemal-openxml_office::Failed remove bookViews element",
                         )?
                     }
                     // Deconstruct Sheets into collection
-                    if let Some(sheets_id) = xml_doc_mut
+                    if let Some(sheets_id) = xml_document_mut
                         .find_first_child(root_id, "sheets")
                         .context("draviavemal-openxml_office::Failed to find sheets element")?
                     {
-                        let sheet_ids: Vec<NodeId> = xml_doc_mut
+                        let sheet_ids: Vec<NodeId> = xml_document_mut
                             .get_element(sheets_id)
                             .context("draviavemal-openxml_office::Failed to pull sheets element")?
                             .get_child_contents()
@@ -139,7 +139,7 @@ impl WorkbookPart {
                             })
                             .unwrap_or_default();
                         for sheet_id in sheet_ids {
-                            let sheet = xml_doc_mut.get_element(sheet_id).context(
+                            let sheet = xml_document_mut.get_element(sheet_id).context(
                                 "draviavemal-openxml_office::Failed to pull sheet element",
                             )?;
                             let name = sheet
@@ -156,7 +156,7 @@ impl WorkbookPart {
                             ));
                         }
                         // Delete Deconstructed Sheets from XML
-                        xml_doc_mut
+                        xml_document_mut
                             .remove_element_mut(sheets_id)
                             .context("draviavemal-openxml_office::Failed remove sheets element")?
                     }

@@ -1,10 +1,24 @@
-use std::{cell::RefCell, collections::{BTreeMap, VecDeque}, rc::{Rc, Weak}};
+use std::{
+    cell::RefCell,
+    collections::{BTreeMap, VecDeque},
+    rc::{Rc, Weak},
+};
 
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use draviavemal_xml_rs::XmlDocument;
 
 use crate::{
-    converters::ConverterUtil, element_dictionary::EXCEL_TYPE_COLLECTION, files::OfficeDocument, global_2007::{parts::RelationsPart, traits::XmlDocumentPartInitializing}, log_elapsed, spreadsheet_2007::{DrawingPart, WorkSheet, models::{CellDataType, CellPackage, CellProperty, ColumnProperties, HyperLinks, ReferenceRange, RowIndex}, services::CommonServices, worksheet::model::{Dimension, RowRecords, WorkSheetViews}},
+    converters::ConverterUtil,
+    element_dictionary::EXCEL_TYPE_COLLECTION,
+    global_2007::files::OfficeDocument,
+    global_2007::{parts::RelationsPart, traits::XmlDocumentPartInitializing},
+    log_elapsed,
+    spreadsheet_2007::{
+        services::{CommonServices, SpreadsheetRelationshipRules},
+        worksheet::struct_items::{Dimension, RowRecords, WorkSheetViews},
+        CellDataType, CellPackage, CellProperty, ColumnProperties, DrawingPart, HyperLinks,
+        ReferenceRange, RowIndex, WorkSheet,
+    },
 };
 
 impl WorkSheet {
@@ -25,13 +39,14 @@ impl WorkSheet {
         .context("draviavemal-openxml_office::Failed to pull worksheet file name")?;
         let xml_document = WorkSheet::get_xml_document(&office_document, &file_path)?;
         let sheet_relationship_part = Rc::new(RefCell::new(
-            RelationsPart::new(
+            RelationsPart::with_rules(
                 office_document.clone(),
                 &format!(
                     "{}/_rels/{}.rels",
                     &file_path[..file_path.rfind('/').unwrap()],
                     file_path.rsplit('/').next().unwrap()
                 ),
+                Box::new(SpreadsheetRelationshipRules),
             )
             .context(
                 "draviavemal-openxml_office::Creating Relation ship part for workbook failed.",
@@ -91,24 +106,24 @@ impl WorkSheet {
         AnyError,
     > {
         if let Some(xml_document) = xml_document.upgrade() {
-            let mut xml_doc_mut = xml_document
+            let mut xml_document_mut = xml_document
                 .try_borrow_mut()
                 .context("draviavemal-openxml_office::Failed to get XML doc handle")?;
             // unwrap dimension
-            let dimension_root_id = xml_doc_mut.get_root_id();
-            if let Some(dimension_ids) = xml_doc_mut
+            let dimension_root_id = xml_document_mut.get_root_id();
+            if let Some(dimension_ids) = xml_document_mut
                 .find_all_child(dimension_root_id, "dimension")
                 .context("draviavemal-openxml_office::Failed to find dimension elements")?
             {
                 for dimension_id in dimension_ids {
-                    xml_doc_mut.remove_element_mut(dimension_id).context(
+                    xml_document_mut.remove_element_mut(dimension_id).context(
                         "draviavemal-openxml_office::Failed to remove dimension element",
                     )?;
                 }
             }
             let worksheet_views = log_elapsed!(
                 || {
-                    WorkSheet::deserialize_worksheet_views(&mut xml_doc_mut)
+                    WorkSheet::deserialize_worksheet_views(&mut xml_document_mut)
                         .context("draviavemal-openxml_office::Failed to deserialize Worksheet View")
                 },
                 "Worksheet View Deserialization"
@@ -116,7 +131,7 @@ impl WorkSheet {
             // unwrap columns to local collection
             let column_collection = log_elapsed!(
                 || {
-                    WorkSheet::deserialize_cols(&mut xml_doc_mut)
+                    WorkSheet::deserialize_cols(&mut xml_document_mut)
                         .context("draviavemal-openxml_office::Failed To Deserialize Cols")
                 },
                 "Column deserialize"
@@ -124,21 +139,21 @@ impl WorkSheet {
             // unwrap sheet data into object
             let (sheet_data, dimension) = log_elapsed!(
                 || {
-                    WorkSheet::deserialize_sheet_data(&mut xml_doc_mut)
+                    WorkSheet::deserialize_sheet_data(&mut xml_document_mut)
                         .context("draviavemal-openxml_office::Failed To Deserialize Sheet Data")
                 },
                 "Sheet Data Deserialize"
             )?;
             let merge_cells = log_elapsed!(
                 || {
-                    WorkSheet::deserialize_merge_cells(&mut xml_doc_mut)
+                    WorkSheet::deserialize_merge_cells(&mut xml_document_mut)
                         .context("draviavemal-openxml_office::Failed To Deserialize Merge Cells")
                 },
                 "Merge Cell Deserialize"
             )?;
             let hyperlinks = log_elapsed!(
                 || {
-                    WorkSheet::deserialize_hyperlinks(&mut xml_doc_mut, &relationship_part)
+                    WorkSheet::deserialize_hyperlinks(&mut xml_document_mut, &relationship_part)
                         .context("draviavemal-openxml_office::Failed To Deserialize hyperlinks")
                 },
                 "Hyperlink Deserialize"

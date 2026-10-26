@@ -1,5 +1,8 @@
 use phf::{phf_map, Map};
 
+pub(crate) const IMAGE_RELATIONSHIP_TYPE: &str =
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
+
 pub(crate) struct Content {
     pub(crate) schemas_namespace: &'static str,
     pub(crate) schemas_type: &'static str,

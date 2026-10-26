@@ -10,12 +10,10 @@ use std::{
 use crate::{
     ffi::{openxml_office_fbs::spreadsheet::*, root_from_raw, set_error, write_buffer, StatusCode},
     spreadsheet_2007::{
-        models::{
-            BorderSetting, BorderStyleValues, CellStyleSetting, ColorSetting,
-            ColorSettingTypeValues::{Indexed, Rgb, Theme},
-            HorizontalAlignmentValues, NumberFormatValues, StyleId, VerticalAlignmentValues,
-        },
-        Excel, ExcelPropertiesModel, WorkSheet, WorkbookSettings,
+        BorderSetting, BorderStyleValues, CellStyleSetting, ColorSetting,
+        ColorSettingTypeValues::{Indexed, Rgb, Theme},
+        Excel, ExcelPropertiesModel, HorizontalAlignmentValues, NumberFormatValues, StyleId,
+        VerticalAlignmentValues, WorkSheet, WorkbookSettings,
     },
 };
 

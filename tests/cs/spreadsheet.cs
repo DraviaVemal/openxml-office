@@ -1304,8 +1304,10 @@ namespace openxmloffice.tests
             });
             CellPackage[] packages = ws.GetRangeCellProperties(new ReferenceRange
             {
-                ColumnStart = 1, ColumnEnd = 3,
-                RowStart    = 1, RowEnd    = 1,
+                ColumnStart = 1,
+                ColumnEnd = 3,
+                RowStart = 1,
+                RowEnd = 1,
             });
             Assert.IsNotNull(packages);
             Assert.IsTrue(packages.Length >= 3);
@@ -1319,7 +1321,13 @@ namespace openxmloffice.tests
             {
                 ImageType = ImageType.JPEG,
                 From = new AnchorPosition { Column = 2, Row = 2 },
-                To   = new AnchorPosition { Column = 5, Row = 8 },
+                To = new AnchorPosition { Column = 5, Row = 8 },
+            });
+            ws.AddPicture("./edit_test_files/tom_and_jerry.jpg", new ExcelPictureSetting
+            {
+                ImageType = ImageType.JPEG,
+                From = new AnchorPosition { Column = 2, Row = 2 },
+                To = new AnchorPosition { Column = 5, Row = 8 },
             });
             Assert.IsTrue(true);
         }

@@ -8,14 +8,13 @@ use log::debug;
 
 use crate::{
     converters::ConverterUtil,
-    global_2007::traits::XmlDocumentPartFlush,
+    global::traits::XmlDocumentPartFlush,
     spreadsheet_2007::{
-        models::{
+        
             CellDataType, CellProperty, ColumnIndex, ColumnProperties, ExcelPictureSetting,
             HyperLinks, ReferenceRange, RowIndex, RowProperties,
-        },
         services::CalculationChain,
-        worksheet::model::RowRecords,
+        worksheet::struct_items::RowRecords,
         WorkSheet,
     },
 };

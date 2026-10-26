@@ -27,6 +27,7 @@ help:
 	@echo "  make go           Build Go (ffi)"
 	@echo "  make test         Run tests for all languages (summary report)"
 	@echo "  make bench        Run Rust, Go and C# benchmarks and record them in tests/benchmark_history"
+	@echo "  make bench-parity Run the same 100k-cell workbook write in Rust, Go and C#"
 	@echo "  make bench-rs     Rust criterion baseline (v<version>) + footprint; bench-rs-compare BENCH_BASELINE=v<ver>"
 	@echo "  make clean        Remove build artifacts"
 	@echo ""

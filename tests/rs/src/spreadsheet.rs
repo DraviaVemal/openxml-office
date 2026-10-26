@@ -4,11 +4,14 @@ mod spreadsheet_test {
     use draviavemal_openxml_office::{
         global_2007::traits::XmlDocumentPartFlush,
         log_elapsed,
-        spreadsheet_2007::models::{
+        spreadsheet_2007::{
             CellProperty, CellStyleSetting, ExcelPictureSetting, ReferenceRange,
         },
     };
-    use std::fs::{create_dir_all, exists};
+    use std::{
+        fs::{create_dir_all, exists},
+        io::Read,
+    };
 
     fn get_save_file(dynamic_path: Option<&str>) -> String {
         let result_path = "test_results";
@@ -185,28 +188,28 @@ mod spreadsheet_test {
         row_prop
             .set_row_index_properties_mut(
                 &1,
-                draviavemal_openxml_office::spreadsheet_2007::models::RowProperties::default()
+                draviavemal_openxml_office::spreadsheet_2007::RowProperties::default()
                     .set_height(Some(100 as f32)),
             )
             .expect("Failed to set row height");
         row_prop
             .set_row_index_properties_mut(
                 &3,
-                draviavemal_openxml_office::spreadsheet_2007::models::RowProperties::default()
+                draviavemal_openxml_office::spreadsheet_2007::RowProperties::default()
                     .set_hidden(Some(true)),
             )
             .expect("Failed to set row height");
         row_prop
             .set_row_index_properties_mut(
                 &5,
-                draviavemal_openxml_office::spreadsheet_2007::models::RowProperties::default()
+                draviavemal_openxml_office::spreadsheet_2007::RowProperties::default()
                     .set_thick_top(Some(true)),
             )
             .expect("Failed to set thick top");
         row_prop
             .set_row_index_properties_mut(
                 &7,
-                draviavemal_openxml_office::spreadsheet_2007::models::RowProperties::default()
+                draviavemal_openxml_office::spreadsheet_2007::RowProperties::default()
                     .set_thick_bottom(Some(true)),
             )
             .expect("Failed to set thick bottom");
@@ -246,7 +249,7 @@ mod spreadsheet_test {
             }
             edit_worksheet
                 .set_merge_cell_mut(
-                    draviavemal_openxml_office::spreadsheet_2007::models::ReferenceRange {
+                    draviavemal_openxml_office::spreadsheet_2007::ReferenceRange {
                         column_start: 1,
                         column_end: 1,
                         row_start: 1,
@@ -456,7 +459,7 @@ mod spreadsheet_test {
         .set_column_index_properties_mut(
             &1,
             Some(
-                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                draviavemal_openxml_office::spreadsheet_2007::ColumnProperties::default()
                     .set_width(Some(200 as f32)),
             ),
         )
@@ -465,7 +468,7 @@ mod spreadsheet_test {
         .set_column_index_properties_mut(
             &3,
             Some(
-                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                draviavemal_openxml_office::spreadsheet_2007::ColumnProperties::default()
                     .set_hidden(Some(true)),
             ),
         )
@@ -474,7 +477,7 @@ mod spreadsheet_test {
         .set_column_index_properties_mut(
             &5,
             Some(
-                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                draviavemal_openxml_office::spreadsheet_2007::ColumnProperties::default()
                     .set_best_fit(Some(true)),
             ),
         )
@@ -528,7 +531,7 @@ mod spreadsheet_test {
         .set_column_index_properties_mut(
             &1,
             Some(
-                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                draviavemal_openxml_office::spreadsheet_2007::ColumnProperties::default()
                     .set_width(Some(200 as f32)),
             ),
         )
@@ -537,7 +540,7 @@ mod spreadsheet_test {
         .set_column_index_properties_mut(
             &3,
             Some(
-                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                draviavemal_openxml_office::spreadsheet_2007::ColumnProperties::default()
                     .set_hidden(Some(true)),
             ),
         )
@@ -546,7 +549,7 @@ mod spreadsheet_test {
         .set_column_index_properties_mut(
             &5,
             Some(
-                draviavemal_openxml_office::spreadsheet_2007::models::ColumnProperties::default()
+                draviavemal_openxml_office::spreadsheet_2007::ColumnProperties::default()
                     .set_best_fit(Some(true)),
             ),
         )
@@ -569,7 +572,7 @@ mod spreadsheet_test {
         .expect("Open Existing File Failed");
         let style_id = file
             .get_style_id_mut(
-                draviavemal_openxml_office::spreadsheet_2007::models::CellStyleSetting::default(),
+                draviavemal_openxml_office::spreadsheet_2007::CellStyleSetting::default(),
             )
             .expect("Failed to get Style Id");
         {
@@ -580,11 +583,11 @@ mod spreadsheet_test {
                 .set_cell_ref_value_mut(
                     "V3",
                     vec![
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Dravia".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Vemal".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Vemal".to_string()))
                         .set_style_id(Some(style_id)),
                 ],
@@ -630,23 +633,23 @@ mod spreadsheet_test {
                 .set_cell_ref_value_mut(
                     "V3",
                     vec![
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Dravia".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Vemal".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Bold".to_string()))
                         .set_style_id(Some(bold_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Italic".to_string()))
                         .set_style_id(Some(italic_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("underline".to_string()))
                         .set_style_id(Some(underline_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("double underline".to_string()))
                         .set_style_id(Some(double_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some(
                             "This is a very long line to wrap the column. Test the wrap string"
                                 .to_string(),
@@ -693,23 +696,23 @@ mod spreadsheet_test {
                 .set_cell_ref_value_mut(
                     "V3",
                     vec![
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Dravia".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Vemal".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Bold".to_string()))
                         .set_style_id(Some(bold_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Italic".to_string()))
                         .set_style_id(Some(italic_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("underline".to_string()))
                         .set_style_id(Some(underline_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("double underline".to_string()))
                         .set_style_id(Some(double_id)),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some(
                             "This is a very long line to wrap the column. Test the wrap string"
                                 .to_string(),
@@ -738,6 +741,22 @@ mod spreadsheet_test {
             },
         )
         .expect("Open Existing File Failed");
+        let image_bytes = std::fs::read("../edit_test_files/tom_and_jerry.jpg").unwrap();
+        let mut source_archive = zip::ZipArchive::new(
+            std::fs::File::open("../edit_test_files/basic_test.xlsx").unwrap(),
+        )
+        .expect("Failed to open source archive");
+        let mut original_matching_media_parts = 0;
+        for index in 0..source_archive.len() {
+            let mut part = source_archive.by_index(index).unwrap();
+            if part.name().starts_with("xl/media/") {
+                let mut media_bytes = Vec::new();
+                part.read_to_end(&mut media_bytes).unwrap();
+                if media_bytes == image_bytes {
+                    original_matching_media_parts += 1;
+                }
+            }
+        }
         {
             let mut sheet = excel
                 .get_worksheet_mut("image".to_string())
@@ -748,12 +767,31 @@ mod spreadsheet_test {
                     ExcelPictureSetting::default(),
                 )
                 .expect("Failed to add image");
+            sheet
+                .add_picture_mut(
+                    "../edit_test_files/tom_and_jerry.jpg",
+                    ExcelPictureSetting::default(),
+                )
+                .expect("Failed to add duplicate image");
             sheet.flush().expect("Worksheet flush failed");
         }
         let path = excel
             .save_as(&get_save_file(None))
             .expect("Failed to save File");
         assert!(!path.is_empty());
+        let mut archive = zip::ZipArchive::new(std::fs::File::open(path).unwrap()).unwrap();
+        let mut matching_media_parts = 0;
+        for index in 0..archive.len() {
+            let mut part = archive.by_index(index).unwrap();
+            if part.name().starts_with("xl/media/") {
+                let mut media_bytes = Vec::new();
+                part.read_to_end(&mut media_bytes).unwrap();
+                if media_bytes == image_bytes {
+                    matching_media_parts += 1;
+                }
+            }
+        }
+        assert_eq!(matching_media_parts, original_matching_media_parts);
     }
 
     #[test]
@@ -775,9 +813,9 @@ mod spreadsheet_test {
                 .set_cell_ref_value_mut(
                     "V3",
                     vec![
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Dravia".to_string())),
-                    draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default()
+                    draviavemal_openxml_office::spreadsheet_2007::CellProperty::default()
                         .set_value(Some("Vemal".to_string())),
                 ],
                 )
@@ -808,7 +846,7 @@ mod spreadsheet_test {
                             row,
                             1,
                             (1..10)
-                                .map(|_| draviavemal_openxml_office::spreadsheet_2007::models::CellProperty::default().set_value(Some("Test".to_string())))
+                                .map(|_| draviavemal_openxml_office::spreadsheet_2007::CellProperty::default().set_value(Some("Test".to_string())))
                                 .collect(),
                         )
                         .expect("Failed to Set Row Value");

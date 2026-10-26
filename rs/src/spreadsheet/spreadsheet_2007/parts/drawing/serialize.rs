@@ -1,33 +1,31 @@
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use draviavemal_xml_rs::{NodeId, XmlAttribute, XmlDocument};
 
+use super::{
+    AbsoluteAnchor, AnchorContent, DrawingAnchor, EditAsValues, GraphicFrame, OneCellAnchor,
+    TwoCellAnchor,
+};
 use crate::{
     global_2007::{
-        models::{AnchorPosition, BlipFillMode, Picture, RelativeRect, ShapeProperties, Transform},
+        parts::{AnchorPosition, BlipFillMode, Picture, RelativeRect, ShapeProperties, Transform},
         traits::Enum,
     },
     namespaces::{CHART_NS, DRAWINGML_NS, RELATIONSHIP_OFFICE_DOC_NS, SPREADSHEET_DRAWING_NS},
-    spreadsheet_2007::{
-        models::{
-            AbsoluteAnchor, AnchorContent, DrawingAnchor, EditAsValues, GraphicFrame,
-            OneCellAnchor, TwoCellAnchor,
-        },
-        DrawingPart,
-    },
+    spreadsheet_2007::DrawingPart,
 };
 
 impl DrawingPart {
     pub(crate) fn serialize_drawing(
         &mut self,
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
     ) -> AnyResult<(), AnyError> {
         if let Some(mut anchor_collection) = self.anchor_collection.take() {
-            let root_id = xml_doc_mut.get_root_id();
+            let root_id = xml_document_mut.get_root_id();
             while let Some(anchor) = anchor_collection.pop_front() {
                 match anchor {
                     DrawingAnchor::TwoCellAnchor(two_cell_anchor) => {
                         DrawingPart::serialize_two_cell_anchor(
-                            xml_doc_mut,
+                            xml_document_mut,
                             root_id,
                             two_cell_anchor,
                         )
@@ -37,7 +35,7 @@ impl DrawingPart {
                     }
                     DrawingAnchor::OneCellAnchor(one_cell_anchor) => {
                         DrawingPart::serialize_one_cell_anchor(
-                            xml_doc_mut,
+                            xml_document_mut,
                             root_id,
                             one_cell_anchor,
                         )
@@ -47,7 +45,7 @@ impl DrawingPart {
                     }
                     DrawingAnchor::AbsoluteAnchor(absolute_anchor) => {
                         DrawingPart::serialize_absolute_anchor(
-                            xml_doc_mut,
+                            xml_document_mut,
                             root_id,
                             absolute_anchor,
                         )
@@ -62,7 +60,7 @@ impl DrawingPart {
     }
 
     fn serialize_two_cell_anchor(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         parent_id: NodeId,
         two_cell_anchor: TwoCellAnchor,
     ) -> AnyResult<(), AnyError> {
@@ -73,7 +71,7 @@ impl DrawingPart {
                 EditAsValues::get_string(edit_as),
             )]),
         };
-        let anchor_id = xml_doc_mut
+        let anchor_id = xml_document_mut
             .append_child_element_ns_mut(
                 parent_id,
                 "twoCellAnchor",
@@ -82,102 +80,102 @@ impl DrawingPart {
             )
             .context("draviavemal-openxml_office::Failed to add two cell anchor element")?;
         DrawingPart::serialize_anchor_position(
-            xml_doc_mut,
+            xml_document_mut,
             anchor_id,
             "from",
             &two_cell_anchor.from,
         )
         .context("draviavemal-openxml_office::Failed to serialise from position")?;
-        DrawingPart::serialize_anchor_position(xml_doc_mut, anchor_id, "to", &two_cell_anchor.to)
+        DrawingPart::serialize_anchor_position(xml_document_mut, anchor_id, "to", &two_cell_anchor.to)
             .context("draviavemal-openxml_office::Failed to serialise to position")?;
         DrawingPart::serialize_anchor_content(
-            xml_doc_mut,
+            xml_document_mut,
             anchor_id,
             two_cell_anchor.anchor_content,
         )
         .context("draviavemal-openxml_office::Failed to serialise anchor content")?;
-        xml_doc_mut
+        xml_document_mut
             .append_child_element_ns_mut(anchor_id, "clientData", &SPREADSHEET_DRAWING_NS, None)
             .context("draviavemal-openxml_office::Failed to add client data element")?;
         Ok(())
     }
 
     fn serialize_one_cell_anchor(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         parent_id: NodeId,
         one_cell_anchor: OneCellAnchor,
     ) -> AnyResult<(), AnyError> {
-        let anchor_id = xml_doc_mut
+        let anchor_id = xml_document_mut
             .append_child_element_ns_mut(parent_id, "oneCellAnchor", &SPREADSHEET_DRAWING_NS, None)
             .context("draviavemal-openxml_office::Failed to add one cell anchor element")?;
         DrawingPart::serialize_anchor_position(
-            xml_doc_mut,
+            xml_document_mut,
             anchor_id,
             "from",
             &one_cell_anchor.from,
         )
         .context("draviavemal-openxml_office::Failed to serialise from position")?;
         DrawingPart::serialize_anchor_content(
-            xml_doc_mut,
+            xml_document_mut,
             anchor_id,
             one_cell_anchor.anchor_content,
         )
         .context("draviavemal-openxml_office::Failed to serialise anchor content")?;
-        xml_doc_mut
+        xml_document_mut
             .append_child_element_ns_mut(anchor_id, "clientData", &SPREADSHEET_DRAWING_NS, None)
             .context("draviavemal-openxml_office::Failed to add client data element")?;
         Ok(())
     }
 
     fn serialize_absolute_anchor(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         parent_id: NodeId,
         absolute_anchor: AbsoluteAnchor,
     ) -> AnyResult<(), AnyError> {
-        let anchor_id = xml_doc_mut
+        let anchor_id = xml_document_mut
             .append_child_element_ns_mut(parent_id, "absoluteAnchor", &SPREADSHEET_DRAWING_NS, None)
             .context("draviavemal-openxml_office::Failed to add absolute anchor element")?;
         DrawingPart::serialize_anchor_content(
-            xml_doc_mut,
+            xml_document_mut,
             anchor_id,
             absolute_anchor.anchor_content,
         )
         .context("draviavemal-openxml_office::Failed to serialise anchor content")?;
-        xml_doc_mut
+        xml_document_mut
             .append_child_element_ns_mut(anchor_id, "clientData", &SPREADSHEET_DRAWING_NS, None)
             .context("draviavemal-openxml_office::Failed to add client data element")?;
         Ok(())
     }
 
     fn serialize_anchor_position(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         parent_id: NodeId,
         local_name: &str,
         anchor_position: &AnchorPosition,
     ) -> AnyResult<(), AnyError> {
-        let position_id = xml_doc_mut
+        let position_id = xml_document_mut
             .append_child_element_ns_mut(parent_id, local_name, &SPREADSHEET_DRAWING_NS, None)
             .context("draviavemal-openxml_office::Failed to add anchor position element")?;
         DrawingPart::serialize_text_element(
-            xml_doc_mut,
+            xml_document_mut,
             position_id,
             "col",
             &anchor_position.column.to_string(),
         )?;
         DrawingPart::serialize_text_element(
-            xml_doc_mut,
+            xml_document_mut,
             position_id,
             "colOff",
             &anchor_position.column_offset.to_string(),
         )?;
         DrawingPart::serialize_text_element(
-            xml_doc_mut,
+            xml_document_mut,
             position_id,
             "row",
             &anchor_position.row.to_string(),
         )?;
         DrawingPart::serialize_text_element(
-            xml_doc_mut,
+            xml_document_mut,
             position_id,
             "rowOff",
             &anchor_position.row_offset.to_string(),
@@ -186,15 +184,15 @@ impl DrawingPart {
     }
 
     fn serialize_text_element(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         parent_id: NodeId,
         local_name: &str,
         value: &str,
     ) -> AnyResult<(), AnyError> {
-        let element_id = xml_doc_mut
+        let element_id = xml_document_mut
             .append_child_element_ns_mut(parent_id, local_name, &SPREADSHEET_DRAWING_NS, None)
             .context("draviavemal-openxml_office::Failed to add text element")?;
-        xml_doc_mut
+        xml_document_mut
             .get_element_mut(element_id)
             .context("draviavemal-openxml_office::Failed to get text element")?
             .add_text_mut(value)
@@ -203,36 +201,36 @@ impl DrawingPart {
     }
 
     fn serialize_anchor_content(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         parent_id: NodeId,
         anchor_content: AnchorContent,
     ) -> AnyResult<(), AnyError> {
         match anchor_content {
             AnchorContent::Picture(picture) => {
-                DrawingPart::serialize_picture(xml_doc_mut, parent_id, picture)
+                DrawingPart::serialize_picture(xml_document_mut, parent_id, picture)
                     .context("draviavemal-openxml_office::Failed to serialise picture")?;
             }
             AnchorContent::GraphicFrame(graphic_frame) => {
-                DrawingPart::serialize_graphic_frame(xml_doc_mut, parent_id, graphic_frame)
+                DrawingPart::serialize_graphic_frame(xml_document_mut, parent_id, graphic_frame)
                     .context("draviavemal-openxml_office::Failed to serialise graphic frame")?;
             }
             AnchorContent::Shape(_) => {
-                xml_doc_mut
+                xml_document_mut
                     .append_child_element_ns_mut(parent_id, "sp", &SPREADSHEET_DRAWING_NS, None)
                     .context("draviavemal-openxml_office::Failed to add shape element")?;
             }
             AnchorContent::GroupShape(_) => {
-                xml_doc_mut
+                xml_document_mut
                     .append_child_element_ns_mut(parent_id, "grpSp", &SPREADSHEET_DRAWING_NS, None)
                     .context("draviavemal-openxml_office::Failed to add group shape element")?;
             }
             AnchorContent::ConnectorShape(_) => {
-                xml_doc_mut
+                xml_document_mut
                     .append_child_element_ns_mut(parent_id, "cxnSp", &SPREADSHEET_DRAWING_NS, None)
                     .context("draviavemal-openxml_office::Failed to add connector shape element")?;
             }
             AnchorContent::ContentPart(_) => {
-                xml_doc_mut
+                xml_document_mut
                     .append_child_element_ns_mut(
                         parent_id,
                         "contentPart",
@@ -246,14 +244,14 @@ impl DrawingPart {
     }
 
     fn serialize_picture(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         parent_id: NodeId,
         picture: Picture,
     ) -> AnyResult<(), AnyError> {
-        let picture_id = xml_doc_mut
+        let picture_id = xml_document_mut
             .append_child_element_ns_mut(parent_id, "pic", &SPREADSHEET_DRAWING_NS, None)
             .context("draviavemal-openxml_office::Failed to add picture element")?;
-        let non_visual_id = xml_doc_mut
+        let non_visual_id = xml_document_mut
             .append_child_element_ns_mut(picture_id, "nvPicPr", &SPREADSHEET_DRAWING_NS, None)
             .context("draviavemal-openxml_office::Failed to add non visual picture element")?;
         let mut properties_attributes = vec![
@@ -266,7 +264,7 @@ impl DrawingPart {
         if picture.hidden {
             properties_attributes.push(XmlAttribute::new("hidden".to_string(), "1".to_string()));
         }
-        xml_doc_mut
+        xml_document_mut
             .append_child_element_ns_mut(
                 non_visual_id,
                 "cNvPr",
@@ -274,12 +272,12 @@ impl DrawingPart {
                 Some(properties_attributes),
             )
             .context("draviavemal-openxml_office::Failed to add picture properties element")?;
-        let non_visual_picture_id = xml_doc_mut
+        let non_visual_picture_id = xml_document_mut
             .append_child_element_ns_mut(non_visual_id, "cNvPicPr", &SPREADSHEET_DRAWING_NS, None)
             .context(
                 "draviavemal-openxml_office::Failed to add non visual picture properties element",
             )?;
-        xml_doc_mut
+        xml_document_mut
             .append_child_element_ns_mut(
                 non_visual_picture_id,
                 "picLocks",
@@ -290,14 +288,14 @@ impl DrawingPart {
                 )]),
             )
             .context("draviavemal-openxml_office::Failed to add picture locks element")?;
-        let blip_fill_id = xml_doc_mut
+        let blip_fill_id = xml_document_mut
             .append_child_element_ns_mut(picture_id, "blipFill", &SPREADSHEET_DRAWING_NS, None)
             .context("draviavemal-openxml_office::Failed to add blip fill element")?;
         let mut blip_attributes = Vec::new();
         if let Some(compression_state) = picture.compression_state {
             blip_attributes.push(XmlAttribute::new("cstate".to_string(), compression_state));
         }
-        let blip_id = xml_doc_mut
+        let blip_id = xml_document_mut
             .append_child_element_ns_mut(
                 blip_fill_id,
                 "blip",
@@ -309,7 +307,7 @@ impl DrawingPart {
                 },
             )
             .context("draviavemal-openxml_office::Failed to add blip element")?;
-        xml_doc_mut
+        xml_document_mut
             .get_element_mut(blip_id)
             .context("draviavemal-openxml_office::Failed to get blip element")?
             .add_attribute_ns_mut(
@@ -320,7 +318,7 @@ impl DrawingPart {
             .context("draviavemal-openxml_office::Failed to add blip relationship")?;
         if let Some(source_rectangle) = picture.source_rectangle {
             DrawingPart::serialize_relative_rect(
-                xml_doc_mut,
+                xml_document_mut,
                 blip_fill_id,
                 "srcRect",
                 &source_rectangle,
@@ -329,11 +327,11 @@ impl DrawingPart {
         }
         match picture.fill_mode {
             BlipFillMode::Stretch(fill_rect) => {
-                let stretch_id = xml_doc_mut
+                let stretch_id = xml_document_mut
                     .append_child_element_ns_mut(blip_fill_id, "stretch", &DRAWINGML_NS, None)
                     .context("draviavemal-openxml_office::Failed to add stretch element")?;
                 DrawingPart::serialize_relative_rect(
-                    xml_doc_mut,
+                    xml_document_mut,
                     stretch_id,
                     "fillRect",
                     &fill_rect,
@@ -360,7 +358,7 @@ impl DrawingPart {
                 if let Some(alignment) = tile.alignment {
                     tile_attributes.push(XmlAttribute::new("algn".to_string(), alignment));
                 }
-                xml_doc_mut
+                xml_document_mut
                     .append_child_element_ns_mut(
                         blip_fill_id,
                         "tile",
@@ -374,25 +372,25 @@ impl DrawingPart {
                     .context("draviavemal-openxml_office::Failed to add tile element")?;
             }
         }
-        DrawingPart::serialize_shape_properties(xml_doc_mut, picture_id, &picture.shape_properties)
+        DrawingPart::serialize_shape_properties(xml_document_mut, picture_id, &picture.shape_properties)
             .context("draviavemal-openxml_office::Failed to serialise shape properties")?;
         Ok(())
     }
 
     fn serialize_shape_properties(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         parent_id: NodeId,
         shape_properties: &ShapeProperties,
     ) -> AnyResult<(), AnyError> {
-        let shape_property_id = xml_doc_mut
+        let shape_property_id = xml_document_mut
             .append_child_element_ns_mut(parent_id, "spPr", &SPREADSHEET_DRAWING_NS, None)
             .context("draviavemal-openxml_office::Failed to add shape property element")?;
         if let Some(transform) = &shape_properties.transform {
-            DrawingPart::serialize_transform(xml_doc_mut, shape_property_id, transform)
+            DrawingPart::serialize_transform(xml_document_mut, shape_property_id, transform)
                 .context("draviavemal-openxml_office::Failed to serialise transform")?;
         }
         if let Some(preset_geometry) = &shape_properties.preset_geometry {
-            let preset_geometry_id = xml_doc_mut
+            let preset_geometry_id = xml_document_mut
                 .append_child_element_ns_mut(
                     shape_property_id,
                     "prstGeom",
@@ -403,7 +401,7 @@ impl DrawingPart {
                     )]),
                 )
                 .context("draviavemal-openxml_office::Failed to add preset geometry element")?;
-            xml_doc_mut
+            xml_document_mut
                 .append_child_element_ns_mut(preset_geometry_id, "avLst", &DRAWINGML_NS, None)
                 .context("draviavemal-openxml_office::Failed to add adjust value list element")?;
         }
@@ -411,7 +409,7 @@ impl DrawingPart {
     }
 
     fn serialize_transform(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         parent_id: NodeId,
         transform: &Transform,
     ) -> AnyResult<(), AnyError> {
@@ -425,7 +423,7 @@ impl DrawingPart {
         if transform.flip_vertical {
             transform_attributes.push(XmlAttribute::new("flipV".to_string(), "1".to_string()));
         }
-        let transform_id = xml_doc_mut
+        let transform_id = xml_document_mut
             .append_child_element_ns_mut(
                 parent_id,
                 "xfrm",
@@ -438,7 +436,7 @@ impl DrawingPart {
             )
             .context("draviavemal-openxml_office::Failed to add transform element")?;
         if let Some(offset) = &transform.offset {
-            xml_doc_mut
+            xml_document_mut
                 .append_child_element_ns_mut(
                     transform_id,
                     "off",
@@ -451,7 +449,7 @@ impl DrawingPart {
                 .context("draviavemal-openxml_office::Failed to add offset element")?;
         }
         if let Some(extent) = &transform.extent {
-            xml_doc_mut
+            xml_document_mut
                 .append_child_element_ns_mut(
                     transform_id,
                     "ext",
@@ -467,7 +465,7 @@ impl DrawingPart {
     }
 
     fn serialize_relative_rect(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         parent_id: NodeId,
         local_name: &str,
         relative_rect: &RelativeRect,
@@ -485,7 +483,7 @@ impl DrawingPart {
         if let Some(bottom) = relative_rect.bottom {
             rect_attributes.push(XmlAttribute::new("b".to_string(), bottom.to_string()));
         }
-        xml_doc_mut
+        xml_document_mut
             .append_child_element_ns_mut(
                 parent_id,
                 local_name,
@@ -501,11 +499,11 @@ impl DrawingPart {
     }
 
     fn serialize_graphic_frame(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         parent_id: NodeId,
         graphic_frame: GraphicFrame,
     ) -> AnyResult<(), AnyError> {
-        let graphic_frame_id = xml_doc_mut
+        let graphic_frame_id = xml_document_mut
             .append_child_element_ns_mut(
                 parent_id,
                 "graphicFrame",
@@ -518,7 +516,7 @@ impl DrawingPart {
                     }),
             )
             .context("draviavemal-openxml_office::Failed to add graphic frame element")?;
-        let non_visual_id = xml_doc_mut
+        let non_visual_id = xml_document_mut
             .append_child_element_ns_mut(
                 graphic_frame_id,
                 "nvGraphicFramePr",
@@ -528,7 +526,7 @@ impl DrawingPart {
             .context(
                 "draviavemal-openxml_office::Failed to add non visual graphic frame element",
             )?;
-        xml_doc_mut
+        xml_document_mut
             .append_child_element_ns_mut(
                 non_visual_id,
                 "cNvPr",
@@ -541,7 +539,7 @@ impl DrawingPart {
             .context(
                 "draviavemal-openxml_office::Failed to add graphic frame properties element",
             )?;
-        xml_doc_mut
+        xml_document_mut
             .append_child_element_ns_mut(
                 non_visual_id,
                 "cNvGraphicFramePr",
@@ -550,7 +548,7 @@ impl DrawingPart {
             )
             .context("draviavemal-openxml_office::Failed to add non visual graphic frame properties element")?;
         if let Some(transform) = &graphic_frame.transform {
-            let transform_id = xml_doc_mut
+            let transform_id = xml_document_mut
                 .append_child_element_ns_mut(
                     graphic_frame_id,
                     "xfrm",
@@ -561,7 +559,7 @@ impl DrawingPart {
                     "draviavemal-openxml_office::Failed to add graphic frame transform element",
                 )?;
             if let Some(offset) = &transform.offset {
-                xml_doc_mut
+                xml_document_mut
                     .append_child_element_ns_mut(
                         transform_id,
                         "off",
@@ -574,7 +572,7 @@ impl DrawingPart {
                     .context("draviavemal-openxml_office::Failed to add offset element")?;
             }
             if let Some(extent) = &transform.extent {
-                xml_doc_mut
+                xml_document_mut
                     .append_child_element_ns_mut(
                         transform_id,
                         "ext",
@@ -587,7 +585,7 @@ impl DrawingPart {
                     .context("draviavemal-openxml_office::Failed to add extent element")?;
             }
         }
-        let graphic_id = xml_doc_mut
+        let graphic_id = xml_document_mut
             .append_child_element_ns_mut(graphic_frame_id, "graphic", &DRAWINGML_NS, None)
             .context("draviavemal-openxml_office::Failed to add graphic element")?;
         let graphic_uri = if graphic_frame.graphic_uri.is_empty() {
@@ -595,7 +593,7 @@ impl DrawingPart {
         } else {
             graphic_frame.graphic_uri.clone()
         };
-        let graphic_data_id = xml_doc_mut
+        let graphic_data_id = xml_document_mut
             .append_child_element_ns_mut(
                 graphic_id,
                 "graphicData",
@@ -603,10 +601,10 @@ impl DrawingPart {
                 Some(vec![XmlAttribute::new("uri".to_string(), graphic_uri)]),
             )
             .context("draviavemal-openxml_office::Failed to add graphic data element")?;
-        let chart_id = xml_doc_mut
+        let chart_id = xml_document_mut
             .append_child_element_ns_mut(graphic_data_id, "chart", &CHART_NS, None)
             .context("draviavemal-openxml_office::Failed to add chart element")?;
-        xml_doc_mut
+        xml_document_mut
             .get_element_mut(chart_id)
             .context("draviavemal-openxml_office::Failed to get chart element")?
             .add_attribute_ns_mut(

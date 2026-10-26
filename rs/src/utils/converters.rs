@@ -1,24 +1,27 @@
 use anyhow::{Context, Error as AnyError, Ok, Result as AnyResult};
 
-use crate::spreadsheet_2007::models::{ColumnIndex, RowIndex};
+use crate::spreadsheet_2007::{ColumnIndex, RowIndex};
 
 pub struct ConverterUtil;
 
 impl ConverterUtil {
     /// Return int Id of the column
     pub fn get_column_index(cell_ref: &str) -> AnyResult<u16, AnyError> {
-        let column_part: String = cell_ref.chars().take_while(|c| c.is_alphabetic()).collect();
+        let column_part: String = cell_ref
+            .chars()
+            .take_while(|character| character.is_alphabetic())
+            .collect();
         if column_part.is_empty() {
             return Err(AnyError::msg(
                 "draviavemal-openxml_office::Failed to Convert to Column Key Id",
             ));
         }
-        let mut index = 0;
-        for (i, c) in column_part.chars().rev().enumerate() {
-            let char_value = c.to_ascii_uppercase() as u16 - 'A' as u16 + 1;
-            index += char_value * 26_usize.pow(i as u32) as u16;
+        let mut column_index = 0;
+        for (position_from_right, column_character) in column_part.chars().rev().enumerate() {
+            let column_digit = column_character.to_ascii_uppercase() as u16 - 'A' as u16 + 1;
+            column_index += column_digit * 26_usize.pow(position_from_right as u32) as u16;
         }
-        Ok(index)
+        Ok(column_index)
     }
     /// Return String ref of the column
     pub fn get_column_ref(column_id: u16) -> AnyResult<String, AnyError> {
@@ -27,14 +30,14 @@ impl ConverterUtil {
                 "draviavemal-openxml_office::Index must be greater than 0",
             ));
         }
-        let mut index = column_id;
+        let mut remaining_column_index = column_id;
         let mut column_name = String::new();
 
-        while index > 0 {
-            index -= 1;
-            let char_value = (index % 26) as u8 + b'A';
-            column_name.insert(0, char_value as char);
-            index /= 26;
+        while remaining_column_index > 0 {
+            remaining_column_index -= 1;
+            let letter_value = (remaining_column_index % 26) as u8 + b'A';
+            column_name.insert(0, letter_value as char);
+            remaining_column_index /= 26;
         }
 
         Ok(column_name)
@@ -94,7 +97,7 @@ impl ConverterUtil {
     fn extract_digits(input: &str) -> AnyResult<u32> {
         input
             .chars()
-            .filter(|c| c.is_digit(10))
+            .filter(|character| character.is_digit(10))
             .collect::<String>()
             .parse()
             .context("draviavemal-openxml_office::Failed to Extract Digits")

@@ -6,15 +6,17 @@ use std::{
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
 
 use crate::{
-    files::OfficeDocument,
+    global_2007::files::OfficeDocument,
     global_2007::{
         parts::{RelationsPart, ThemePart},
-        service::MediaFiles,
         traits::{XmlDocumentPart, XmlDocumentPartInitializing},
     },
     log_elapsed,
     spreadsheet_2007::{
-        services::{CalculationChainPart, CommonServices, ShareStringPart, StylePart},
+        services::{
+            CalculationChainPart, CommonServices, ShareStringPart, SpreadsheetRelationshipRules,
+            StylePart,
+        },
         WorkbookPart,
     },
 };
@@ -33,12 +35,13 @@ impl XmlDocumentPart for WorkbookPart {
                     .to_string();
                 let mut file_tree = WorkbookPart::get_xml_document(&office_document, &file_name)?;
                 let workbook_relationship_part = Rc::new(RefCell::new(
-                    RelationsPart::new(
+                    RelationsPart::with_rules(
                         office_document.clone(),
                         &format!(
                             "{}/_rels/workbook.xml.rels",
                             &file_name[..file_name.rfind("/").unwrap()]
                         ),
+                        Box::new(SpreadsheetRelationshipRules),
                     )
                     .context("draviavemal-openxml_office::Creating Relation ship part for workbook failed.")?,
                 ));
@@ -48,9 +51,6 @@ impl XmlDocumentPart for WorkbookPart {
                     Rc::downgrade(&workbook_relationship_part),
                 )
                 .context("draviavemal-openxml_office::Loading Theme Part Failed")?;
-                // Share String
-                let meadia_files = MediaFiles::new()
-                    .context("draviavemal-openxml_office::Loading Share String Failed")?;
                 // Share String
                 let share_string = ShareStringPart::new(
                     office_document.clone(),
@@ -70,7 +70,6 @@ impl XmlDocumentPart for WorkbookPart {
                 )
                 .context("draviavemal-openxml_office::Loading Style Part Failed")?;
                 let common_service = Rc::new(RefCell::new(CommonServices::new(
-                    meadia_files,
                     calculation_chain,
                     share_string,
                     style,

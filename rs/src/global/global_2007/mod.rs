@@ -1,5 +1,4 @@
 pub(crate) mod charts;
-pub mod models;
-pub(crate) mod parts;
-pub mod traits;
-pub mod service;
+pub(crate) mod files;
+pub mod parts;
+pub use crate::global::traits;

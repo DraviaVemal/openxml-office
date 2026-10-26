@@ -1,12 +1,12 @@
 use crate::{
-    files::OfficeDocument,
+    global_2007::files::OfficeDocument,
     global_2007::{
         parts::{CorePropertiesPart, RelationsPart},
         traits::{XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartFlush},
     },
     log_elapsed,
     spreadsheet_2007::{
-        models::{CellStyleSetting, StyleId},
+        CellStyleSetting, StyleId,
         parts::{WorkSheet, WorkbookPart},
     },
 };
@@ -15,10 +15,14 @@ use std::{cell::RefCell, rc::Rc};
 
 mod edit;
 mod internal;
-mod model;
 mod read;
 
-pub use model::{Excel, ExcelPropertiesModel, WorkbookSettings};
+#[path = "enum.rs"]
+pub(crate) mod enum_items;
+#[path = "struct.rs"]
+pub(crate) mod struct_items;
+
+pub use struct_items::{Excel, ExcelPropertiesModel, WorkbookSettings};
 
 #[cfg(feature = "ffi")]
 pub mod ffi;

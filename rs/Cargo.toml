@@ -42,6 +42,10 @@ harness = false
 name = "footprint"
 harness = false
 
+[[bench]]
+name = "language_parity"
+harness = false
+
 [features]
 document = ["spreadsheet"]
 spreadsheet = []

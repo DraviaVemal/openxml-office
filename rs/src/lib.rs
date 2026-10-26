@@ -1,5 +1,4 @@
 // As Is Modules
-pub(crate) mod files;
 pub(crate) mod macros;
 // Aliased Modules
 pub(crate) mod document;

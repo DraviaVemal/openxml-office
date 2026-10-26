@@ -1,24 +1,17 @@
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use draviavemal_xml_rs::{NamespaceDeclaration, XmlAttribute, XmlDocument, XmlElementContentType};
 
+use crate::macros::lifecycle::impl_xml_part_lifecycle;
 use crate::{
     element_dictionary::EXCEL_TYPE_COLLECTION,
-    global_2007::traits::{
-        XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
-    },
+    global::traits::{XmlDocumentPartClose, XmlDocumentPartInitializing},
     log_elapsed,
     namespaces::{RELATIONSHIP_OFFICE_DOC_NS, SPREADSHEET_NS},
     order_dictionary::EXCEL_ORDER_COLLECTION,
     spreadsheet_2007::WorkbookPart,
 };
 
-impl Drop for WorkbookPart {
-    fn drop(&mut self) {
-        let _ = self.close_document();
-    }
-}
-
-impl XmlDocumentPartFlush for WorkbookPart {}
+impl_xml_part_lifecycle!(WorkbookPart);
 
 impl XmlDocumentPartClose for WorkbookPart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>
@@ -42,14 +35,14 @@ impl XmlDocumentPartClose for WorkbookPart {
                     .context("draviavemal-openxml_office::Failed to Close work")?;
                 // Write Sheet Records to Workbook
                 if let Some(xml_document_mut) = self.xml_document.upgrade() {
-                    let mut xml_doc_mut = xml_document_mut
+                    let mut xml_document_mut = xml_document_mut
                         .try_borrow_mut()
                         .context("draviavemal-openxml_office::Borrow XML Document Failed")?;
                     let mut sheet_count = 1;
-                    let root_id = xml_doc_mut.get_root_id();
+                    let root_id = xml_document_mut.get_root_id();
                     if let Some(workbook_view) = &self.workbook_view {
                         // Create and Set BookViews
-                        let book_views_id = xml_doc_mut
+                        let book_views_id = xml_document_mut
                             .insert_child_element_after_last_tag_mut(
                                 root_id,
                                 "bookViews",
@@ -128,7 +121,7 @@ impl XmlDocumentPartClose for WorkbookPart {
                                 "1".to_string()
                             },
                         ));
-                        xml_doc_mut
+                        xml_document_mut
                             .append_child_element_mut(
                                 book_views_id,
                                 "workbookView",
@@ -139,7 +132,7 @@ impl XmlDocumentPartClose for WorkbookPart {
                             )?;
                     }
                     // Create and set Sheets
-                    let sheets_id = xml_doc_mut
+                    let sheets_id = xml_document_mut
                         .insert_child_element_after_last_tag_mut(
                             root_id,
                             "sheets",
@@ -172,13 +165,13 @@ impl XmlDocumentPartClose for WorkbookPart {
                             attributes
                                 .push(XmlAttribute::new("state".to_string(), "hidden".to_string()));
                         }
-                        xml_doc_mut
+                        xml_document_mut
                             .append_child_element_mut(sheets_id, "sheet", Some(attributes))
                             .context("draviavemal-openxml_office::Create Sheet Node Failed")?;
                         sheet_count += 1;
                     }
                     if let Some(order) = EXCEL_ORDER_COLLECTION.get("workbook") {
-                        if let Ok(root_element) = xml_doc_mut.get_element_mut(root_id) {
+                        if let Ok(root_element) = xml_document_mut.get_element_mut(root_id) {
                             if let Some(contents) = root_element.get_child_contents_mut() {
                                 contents.sort_by_key(|content| match content {
                                     XmlElementContentType::Element((_, _, ns_tag)) => order

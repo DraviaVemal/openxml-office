@@ -14,16 +14,16 @@ impl CalculationChainPart {
     ) -> AnyResult<Vec<CalculationChain>, AnyError> {
         let mut calculation_collection = Vec::new();
         if let Some(xml_document) = xml_document.upgrade() {
-            let mut xml_doc_mut = xml_document
+            let mut xml_document_mut = xml_document
                 .try_borrow_mut()
                 .context("draviavemal-openxml_office::xml doc borrow failed")?;
-            let root_id = xml_doc_mut.get_root_id();
-            if let Some(element_ids) = xml_doc_mut
+            let root_id = xml_document_mut.get_root_id();
+            if let Some(element_ids) = xml_document_mut
                 .find_all_child(root_id, "c")
                 .context("draviavemal-openxml_office::Failed to find calc chain elements")?
             {
                 for element_id in element_ids {
-                    let element = xml_doc_mut
+                    let element = xml_document_mut
                         .get_element(element_id)
                         .context("draviavemal-openxml_office::Failed to pull calc chain element")?;
                     if let Some(cell_ref) = element.get_attribute("r") {
@@ -51,7 +51,7 @@ impl CalculationChainPart {
                             }),
                         });
                     }
-                    xml_doc_mut
+                    xml_document_mut
                         .remove_element_mut(element_id)
                         .context("draviavemal-openxml_office::Falied to remove element")?;
                 }

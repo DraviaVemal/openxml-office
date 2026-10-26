@@ -1,6 +1,7 @@
 // Copyright (c) DraviaVemal. This project is dual-licensed. See License in the project root.
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using CurrentSpreadsheet = draviavemal.openxml_office.spreadsheet_2007;
 using LegacySpreadsheet = OpenXMLOffice.Spreadsheet_2007;
@@ -77,6 +78,58 @@ namespace openxmloffice.tests
 
             WriteReport(results);
             Assert.AreEqual(cellCounts.Length * 2, results.Count);
+        }
+
+        [TestMethod]
+        public void LanguageParityBenchmark()
+        {
+            const int cellCount = 100_000;
+            const int columns = 100;
+            const string workload = "write_new_100k_cells_one_sheet";
+            int iterations = int.TryParse(
+                Environment.GetEnvironmentVariable("PARITY_BENCH_ITERATIONS"),
+                out int configuredIterations) && configuredIterations > 0
+                ? configuredIterations
+                : 5;
+
+            string warmupPath = WriteCurrentPackage(cellCount, "parity-warmup");
+            File.Delete(warmupPath);
+            File.Delete(warmupPath);
+
+            List<double> timings = new(iterations);
+            for (int iteration = 0; iteration < iterations; iteration++)
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                string outputPath = WriteCurrentPackage(cellCount, $"parity-{iteration}");
+                stopwatch.Stop();
+                timings.Add(stopwatch.Elapsed.TotalMilliseconds);
+                File.Delete(outputPath);
+            }
+
+            timings.Sort();
+            double medianMs = timings[timings.Count / 2];
+            double minimumMs = timings[0];
+            double maximumMs = timings[^1];
+            double cellsPerSecond = cellCount / (medianMs / 1000.0);
+            string row = string.Create(
+                CultureInfo.InvariantCulture,
+                $"csharp,{workload},{cellCount},{cellCount / columns},{columns},{iterations},{medianMs:F3},{minimumMs:F3},{maximumMs:F3},{cellsPerSecond:F0}");
+
+            string reportPath = Environment.GetEnvironmentVariable("PARITY_BENCH_OUTPUT")
+                ?? Path.Combine(resultPath, "language-parity.csv");
+            string? reportDirectory = Path.GetDirectoryName(Path.GetFullPath(reportPath));
+            if (reportDirectory != null)
+            {
+                Directory.CreateDirectory(reportDirectory);
+            }
+            bool writeHeader = !File.Exists(reportPath) || new FileInfo(reportPath).Length == 0;
+            using StreamWriter report = new(reportPath, true, new UTF8Encoding(false));
+            if (writeHeader)
+            {
+                report.WriteLine("language,workload,cells,rows,columns,iterations,median_ms,min_ms,max_ms,cells_per_second");
+            }
+            report.WriteLine(row);
+            TestContext.WriteLine(row);
         }
 
         /// <summary>

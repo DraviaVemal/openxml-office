@@ -99,6 +99,8 @@ RS_VERSION      := $(shell sed -n 's/^version = "\(.*\)"/\1/p' rs/Cargo.toml | h
 BENCH_RECORD    ?= 1
 BENCH_ITERATIONS ?= 5
 BENCH_ENV       := BENCH_RECORD=$(BENCH_RECORD) BENCH_ITERATIONS=$(BENCH_ITERATIONS)
+PARITY_BENCH_ITERATIONS ?= $(BENCH_ITERATIONS)
+PARITY_BENCH_OUTPUT := $(abspath $(TARGET_DIR)/test-report/language-parity.csv)
 
 .PHONY: bench-rs
 bench-rs:
@@ -120,4 +122,15 @@ bench-cs: targets
 	cd tests/cs && $(BENCH_ENV) dotnet test $(DOTNET_CFG) --filter "FullyQualifiedName~Benchmark"
 
 .PHONY: bench
-bench: bench-rs bench-go bench-cs
+bench: bench-rs bench-go bench-cs bench-parity
+
+.PHONY: bench-parity
+bench-parity:
+	$(MAKE) BUILD_TYPE=release ffi
+	@mkdir -p $(dir $(PARITY_BENCH_OUTPUT))
+	@rm -f $(PARITY_BENCH_OUTPUT)
+	PARITY_BENCH_OUTPUT=$(PARITY_BENCH_OUTPUT) PARITY_BENCH_ITERATIONS=$(PARITY_BENCH_ITERATIONS) $(CARGO) bench -p draviavemal-openxml_office --bench language_parity
+	cd tests/go && PARITY_BENCH_OUTPUT=$(PARITY_BENCH_OUTPUT) PARITY_BENCH_ITERATIONS=$(PARITY_BENCH_ITERATIONS) CGO_ENABLED=1 go test -run '^TestLanguageParityBenchmark$$' -count=1 -v
+	cd tests/cs && PARITY_BENCH_OUTPUT=$(PARITY_BENCH_OUTPUT) PARITY_BENCH_ITERATIONS=$(PARITY_BENCH_ITERATIONS) dotnet test --configuration Release --filter FullyQualifiedName~LanguageParityBenchmark
+	@awk -F, 'NR > 1 { median_ms[$$1] = $$7 } END { if (median_ms["rust"] > 0) { printf "\nRelative throughput (Rust = 1.00x):\n"; printf "  Rust:   1.00x\n"; printf "  Go:     %.2fx\n", median_ms["rust"] / median_ms["go"]; printf "  C#:     %.2fx\n", median_ms["rust"] / median_ms["csharp"] } }' $(PARITY_BENCH_OUTPUT)
+	@printf '\nCross-language timing results: %s\n' $(PARITY_BENCH_OUTPUT)

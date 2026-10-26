@@ -13,6 +13,8 @@ import (
 	"errors"
 	"unsafe"
 
+	openxml_office_fbs_global "github.com/DraviaVemal/openxml-office/go/internal/openxml_office_fbs/global"
+	openxml_office_fbs_spreadsheet "github.com/DraviaVemal/openxml-office/go/internal/openxml_office_fbs/spreadsheet"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
@@ -426,12 +428,19 @@ func (worksheet *Worksheet) AddPicture(imagePath string, setting ExcelPictureSet
 	fromOffset := buildAnchorPosition(builder, setting.From)
 	toOffset := buildAnchorPosition(builder, setting.To)
 
-	builder.StartObject(4)
-	builder.PrependInt8Slot(0, int8(setting.ImageType), 0)
-	builder.PrependUOffsetTSlot(1, fromOffset, 0)
-	builder.PrependUOffsetTSlot(2, toOffset, 0)
-	builder.PrependUOffsetTSlot(3, hyperlinkOffset, 0)
-	pictureSettingOffset := builder.EndObject()
+	openxml_office_fbs_global.Global_picture_settingsStart(builder)
+	openxml_office_fbs_global.Global_picture_settingsAddImageType(
+		builder,
+		openxml_office_fbs_global.Global_image_type(setting.ImageType),
+	)
+	imageSettingsOffset := openxml_office_fbs_global.Global_picture_settingsEnd(builder)
+
+	openxml_office_fbs_spreadsheet.Worksheet_picture_settingStart(builder)
+	openxml_office_fbs_spreadsheet.Worksheet_picture_settingAddPictureSettings(builder, imageSettingsOffset)
+	openxml_office_fbs_spreadsheet.Worksheet_picture_settingAddFrom(builder, fromOffset)
+	openxml_office_fbs_spreadsheet.Worksheet_picture_settingAddTo(builder, toOffset)
+	openxml_office_fbs_spreadsheet.Worksheet_picture_settingAddHyperlink(builder, hyperlinkOffset)
+	pictureSettingOffset := openxml_office_fbs_spreadsheet.Worksheet_picture_settingEnd(builder)
 
 	builder.StartObject(3)
 	builder.PrependUint64Slot(0, worksheet.worksheetPtr, 0)

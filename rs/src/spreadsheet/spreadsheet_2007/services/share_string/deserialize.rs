@@ -11,16 +11,16 @@ impl ShareStringPart {
     ) -> AnyResult<Vec<String>, AnyError> {
         let mut share_string_collection = Vec::new();
         if let Some(xml_document) = xml_document.upgrade() {
-            let mut xml_doc_mut = xml_document
+            let mut xml_document_mut = xml_document
                 .try_borrow_mut()
                 .context("draviavemal-openxml_office::xml doc borrow failed")?;
-            let root_id = xml_doc_mut.get_root_id();
-            if let Some(si_ids) = xml_doc_mut
+            let root_id = xml_document_mut.get_root_id();
+            if let Some(si_ids) = xml_document_mut
                 .find_all_child(root_id, "si")
                 .context("draviavemal-openxml_office::Failed to find si elements")?
             {
                 for si_id in si_ids {
-                    let first_child = xml_doc_mut
+                    let first_child = xml_document_mut
                         .get_element(si_id)
                         .context("draviavemal-openxml_office::Failed to pull si element")?
                         .get_child_contents()
@@ -32,7 +32,7 @@ impl ShareStringPart {
                             })
                         });
                     if let Some(child_id) = first_child {
-                        let text_element = xml_doc_mut
+                        let text_element = xml_document_mut
                             .get_element(child_id)
                             .context("draviavemal-openxml_office::Failed to pull child element")?;
                         let value = text_element
@@ -50,7 +50,7 @@ impl ShareStringPart {
                             .unwrap_or_default();
                         share_string_collection.push(value);
                     }
-                    xml_doc_mut
+                    xml_document_mut
                         .remove_element_mut(si_id)
                         .context("draviavemal-openxml_office::Failed To remove element")?;
                 }
