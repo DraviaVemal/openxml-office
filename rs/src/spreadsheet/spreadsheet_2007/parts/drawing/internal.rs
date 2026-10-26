@@ -1,12 +1,15 @@
 use crate::{
     element_dictionary::Content,
-    files::OfficeDocument,
+    global_2007::files::OfficeDocument,
     global_2007::{
         parts::{DrawingPartGlobal, RelationsPart},
         traits::XmlDocumentPartInitializing,
     },
     log_elapsed,
-    spreadsheet_2007::{services::CommonServices, DrawingPart},
+    spreadsheet_2007::{
+        services::{CommonServices, SpreadsheetRelationshipRules},
+        DrawingPart,
+    },
 };
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use phf::Map;
@@ -37,13 +40,14 @@ impl DrawingPart {
         };
         let xml_document = DrawingPart::get_xml_document(&office_document, &file_path)?;
         let drawing_relationship_part = Rc::new(RefCell::new(
-            RelationsPart::new(
+            RelationsPart::with_rules(
                 office_document.clone(),
                 &format!(
                     "{}/_rels/{}.rels",
                     &file_path[..file_path.rfind('/').unwrap()],
                     file_path.rsplit('/').next().unwrap()
                 ),
+                Box::new(SpreadsheetRelationshipRules),
             )
             .context(
                 "draviavemal-openxml_office::Creating Relation ship part for workbook failed.",

@@ -1,32 +1,22 @@
-
 #[macro_export]
 macro_rules! log_elapsed {
-    ($func_name:expr,$msg:expr) => {{
+    (@measure $operation:expr, $message:expr) => {{
         if cfg!(debug_assertions) {
-            use std::time::Instant;
-            let start = Instant::now();
-            let result = $func_name();
+            let start = std::time::Instant::now();
+            let result = $operation();
             let elapsed = start.elapsed();
             if elapsed.as_secs() > 2 {
-                log::debug!("Function {} : Elapsed :{:?}", $msg, elapsed);
+                log::debug!("Function {}: Elapsed {:?}", $message, elapsed);
             }
             result
         } else {
-            $func_name()
+            $operation()
         }
     }};
-    ($func_name:expr) => {{
-        if cfg!(debug_assertions) {
-            use std::time::Instant;
-            let start = Instant::now();
-            let fn_return = $func_name;
-            let elapsed = start.elapsed();
-            if elapsed.as_secs() > 2 {
-                log::debug!("Function {}: Elapsed {:?}", stringify!($func_name), elapsed);
-            }
-            fn_return
-        } else {
-            $func_name
-        }
+    ($operation:expr, $message:expr) => {{
+        $crate::log_elapsed!(@measure || $operation(), $message)
+    }};
+    ($operation:expr) => {{
+        $crate::log_elapsed!(@measure || $operation, stringify!($operation))
     }};
 }

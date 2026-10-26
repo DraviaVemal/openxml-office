@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -19,6 +20,78 @@ import (
 
 	"github.com/DraviaVemal/openxml-office/go/spreadsheet/spreadsheet_2007"
 )
+
+func TestLanguageParityBenchmark(t *testing.T) {
+	const cellCount = 100_000
+	const columns = 100
+	const workload = "write_new_100k_cells_one_sheet"
+
+	iterations := 5
+	if configuredIterations, err := strconv.Atoi(os.Getenv("PARITY_BENCH_ITERATIONS")); err == nil && configuredIterations > 0 {
+		iterations = configuredIterations
+	}
+	outputDirectory, err := os.MkdirTemp("", "openxml-language-parity-")
+	if err != nil {
+		t.Fatalf("create benchmark temp directory: %v", err)
+	}
+	defer os.RemoveAll(outputDirectory)
+
+	warmupPath, err := writeCurrentPackage(outputDirectory, cellCount, "warmup")
+	if err != nil {
+		t.Fatalf("warm up writer: %v", err)
+	}
+	if err := os.Remove(warmupPath); err != nil {
+		t.Fatalf("remove warmup workbook: %v", err)
+	}
+
+	timings := make([]float64, 0, iterations)
+	for iteration := 0; iteration < iterations; iteration++ {
+		start := time.Now()
+		outputPath, err := writeCurrentPackage(outputDirectory, cellCount, strconv.Itoa(iteration))
+		elapsedMs := float64(time.Since(start).Nanoseconds()) / 1e6
+		if err != nil {
+			t.Fatalf("write workbook on iteration %d: %v", iteration+1, err)
+		}
+		timings = append(timings, elapsedMs)
+		if err := os.Remove(outputPath); err != nil {
+			t.Fatalf("remove benchmark workbook: %v", err)
+		}
+	}
+
+	sort.Float64s(timings)
+	medianMs := timings[len(timings)/2]
+	minimumMs := timings[0]
+	maximumMs := timings[len(timings)-1]
+	cellsPerSecond := float64(cellCount) / (medianMs / 1000.0)
+	row := fmt.Sprintf("go,%s,%d,%d,%d,%d,%.3f,%.3f,%.3f,%.0f", workload, cellCount, cellCount/columns, columns, iterations, medianMs, minimumMs, maximumMs, cellsPerSecond)
+
+	reportPath := os.Getenv("PARITY_BENCH_OUTPUT")
+	if reportPath == "" {
+		reportPath = filepath.Join(resultPath, "language-parity.csv")
+	}
+	if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
+		t.Fatalf("create report directory: %v", err)
+	}
+	info, statErr := os.Stat(reportPath)
+	writeHeader := os.IsNotExist(statErr) || (statErr == nil && info.Size() == 0)
+	if statErr != nil && !os.IsNotExist(statErr) {
+		t.Fatalf("inspect report file: %v", statErr)
+	}
+	report, err := os.OpenFile(reportPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatalf("open report file: %v", err)
+	}
+	defer report.Close()
+	if writeHeader {
+		if _, err := fmt.Fprintln(report, "language,workload,cells,rows,columns,iterations,median_ms,min_ms,max_ms,cells_per_second"); err != nil {
+			t.Fatalf("write report header: %v", err)
+		}
+	}
+	if _, err := fmt.Fprintln(report, row); err != nil {
+		t.Fatalf("write benchmark result: %v", err)
+	}
+	fmt.Println(row)
+}
 
 // Standalone benchmark that compares the current package against the published
 // github.com/xuri/excelize v2 package. It mirrors the C# benchmark (tests/cs/benchmark.cs):

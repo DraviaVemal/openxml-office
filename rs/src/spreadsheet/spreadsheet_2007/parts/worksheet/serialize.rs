@@ -7,19 +7,19 @@ use crate::{
     element_dictionary::COMMON_TYPE_COLLECTION,
     global_2007::{parts::RelationsPart, traits::Enum},
     namespaces::RELATIONSHIP_OFFICE_DOC_NS,
-    spreadsheet_2007::{models::CellDataType, WorkSheet},
+    spreadsheet_2007::{CellDataType, WorkSheet},
 };
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
 
 impl WorkSheet {
     pub(crate) fn serialize_dimension(
         &mut self,
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
     ) -> AnyResult<(), AnyError> {
-        fn set_default(xml_doc_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
+        fn set_default(xml_document_mut: &mut XmlDocument) -> AnyResult<(), AnyError> {
             let dimension_attribute = vec![XmlAttribute::new("ref".to_string(), "A1".to_string())];
-            let root_id = xml_doc_mut.get_root_id();
-            xml_doc_mut
+            let root_id = xml_document_mut.get_root_id();
+            xml_document_mut
                 .append_child_element_mut(root_id, "dimension", Some(dimension_attribute))
                 .context("draviavemal-openxml_office::Failed to Add Dimension node to worksheet")?;
             Ok(())
@@ -43,29 +43,29 @@ impl WorkSheet {
                         }
                     ),
                 )];
-                let root_id = xml_doc_mut.get_root_id();
-                xml_doc_mut
+                let root_id = xml_document_mut.get_root_id();
+                xml_document_mut
                     .append_child_element_mut(root_id, "dimension", Some(dimension_attribute))
                     .context(
                         "draviavemal-openxml_office::Failed to Add Dimension node to worksheet",
                     )?;
             } else {
-                set_default(xml_doc_mut)?;
+                set_default(xml_document_mut)?;
             }
         } else {
-            set_default(xml_doc_mut)?;
+            set_default(xml_document_mut)?;
         }
         Ok(())
     }
 
     pub(crate) fn serialize_cols(
         &mut self,
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
     ) -> AnyResult<(), AnyError> {
         if let Some(mut column_collection) = self.column_collection.take() {
             if column_collection.len() > 0 {
-                let root_id = xml_doc_mut.get_root_id();
-                let cols_id = xml_doc_mut
+                let root_id = xml_document_mut.get_root_id();
+                let cols_id = xml_document_mut
                     .insert_child_element_after_last_tag_mut(root_id, "cols", "sheetFormatPr", None)
                     .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
                 loop {
@@ -95,7 +95,7 @@ impl WorkSheet {
                             attribute
                                 .push(XmlAttribute::new("bestFit".to_string(), "1".to_string()));
                         }
-                        xml_doc_mut
+                        xml_document_mut
                             .append_child_element_mut(cols_id, "col", Some(attribute))
                             .context("draviavemal-openxml_office::Failed to insert col record")?;
                     } else {
@@ -109,10 +109,10 @@ impl WorkSheet {
 
     pub(crate) fn serialize_sheet_views(
         &mut self,
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
     ) -> AnyResult<(), AnyError> {
-        let root_id = xml_doc_mut.get_root_id();
-        let sheet_views_id = xml_doc_mut
+        let root_id = xml_document_mut.get_root_id();
+        let sheet_views_id = xml_document_mut
             .insert_child_element_after_last_tag_mut(root_id, "sheetViews", "dimension", None)
             .context("draviavemal-openxml_office::Failed to Insert Sheet Views Element")?;
         loop {
@@ -209,7 +209,7 @@ impl WorkSheet {
                         zoom_scale_page_layout.to_string(),
                     );
                 }
-                xml_doc_mut
+                xml_document_mut
                     .append_child_element_mut(
                         sheet_views_id,
                         "sheetView",
@@ -230,11 +230,11 @@ impl WorkSheet {
 
     pub(crate) fn serialize_sheet_data(
         &mut self,
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
     ) -> AnyResult<(), AnyError> {
         if let Some(sheet_data) = self.sheet_data.take() {
-            let root_id = xml_doc_mut.get_root_id();
-            let sheet_data_id = xml_doc_mut
+            let root_id = xml_document_mut.get_root_id();
+            let sheet_data_id = xml_document_mut
                 .insert_child_element_after_last_tag_mut(root_id, "sheetData", "cols", None)
                 .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
             for (row_index, db_row) in sheet_data {
@@ -269,7 +269,7 @@ impl WorkSheet {
                 if db_row.row_property.place_holder.is_some() {
                     row_attribute.insert("ph".to_string(), "1".to_string());
                 }
-                let row_element_id = xml_doc_mut
+                let row_element_id = xml_document_mut
                     .append_child_element_mut(
                         sheet_data_id,
                         "row",
@@ -313,7 +313,7 @@ impl WorkSheet {
                         if cell_record.place_holder.is_some() {
                             cell_attribute.insert("ph".to_string(), "1".to_string());
                         }
-                        let cell_id = xml_doc_mut
+                        let cell_id = xml_document_mut
                             .append_child_element_mut(
                                 row_element_id,
                                 "c",
@@ -328,13 +328,13 @@ impl WorkSheet {
                         // Create cell's child element
                         match cell_record.data_type {
                             CellDataType::InlineString => {
-                                let inline_string_id = xml_doc_mut
+                                let inline_string_id = xml_document_mut
                                     .append_child_element_mut(cell_id, "is", None)
                                     .context("draviavemal-openxml_office::Failed to insert Inline string element")?;
-                                let text_id = xml_doc_mut
+                                let text_id = xml_document_mut
                                     .append_child_element_mut(inline_string_id, "t", None)
                                     .context("draviavemal-openxml_office::Failed To insert Text Value to inline string")?;
-                                xml_doc_mut
+                                xml_document_mut
                                     .get_element_mut(text_id)
                                     .context("draviavemal-openxml_office::Failed to get text element")?
                                     .add_text_mut(&if let Some(value) = cell_record.value {
@@ -346,20 +346,20 @@ impl WorkSheet {
                             }
                             _ => {
                                 if let Some(formula) = cell_record.formula {
-                                    let formula_id = xml_doc_mut
+                                    let formula_id = xml_document_mut
                                         .append_child_element_mut(cell_id, "f", None)
                                         .context("draviavemal-openxml_office::Failed to insert Inline string element")?;
-                                    xml_doc_mut
+                                    xml_document_mut
                                         .get_element_mut(formula_id)
                                         .context("draviavemal-openxml_office::Failed to get formula element")?
                                         .add_text_mut(&formula)
                                         .context("draviavemal-openxml_office::Failed to add formula text")?;
                                 }
                                 if let Some(value) = cell_record.value {
-                                    let value_id = xml_doc_mut
+                                    let value_id = xml_document_mut
                                         .append_child_element_mut(cell_id, "v", None)
                                         .context("draviavemal-openxml_office::Failed to insert Inline string element")?;
-                                    xml_doc_mut
+                                    xml_document_mut
                                         .get_element_mut(value_id)
                                         .context("draviavemal-openxml_office::Failed to get value element")?
                                         .add_text_mut(&value)
@@ -376,15 +376,15 @@ impl WorkSheet {
 
     pub(crate) fn serialize_merge_cells(
         &mut self,
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
     ) -> AnyResult<(), AnyError> {
         if let Some(merge_cells) = self.merge_cells.take() {
-            let root_id = xml_doc_mut.get_root_id();
-            let merge_cells_id = xml_doc_mut
+            let root_id = xml_document_mut.get_root_id();
+            let merge_cells_id = xml_document_mut
                 .insert_child_element_after_last_tag_mut(root_id, "mergeCells", "sheetData", None)
                 .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
             {
-                let merge_cells_element = xml_doc_mut
+                let merge_cells_element = xml_document_mut
                     .get_element_mut(merge_cells_id)
                     .context("draviavemal-openxml_office::Failed to get element")?;
                 merge_cells_element
@@ -413,7 +413,7 @@ impl WorkSheet {
                         ),
                     );
                 }
-                xml_doc_mut
+                xml_document_mut
                     .append_child_element_mut(
                         merge_cells_id,
                         "mergeCell",
@@ -432,12 +432,12 @@ impl WorkSheet {
 
     pub(crate) fn serialize_hyperlinks(
         &mut self,
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         relationship_part: Rc<RefCell<RelationsPart>>,
     ) -> AnyResult<(), AnyError> {
         if let Some(hyperlinks) = self.hyperlinks.take() {
-            let root_id = xml_doc_mut.get_root_id();
-            let hyperlinks_id = xml_doc_mut
+            let root_id = xml_document_mut.get_root_id();
+            let hyperlinks_id = xml_document_mut
                 .insert_child_element_after_last_tag_mut(root_id, "hyperlinks", "mergeCells", None)
                 .context("draviavemal-openxml_office::Failed to Insert Cols Element")?;
             for hyperlink in hyperlinks {
@@ -488,7 +488,7 @@ impl WorkSheet {
                 } else {
                     attributes.insert("location".to_string(), hyperlink.link);
                 }
-                let hyperlink_id = xml_doc_mut
+                let hyperlink_id = xml_document_mut
                     .append_child_element_mut(
                         hyperlinks_id,
                         "hyperlink",
@@ -501,7 +501,7 @@ impl WorkSheet {
                     )
                     .context("draviavemal-openxml_office::Failed tp Add element")?;
                 if let Some(r_id) = relationship_id {
-                    xml_doc_mut
+                    xml_document_mut
                         .get_element_mut(hyperlink_id)
                         .context("draviavemal-openxml_office::Failed to fetch hyperlink element")?
                         .add_attribute_ns_mut("id", &RELATIONSHIP_OFFICE_DOC_NS, &r_id)

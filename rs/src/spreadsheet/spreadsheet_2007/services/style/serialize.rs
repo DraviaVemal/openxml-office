@@ -2,13 +2,12 @@ use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use draviavemal_xml_rs::{NodeId, XmlAttribute, XmlDocument};
 
 use crate::{
-    global_2007::traits::Enum,
+    global::traits::Enum,
     spreadsheet_2007::{
-        models::{
+        
             BorderSetting, BorderStyleValues, CellXfs, ColorSetting, ColorSettingTypeValues,
             FontSchemeValues, HorizontalAlignmentValues, PatternTypeValues,
             VerticalAlignmentValues,
-        },
         services::StylePart,
     },
 };
@@ -16,13 +15,13 @@ use crate::{
 impl StylePart {
     pub(crate) fn save_content_to_tree_mut(&mut self) -> AnyResult<(), AnyError> {
         if let Some(xml_document) = self.xml_document.upgrade() {
-            let mut xml_doc_mut = xml_document
+            let mut xml_document_mut = xml_document
                 .try_borrow_mut()
                 .context("draviavemal-openxml_office::xml doc borrow failed")?;
-            let root_id = xml_doc_mut.get_root_id();
+            let root_id = xml_document_mut.get_root_id();
             // Number Formats
             {
-                let num_formats_id = xml_doc_mut
+                let num_formats_id = xml_document_mut
                     .insert_child_element_before_first_tag_mut(
                         root_id,
                         "numFmts",
@@ -34,7 +33,7 @@ impl StylePart {
                     )
                     .context("draviavemal-openxml_office::Create Number Formats Parent Failed.")?;
                 for (_, num_format) in self.number_format_collection.as_slice() {
-                    xml_doc_mut
+                    xml_document_mut
                         .append_child_element_mut(
                             num_formats_id,
                             "numFmt",
@@ -56,7 +55,7 @@ impl StylePart {
             }
             // Fonts
             {
-                let fonts_id = xml_doc_mut
+                let fonts_id = xml_document_mut
                     .insert_child_element_after_last_tag_mut(
                         root_id,
                         "fonts",
@@ -68,28 +67,28 @@ impl StylePart {
                     )
                     .context("draviavemal-openxml_office::Create Fonts Parent Failed.")?;
                 for (_, font_style) in self.font_collection.as_slice() {
-                    let font_id = xml_doc_mut
+                    let font_id = xml_document_mut
                         .append_child_element_mut(fonts_id, "font", None)
                         .context("draviavemal-openxml_office::Adding Font to Fonts Failed")?;
                     if font_style.is_bold {
-                        xml_doc_mut
+                        xml_document_mut
                             .append_child_element_mut(font_id, "b", None)
                             .context("draviavemal-openxml_office::Create Bold Element Failed")?;
                     }
                     if font_style.is_italic {
-                        xml_doc_mut
+                        xml_document_mut
                             .append_child_element_mut(font_id, "i", None)
                             .context("draviavemal-openxml_office::Create Italic Element Failed")?;
                     }
                     if font_style.is_underline {
-                        xml_doc_mut
+                        xml_document_mut
                             .append_child_element_mut(font_id, "u", None)
                             .context(
                                 "draviavemal-openxml_office::Create Underline Element Failed",
                             )?;
                     }
                     if font_style.is_double_underline {
-                        xml_doc_mut
+                        xml_document_mut
                             .append_child_element_mut(
                                 font_id,
                                 "u",
@@ -100,7 +99,7 @@ impl StylePart {
                             )
                             .context("draviavemal-openxml_office::Create Double Underline Element Failed")?;
                     }
-                    xml_doc_mut
+                    xml_document_mut
                         .append_child_element_mut(
                             font_id,
                             "sz",
@@ -112,10 +111,10 @@ impl StylePart {
                         .context("draviavemal-openxml_office::Create Font Size Element Failed")?;
                     StylePart::add_color_element(
                         Some(font_style.color.clone()),
-                        &mut xml_doc_mut,
+                        &mut xml_document_mut,
                         font_id,
                     )?;
-                    xml_doc_mut
+                    xml_document_mut
                         .append_child_element_mut(
                             font_id,
                             "name",
@@ -125,7 +124,7 @@ impl StylePart {
                             )]),
                         )
                         .context("draviavemal-openxml_office::Create Font Name Element Failed")?;
-                    xml_doc_mut
+                    xml_document_mut
                         .append_child_element_mut(
                             font_id,
                             "family",
@@ -135,7 +134,7 @@ impl StylePart {
                             )]),
                         )
                         .context("draviavemal-openxml_office::Create Font Family Element Failed")?;
-                    xml_doc_mut
+                    xml_document_mut
                         .append_child_element_mut(
                             font_id,
                             "scheme",
@@ -149,7 +148,7 @@ impl StylePart {
             }
             // Fills
             {
-                let fills_id = xml_doc_mut
+                let fills_id = xml_document_mut
                     .insert_child_element_after_last_tag_mut(
                         root_id,
                         "fills",
@@ -161,10 +160,10 @@ impl StylePart {
                     )
                     .context("draviavemal-openxml_office::Create Fills parents Failed.")?;
                 for (_, fill_data) in self.fill_collection.as_slice() {
-                    let fill_id = xml_doc_mut
+                    let fill_id = xml_document_mut
                         .append_child_element_mut(fills_id, "fill", None)
                         .context("draviavemal-openxml_office::Adding Fill Element Failed")?;
-                    let pattern_fill_id = xml_doc_mut
+                    let pattern_fill_id = xml_document_mut
                         .append_child_element_mut(
                             fill_id,
                             "patternFill",
@@ -175,7 +174,7 @@ impl StylePart {
                         )
                         .context("draviavemal-openxml_office::Pattern Fill Element Failed")?;
                     if let Some(fg_setting) = fill_data.foreground_color.clone() {
-                        xml_doc_mut
+                        xml_document_mut
                             .append_child_element_mut(
                                 pattern_fill_id,
                                 "fgColor",
@@ -189,7 +188,7 @@ impl StylePart {
                             .context("draviavemal-openxml_office::Pattern Fill Foreground Element Failed")?;
                     }
                     if let Some(bg_setting) = fill_data.background_color.clone() {
-                        xml_doc_mut
+                        xml_document_mut
                             .append_child_element_mut(
                                 pattern_fill_id,
                                 "bgColor",
@@ -206,7 +205,7 @@ impl StylePart {
             }
             // Borders
             {
-                let borders_id = xml_doc_mut
+                let borders_id = xml_document_mut
                     .insert_child_element_after_last_tag_mut(
                         root_id,
                         "borders",
@@ -218,7 +217,7 @@ impl StylePart {
                     )
                     .context("draviavemal-openxml_office::Create borders parents Failed.")?;
                 for (_, border_data) in self.border_collection.as_slice() {
-                    let border_id = xml_doc_mut
+                    let border_id = xml_document_mut
                         .append_child_element_mut(borders_id, "border", None)
                         .context("draviavemal-openxml_office::Create Border Failed")?;
                     for (border_side, border_setting) in [
@@ -230,7 +229,7 @@ impl StylePart {
                     ] {
                         StylePart::add_border_element(
                             border_side,
-                            &mut xml_doc_mut,
+                            &mut xml_document_mut,
                             border_id,
                             border_setting.clone(),
                         )?;
@@ -238,10 +237,10 @@ impl StylePart {
                 }
             }
             // Cell Style Xfs
-            StylePart::add_cell_style(&mut xml_doc_mut, &mut self.cell_xfs_collection, true)?;
+            StylePart::add_cell_style(&mut xml_document_mut, &mut self.cell_xfs_collection, true)?;
             // Cell Styles Xfs
             StylePart::add_cell_style(
-                &mut xml_doc_mut,
+                &mut xml_document_mut,
                 &mut self.cell_style_xfs_collection,
                 false,
             )?;
@@ -252,11 +251,11 @@ impl StylePart {
     /// Add Color Element Node To XML
     fn add_color_element(
         color_setting: Option<ColorSetting>,
-        xml_doc_mut: &mut std::cell::RefMut<'_, XmlDocument>,
+        xml_document_mut: &mut std::cell::RefMut<'_, XmlDocument>,
         parent_id: NodeId,
     ) -> Result<(), AnyError> {
         if let Some(border_color_setting) = color_setting {
-            xml_doc_mut
+            xml_document_mut
                 .append_child_element_mut(
                     parent_id,
                     "color",
@@ -273,7 +272,7 @@ impl StylePart {
     /// Add Border Element Node to XML
     fn add_border_element(
         border_side: &str,
-        xml_doc_mut: &mut std::cell::RefMut<'_, XmlDocument>,
+        xml_document_mut: &mut std::cell::RefMut<'_, XmlDocument>,
         border_id: NodeId,
         border_data: BorderSetting,
     ) -> Result<(), AnyError> {
@@ -286,22 +285,22 @@ impl StylePart {
         } else {
             None
         };
-        let id = xml_doc_mut
+        let id = xml_document_mut
             .append_child_element_mut(border_id, border_side, attributes)
             .context(format!("{} Border Element Creation Failed", border_side))?;
         if has_style {
-            StylePart::add_color_element(border_data.border_color, xml_doc_mut, id)?;
+            StylePart::add_color_element(border_data.border_color, xml_document_mut, id)?;
         }
         Ok(())
     }
 
     fn add_cell_style(
-        xml_doc_mut: &mut std::cell::RefMut<'_, XmlDocument>,
+        xml_document_mut: &mut std::cell::RefMut<'_, XmlDocument>,
         xfs_data: &mut Vec<(u64, CellXfs)>,
         enable_format_id: bool,
     ) -> Result<(), AnyError> {
-        let root_id = xml_doc_mut.get_root_id();
-        let cell_style_xfs_id = xml_doc_mut
+        let root_id = xml_document_mut.get_root_id();
+        let cell_style_xfs_id = xml_document_mut
             .insert_child_element_after_last_tag_mut(
                 root_id,
                 if enable_format_id {
@@ -365,7 +364,7 @@ impl StylePart {
                     xfs.apply_protection.to_string(),
                 ));
             }
-            let xf_id = xml_doc_mut
+            let xf_id = xml_document_mut
                 .append_child_element_mut(cell_style_xfs_id, "xf", Some(attributes))
                 .context("draviavemal-openxml_office::Create Cell Style Config Failed")?;
             if xfs.is_wrap_text > 0
@@ -391,7 +390,7 @@ impl StylePart {
                         HorizontalAlignmentValues::get_string(xfs.horizontal_alignment.clone()),
                     ));
                 }
-                xml_doc_mut
+                xml_document_mut
                     .append_child_element_mut(xf_id, "alignment", Some(alignment_attributes))
                     .context(
                         "draviavemal-openxml_office::Create Cell Alignment Style Config Failed",

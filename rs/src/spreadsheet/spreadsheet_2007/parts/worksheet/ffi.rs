@@ -13,10 +13,10 @@ use crate::{
         root_from_raw, set_error, write_buffer, StatusCode,
     },
     global_2007::{
-        models::{AnchorPosition, ImageType, PictureSetting},
+        parts::{AnchorPosition, ImageType, PictureSetting},
         traits::XmlDocumentPartFlush,
     },
-    spreadsheet_2007::models::{
+    spreadsheet_2007::{
         CellDataType, CellProperty, ColumnProperties, ExcelHyperlinkProperties,
         ExcelHyperlinkPropertyTypeValues, ExcelPictureSetting, ReferenceRange, RowProperties,
         StyleId,
@@ -333,7 +333,7 @@ pub extern "C" fn Worksheet_set_hyperlink(
         Err(status) => return status,
     };
     let link = match request.link() {
-        Some(l) => l.to_string(),
+        Some(link_value) => link_value.to_string(),
         None => {
             return unsafe {
                 set_error(
@@ -346,7 +346,7 @@ pub extern "C" fn Worksheet_set_hyperlink(
     };
     let worksheet_ptr = request.worksheet_ptr() as *mut FfiWorksheet;
     let mut worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
-    let display = request.display().map(|s| s.to_string());
+    let display = request.display().map(|display_text| display_text.to_string());
     let ref_range = fbs_to_reference_range(&request.ref_range());
     match worksheet.set_hyperlink_mut(display, link, ref_range) {
         Ok(()) => StatusCode::Success as i8,
@@ -423,14 +423,14 @@ pub extern "C" fn Worksheet_add_picture(
     in_buffer_size: usize,
     out_error: *mut *const c_char,
 ) -> i8 {
-    let request = match unsafe {
+    let picture_request = match unsafe {
         root_from_raw::<Worksheet_add_picture>(in_buffer, in_buffer_size, out_error)
     } {
         Ok(root) => root,
         Err(status) => return status,
     };
-    let image_path = match request.image_path() {
-        Some(p) => p,
+    let image_path = match picture_request.image_path() {
+        Some(image_path) => image_path,
         None => {
             return unsafe {
                 set_error(
@@ -441,27 +441,34 @@ pub extern "C" fn Worksheet_add_picture(
             }
         }
     };
-    let worksheet_ptr = request.worksheet_ptr() as *mut FfiWorksheet;
+    let worksheet_ptr = picture_request.worksheet_ptr() as *mut FfiWorksheet;
     let mut worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
-    let setting = request.picture_setting();
-    let from_fbs = setting.from();
-    let to_fbs = setting.to();
-    let hyperlink_properties = setting.hyperlink().map(|h| ExcelHyperlinkProperties {
-        display: h.display().map(|s| s.to_string()),
-        link_type: match h.link_type() {
-            Worksheet_excel_hyperlink_type::web_url => ExcelHyperlinkPropertyTypeValues::WEB_URL,
-            Worksheet_excel_hyperlink_type::target_sheet => {
-                ExcelHyperlinkPropertyTypeValues::TARGET_SHEET
-            }
-            _ => ExcelHyperlinkPropertyTypeValues::EXISTING_FILE,
-        },
-        link: h.link().unwrap_or("").to_string(),
-    });
+    let setting_request = picture_request.picture_setting();
+    let from_position = setting_request.from();
+    let to_position = setting_request.to();
+    let hyperlink_properties =
+        setting_request
+            .hyperlink()
+            .map(|hyperlink_request| ExcelHyperlinkProperties {
+                display: hyperlink_request
+                    .display()
+                    .map(|display| display.to_string()),
+                link_type: match hyperlink_request.link_type() {
+                    Worksheet_excel_hyperlink_type::web_url => {
+                        ExcelHyperlinkPropertyTypeValues::WEB_URL
+                    }
+                    Worksheet_excel_hyperlink_type::target_sheet => {
+                        ExcelHyperlinkPropertyTypeValues::TARGET_SHEET
+                    }
+                    _ => ExcelHyperlinkPropertyTypeValues::EXISTING_FILE,
+                },
+                link: hyperlink_request.link().unwrap_or("").to_string(),
+            });
 
     let picture_setting = ExcelPictureSetting {
         hyperlink_properties,
         picture_setting: PictureSetting {
-            image_type: match setting.picture_settings().image_type() {
+            image_type: match setting_request.picture_settings().image_type() {
                 Global_image_type::png => ImageType::PNG,
                 Global_image_type::gif => ImageType::GIF,
                 Global_image_type::bmp => ImageType::BMP,
@@ -470,16 +477,16 @@ pub extern "C" fn Worksheet_add_picture(
             },
         },
         from: AnchorPosition {
-            column: from_fbs.column(),
-            column_offset: from_fbs.column_offset(),
-            row: from_fbs.row(),
-            row_offset: from_fbs.row_offset(),
+            column: from_position.column(),
+            column_offset: from_position.column_offset(),
+            row: from_position.row(),
+            row_offset: from_position.row_offset(),
         },
         to: AnchorPosition {
-            column: to_fbs.column(),
-            column_offset: to_fbs.column_offset(),
-            row: to_fbs.row(),
-            row_offset: to_fbs.row_offset(),
+            column: to_position.column(),
+            column_offset: to_position.column_offset(),
+            row: to_position.row(),
+            row_offset: to_position.row_offset(),
         },
     };
     match worksheet.add_picture_mut(image_path, picture_setting) {
@@ -593,14 +600,14 @@ pub extern "C" fn Worksheet_list_merge_cell(
     let worksheet = unsafe { ManuallyDrop::new(Box::from_raw(worksheet_ptr)) };
     let mut builder = flatbuffers::FlatBufferBuilder::new();
     let mut range_offsets = Vec::new();
-    worksheet.for_each_merge_cell(|r| {
+    worksheet.for_each_merge_cell(|merge_range| {
         range_offsets.push(fbs_reference_range::create(
             &mut builder,
             &Worksheet_reference_rangeArgs {
-                column_start: r.column_start,
-                column_end: r.column_end,
-                row_start: r.row_start,
-                row_end: r.row_end,
+                column_start: merge_range.column_start,
+                column_end: merge_range.column_end,
+                row_start: merge_range.row_start,
+                row_end: merge_range.row_end,
             },
         ));
     });
@@ -636,7 +643,7 @@ pub extern "C" fn Worksheet_list_hyperlinks(
     let mut builder = flatbuffers::FlatBufferBuilder::new();
     let mut link_offsets = Vec::new();
     worksheet.for_each_hyperlink(|display, link, range| {
-        let display_offset = display.map(|d| builder.create_string(d));
+        let display_offset = display.map(|display_text| builder.create_string(display_text));
         let link_offset = builder.create_string(link);
         let range_offset = fbs_reference_range::create(
             &mut builder,

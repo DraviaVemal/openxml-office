@@ -4,7 +4,7 @@ use anyhow::{Context, Error as AnyError, Result as AnyResult};
 
 use crate::{
     element_dictionary::EXCEL_TYPE_COLLECTION,
-    files::OfficeDocument,
+    global_2007::files::OfficeDocument,
     global_2007::{
         parts::RelationsPart,
         traits::{XmlDocumentPart, XmlDocumentPartInitializing},

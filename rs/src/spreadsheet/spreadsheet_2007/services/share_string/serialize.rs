@@ -3,23 +3,16 @@ use std::collections::HashSet;
 use anyhow::{Context, Error as AnyError, Result as AnyResult};
 use draviavemal_xml_rs::{NamespaceDeclaration, XmlDocument};
 
+use crate::macros::lifecycle::impl_xml_part_lifecycle;
 use crate::{
     element_dictionary::EXCEL_TYPE_COLLECTION,
-    global_2007::traits::{
-        XmlDocumentPartClose, XmlDocumentPartFlush, XmlDocumentPartInitializing,
-    },
+    global::traits::{XmlDocumentPartClose, XmlDocumentPartInitializing},
     log_elapsed,
     namespaces::SPREADSHEET_NS,
     spreadsheet_2007::services::ShareStringPart,
 };
 
-impl Drop for ShareStringPart {
-    fn drop(&mut self) {
-        let _ = self.close_document();
-    }
-}
-
-impl XmlDocumentPartFlush for ShareStringPart {}
+impl_xml_part_lifecycle!(ShareStringPart);
 
 impl XmlDocumentPartClose for ShareStringPart {
     fn close_document(&mut self) -> AnyResult<(), AnyError>
@@ -28,24 +21,24 @@ impl XmlDocumentPartClose for ShareStringPart {
     {
         log_elapsed!(
             || {
-                if let Some(office_doc_ref) = self.office_document.upgrade() {
+                if let Some(office_document_ref) = self.office_document.upgrade() {
                     if self.share_string_collection.len() > 0 {
                         if let Some(xml_document) = self.xml_document.upgrade() {
-                            let mut xml_doc_mut = xml_document.try_borrow_mut().context(
+                            let mut xml_document_mut = xml_document.try_borrow_mut().context(
                                 "draviavemal-openxml_office::Failed to Pull Doc Reference",
                             )?;
-                            let root_id = xml_doc_mut.get_root_id();
+                            let root_id = xml_document_mut.get_root_id();
                             // Update count & uniqueCount in root
                             {
                                 let unique_count = self
                                     .share_string_collection
                                     .iter()
-                                    .map(|s| s.to_string())
+                                    .map(|shared_string| shared_string.to_string())
                                     .collect::<HashSet<String>>()
                                     .len()
                                     .to_string();
                                 let count = self.share_string_collection.len().to_string();
-                                if let Ok(root) = xml_doc_mut.get_element_mut(root_id) {
+                                if let Ok(root) = xml_document_mut.get_element_mut(root_id) {
                                     root.remove_attribute_mut("count");
                                     root.remove_attribute_mut("uniqueCount");
                                     root.add_attribute_mut("count", &count).context(
@@ -59,20 +52,20 @@ impl XmlDocumentPartClose for ShareStringPart {
                                 }
                             }
                             for string in self.share_string_collection.to_owned() {
-                                let parent_id = xml_doc_mut
+                                let parent_id = xml_document_mut
                                     .append_child_element_mut(root_id, "si", None)
                                     .context("draviavemal-openxml_office::Failed to Add Child")?;
-                                let text_id = xml_doc_mut
+                                let text_id = xml_document_mut
                                     .append_child_element_mut(parent_id, "t", None)
                                     .context("draviavemal-openxml_office::Creating Share String Child Failed")?;
-                                xml_doc_mut
+                                xml_document_mut
                                     .get_element_mut(text_id)
                                     .context("draviavemal-openxml_office::Failed to pull text element")?
                                     .add_text_mut(&string)
                                     .context("draviavemal-openxml_office::Failed to set share string value")?;
                             }
                         }
-                        office_doc_ref
+                        office_document_ref
                             .try_borrow_mut()
                             .context("draviavemal-openxml_office::Failed To pull XML Handle")?
                             .close_xml_document(&self.file_path)
@@ -85,7 +78,7 @@ impl XmlDocumentPartClose for ShareStringPart {
                                     "draviavemal-openxml_office::Failed To pull parent relation ship part of Share String",
                                 )?
                                 .delete_relationship_mut(&self.file_path);
-                            office_doc_ref
+                            office_document_ref
                                 .try_borrow_mut()
                                 .context("draviavemal-openxml_office::Failed To pull XML Handle")?
                                 .delete_document_mut(&self.file_path);

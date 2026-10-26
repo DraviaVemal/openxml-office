@@ -33,6 +33,35 @@ func TestBlankFile(t *testing.T) {
 	}
 }
 
+func TestAddPicture(t *testing.T) {
+	excel, err := spreadsheet_2007.NewExcel()
+	if err != nil {
+		t.Fatalf("failed to create excel: %v", err)
+	}
+	worksheet, err := excel.AddSheet("PictureSheet")
+	if err != nil {
+		t.Fatalf("failed to add picture worksheet: %v", err)
+	}
+	imagePath := filepath.Join("..", "edit_test_files", "tom_and_jerry.jpg")
+	setting := spreadsheet_2007.ExcelPictureSetting{
+		ImageType: spreadsheet_2007.ImageTypeJPEG,
+		From:      spreadsheet_2007.AnchorPosition{Column: 2, Row: 2},
+		To:        spreadsheet_2007.AnchorPosition{Column: 5, Row: 8},
+	}
+	for pictureIndex := 0; pictureIndex < 2; pictureIndex++ {
+		if err := worksheet.AddPicture(imagePath, setting); err != nil {
+			t.Fatalf("failed to add picture %d: %v", pictureIndex+1, err)
+		}
+	}
+	if err := worksheet.Flush(); err != nil {
+		t.Fatalf("failed to flush picture worksheet: %v", err)
+	}
+	outputPath := filepath.Join(resultPath, "AddPicture-"+timestamp()+".xlsx")
+	if err := excel.SaveAs(outputPath); err != nil {
+		t.Fatalf("failed to save workbook with picture: %v", err)
+	}
+}
+
 func TestWorkbookSettingsBatch(t *testing.T) {
 	excel, err := spreadsheet_2007.NewExcel()
 	if err != nil {

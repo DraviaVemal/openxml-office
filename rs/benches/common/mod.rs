@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use draviavemal_openxml_office::spreadsheet_2007::{
-    models::CellProperty, Excel, ExcelPropertiesModel,
+    CellProperty, Excel, ExcelPropertiesModel,
 };
 
 pub const COLUMNS_PER_ROW: usize = 100;

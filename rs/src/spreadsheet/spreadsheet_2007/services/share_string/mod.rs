@@ -1,6 +1,6 @@
 use crate::{
     element_dictionary::EXCEL_TYPE_COLLECTION,
-    files::OfficeDocument,
+    global_2007::files::OfficeDocument,
     global_2007::{
         parts::RelationsPart,
         traits::{
@@ -18,8 +18,13 @@ use std::{cell::RefCell, collections::HashSet, rc::Weak};
 mod deserialize;
 mod edit;
 mod internal;
-mod model;
 mod read;
 mod serialize;
 
-pub(crate) use model::ShareStringPart;
+#[path = "enum.rs"]
+pub(crate) mod enum_items;
+#[path = "struct.rs"]
+pub(crate) mod struct_items;
+
+pub(crate) use enum_items::*;
+pub(crate) use struct_items::*;

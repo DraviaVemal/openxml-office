@@ -3,11 +3,10 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use anyhow::{Error as AnyError, Result as AnyResult};
 
 use crate::spreadsheet_2007::{
-    models::{
+    
         BorderStyle, CellStyleSetting, CellXfs, ColorSetting, ColorSettingTypeValues, FillStyle,
         FontStyle, HorizontalAlignmentValues, NumberFormat, NumberFormatValues, StyleId,
         VerticalAlignmentValues,
-    },
     services::StylePart,
 };
 

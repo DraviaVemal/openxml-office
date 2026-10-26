@@ -1,5 +1,5 @@
 use crate::{
-    files::OfficeDocument,
+    global_2007::files::OfficeDocument,
     global_2007::{
         parts::{CorePropertiesPart, RelationsPart},
         traits::{XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartFlush},

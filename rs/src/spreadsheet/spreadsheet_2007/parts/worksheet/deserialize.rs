@@ -13,25 +13,24 @@ use crate::{
     global_2007::{parts::RelationsPart, traits::Enum},
     namespaces::RELATIONSHIP_OFFICE_DOC_NS,
     spreadsheet_2007::{
-        models::{
+        
             CellDataType, CellProperty, ColumnIndex, ColumnProperties, HyperLinks, ReferenceRange,
             RowProperties, StyleId,
-        },
-        worksheet::model::{Dimension, RowRecords, WorkSheetView, WorkSheetViews},
+        worksheet::struct_items::{Dimension, RowRecords, WorkSheetView, WorkSheetViews},
         WorkSheet,
     },
 };
 
 impl WorkSheet {
     pub(crate) fn deserialize_cols(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
     ) -> AnyResult<Option<VecDeque<ColumnProperties>>, AnyError> {
-        let root_id = xml_doc_mut.get_root_id();
-        if let Some(cols_id) = xml_doc_mut
+        let root_id = xml_document_mut.get_root_id();
+        if let Some(cols_id) = xml_document_mut
             .find_first_child(root_id, "cols")
             .context("draviavemal-openxml_office::Failed to find cols element")?
         {
-            let child_ids: Vec<NodeId> = xml_doc_mut
+            let child_ids: Vec<NodeId> = xml_document_mut
                 .get_element(cols_id)
                 .context("draviavemal-openxml_office::Failed to get cols element")?
                 .get_child_contents()
@@ -48,7 +47,7 @@ impl WorkSheet {
                 .unwrap_or_default();
             let mut column_collection = VecDeque::with_capacity(child_ids.len());
             for col_id in child_ids {
-                let col = xml_doc_mut
+                let col = xml_document_mut
                     .get_element(col_id)
                     .context("draviavemal-openxml_office::Failed to get col element")?;
                 let mut column_properties = ColumnProperties::default();
@@ -121,7 +120,7 @@ impl WorkSheet {
                 }
                 column_collection.push_back(column_properties);
             }
-            xml_doc_mut
+            xml_document_mut
                 .remove_element_mut(cols_id)
                 .context("draviavemal-openxml_office::Failed to remove cols element")?;
             return Ok(Some(column_collection));
@@ -131,15 +130,15 @@ impl WorkSheet {
 
     /// DeSerializing Worksheet View
     pub(crate) fn deserialize_worksheet_views(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
     ) -> AnyResult<WorkSheetViews, AnyError> {
         let mut worksheet_views = WorkSheetViews::default();
-        let root_id = xml_doc_mut.get_root_id();
-        if let Some(sheet_views_id) = xml_doc_mut
+        let root_id = xml_document_mut.get_root_id();
+        if let Some(sheet_views_id) = xml_document_mut
             .find_first_child(root_id, "sheetViews")
             .context("draviavemal-openxml_office::Failed to find sheetViews element")?
         {
-            let child_records: Vec<(NodeId, String)> = xml_doc_mut
+            let child_records: Vec<(NodeId, String)> = xml_document_mut
                 .get_element(sheet_views_id)
                 .context("draviavemal-openxml_office::Failed to get sheetViews element")?
                 .get_child_contents()
@@ -163,7 +162,7 @@ impl WorkSheet {
                         "draviavemal-openxml_office::Failed to Process Sheet Views child",
                     ));
                 }
-                let sheet_view_element = xml_doc_mut
+                let sheet_view_element = xml_document_mut
                     .get_element(element_id)
                     .context("draviavemal-openxml_office::Failed to get Sheet View Element")?;
                 let mut worksheet_view = WorkSheetView::default();
@@ -321,7 +320,7 @@ impl WorkSheet {
                 }
                 worksheet_views.view_collection.push(worksheet_view);
             }
-            xml_doc_mut
+            xml_document_mut
                 .remove_element_mut(sheet_views_id)
                 .context("draviavemal-openxml_office::Failed to remove sheetViews element")?;
         }
@@ -330,16 +329,16 @@ impl WorkSheet {
 
     /// Deserialize Sheet Data
     pub(crate) fn deserialize_sheet_data(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
     ) -> AnyResult<(Option<BTreeMap<u32, RowRecords>>, Dimension), AnyError> {
         let mut dimension = Dimension::default();
-        let root_id = xml_doc_mut.get_root_id();
-        if let Some(sheet_data_id) = xml_doc_mut
+        let root_id = xml_document_mut.get_root_id();
+        if let Some(sheet_data_id) = xml_document_mut
             .find_first_child(root_id, "sheetData")
             .context("draviavemal-openxml_office::Failed to find sheetData element")?
         {
             let mut sheet_data_collection: BTreeMap<u32, RowRecords> = BTreeMap::new();
-            let row_ids: Vec<NodeId> = xml_doc_mut
+            let row_ids: Vec<NodeId> = xml_document_mut
                 .get_element(sheet_data_id)
                 .context("draviavemal-openxml_office::Failed to get sheetData element")?
                 .get_child_contents()
@@ -357,7 +356,7 @@ impl WorkSheet {
             // Loop All rows of sheet data
             for row_id in row_ids {
                 let mut row_record = RowProperties::default();
-                let row_element = xml_doc_mut
+                let row_element = xml_document_mut
                     .get_element(row_id)
                     .context("draviavemal-openxml_office::Failed to get row element")?;
                 // Get Row Id
@@ -459,7 +458,7 @@ impl WorkSheet {
                     };
                 }
                 let mut cell_records: BTreeMap<ColumnIndex, CellProperty> = BTreeMap::new();
-                let col_ids: Vec<NodeId> = xml_doc_mut
+                let col_ids: Vec<NodeId> = xml_document_mut
                     .get_element(row_id)
                     .context("draviavemal-openxml_office::Failed to get row element")?
                     .get_child_contents()
@@ -477,7 +476,7 @@ impl WorkSheet {
                 // Loop All Columns of row
                 for col_id in col_ids {
                     let mut cell_record = CellProperty::default();
-                    let col_element = xml_doc_mut
+                    let col_element = xml_document_mut
                         .get_element(col_id)
                         .context("draviavemal-openxml_office::Failed to get col element")?;
                     // Get Col Id
@@ -534,7 +533,7 @@ impl WorkSheet {
                             None
                         };
                     };
-                    let cell_child_records: Vec<(NodeId, String)> = xml_doc_mut
+                    let cell_child_records: Vec<(NodeId, String)> = xml_document_mut
                         .get_element(col_id)
                         .context("draviavemal-openxml_office::Failed to get col element")?
                         .get_child_contents()
@@ -555,19 +554,19 @@ impl WorkSheet {
                         match cell_child_tag.as_str() {
                             "v" => {
                                 cell_record.value =
-                                    WorkSheet::get_element_text(xml_doc_mut, cell_child_id)?;
+                                    WorkSheet::get_element_text(xml_document_mut, cell_child_id)?;
                             }
                             "f" => {
                                 cell_record.formula =
-                                    WorkSheet::get_element_text(xml_doc_mut, cell_child_id)?;
+                                    WorkSheet::get_element_text(xml_document_mut, cell_child_id)?;
                             }
                             "is" => {
-                                if let Some(text_id) = xml_doc_mut
+                                if let Some(text_id) = xml_document_mut
                                     .find_first_child(cell_child_id, "t")
                                     .context("draviavemal-openxml_office::Failed to find inline string text element")?
                                 {
                                     cell_record.value =
-                                        WorkSheet::get_element_text(xml_doc_mut, text_id)?;
+                                        WorkSheet::get_element_text(xml_document_mut, text_id)?;
                                 }
                             }
                             _ => {
@@ -591,7 +590,7 @@ impl WorkSheet {
                     },
                 );
             }
-            xml_doc_mut
+            xml_document_mut
                 .remove_element_mut(sheet_data_id)
                 .context("draviavemal-openxml_office::Failed to remove sheetData element")?;
             return Ok((Some(sheet_data_collection), dimension));
@@ -601,10 +600,10 @@ impl WorkSheet {
 
     /// Reads the first text content of an element, returning None if there is no text.
     fn get_element_text(
-        xml_doc_mut: &XmlDocument,
+        xml_document_mut: &XmlDocument,
         element_id: NodeId,
     ) -> AnyResult<Option<String>, AnyError> {
-        Ok(xml_doc_mut
+        Ok(xml_document_mut
             .get_element(element_id)
             .context("draviavemal-openxml_office::Failed to get element for text read")?
             .get_child_contents()
@@ -619,15 +618,15 @@ impl WorkSheet {
 
     /// Deserialize Merge Cell Collection
     pub(crate) fn deserialize_merge_cells(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
     ) -> AnyResult<Option<Vec<ReferenceRange>>> {
-        let root_id = xml_doc_mut.get_root_id();
-        if let Some(merge_cells_id) = xml_doc_mut
+        let root_id = xml_document_mut.get_root_id();
+        if let Some(merge_cells_id) = xml_document_mut
             .find_first_child(root_id, "mergeCells")
             .context("draviavemal-openxml_office::Failed to find mergeCells element")?
         {
             let mut merge_cell_collection = Vec::new();
-            let merge_cell_ids: Vec<NodeId> = xml_doc_mut
+            let merge_cell_ids: Vec<NodeId> = xml_document_mut
                 .get_element(merge_cells_id)
                 .context("draviavemal-openxml_office::Failed to get mergeCells element")?
                 .get_child_contents()
@@ -643,7 +642,7 @@ impl WorkSheet {
                 })
                 .unwrap_or_default();
             for merge_cell_id in merge_cell_ids {
-                let merge_cell_element = xml_doc_mut
+                let merge_cell_element = xml_document_mut
                     .get_element(merge_cell_id)
                     .context("draviavemal-openxml_office::Failed to Get Element")?;
                 let merge_range = merge_cell_element
@@ -673,7 +672,7 @@ impl WorkSheet {
                     });
                 }
             }
-            xml_doc_mut
+            xml_document_mut
                 .remove_element_mut(merge_cells_id)
                 .context("draviavemal-openxml_office::Failed to remove mergeCells element")?;
             if merge_cell_collection.len() > 0 {
@@ -688,16 +687,16 @@ impl WorkSheet {
 
     /// Deserialize Hyperlink Collection
     pub(crate) fn deserialize_hyperlinks(
-        xml_doc_mut: &mut XmlDocument,
+        xml_document_mut: &mut XmlDocument,
         relationship_part: &Rc<RefCell<RelationsPart>>,
     ) -> AnyResult<Option<Vec<HyperLinks>>> {
-        let root_id = xml_doc_mut.get_root_id();
-        if let Some(hyperlinks_id) = xml_doc_mut
+        let root_id = xml_document_mut.get_root_id();
+        if let Some(hyperlinks_id) = xml_document_mut
             .find_first_child(root_id, "hyperlinks")
             .context("draviavemal-openxml_office::Failed to find hyperlinks element")?
         {
             let mut hyperlink_collection = Vec::new();
-            let hyperlink_ids: Vec<NodeId> = xml_doc_mut
+            let hyperlink_ids: Vec<NodeId> = xml_document_mut
                 .get_element(hyperlinks_id)
                 .context("draviavemal-openxml_office::Failed to get hyperlinks element")?
                 .get_child_contents()
@@ -713,7 +712,7 @@ impl WorkSheet {
                 })
                 .unwrap_or_default();
             for hyperlink_element_id in hyperlink_ids {
-                let hyperlink_element = xml_doc_mut
+                let hyperlink_element = xml_document_mut
                     .get_element(hyperlink_element_id)
                     .context("draviavemal-openxml_office::Failed to Get Element")?;
                 let display = hyperlink_element
@@ -773,7 +772,7 @@ impl WorkSheet {
                     range: range_reference,
                 });
             }
-            xml_doc_mut
+            xml_document_mut
                 .remove_element_mut(hyperlinks_id)
                 .context("draviavemal-openxml_office::Failed to remove hyperlinks element")?;
             if hyperlink_collection.len() > 0 {

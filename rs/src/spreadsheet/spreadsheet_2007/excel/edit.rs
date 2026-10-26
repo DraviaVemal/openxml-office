@@ -1,12 +1,12 @@
 use crate::{
-    files::OfficeDocument,
+    global_2007::files::OfficeDocument,
     global_2007::{
         parts::{CorePropertiesPart, RelationsPart},
         traits::{XmlDocumentPart, XmlDocumentPartClose, XmlDocumentPartFlush},
     },
     log_elapsed,
     spreadsheet_2007::{
-        models::{CellStyleSetting, StyleId},
+        CellStyleSetting, StyleId,
         Excel, ExcelPropertiesModel, WorkSheet, WorkbookPart, WorkbookSettings,
     },
 };
