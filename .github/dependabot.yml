@@ -56,7 +56,7 @@ updates:
         applies-to: version-updates
         update-types: ["minor", "patch"]
         patterns: ["*"]
-  - package-ecosystem: "go"
+  - package-ecosystem: "gomod"
     directory: "/go"
     exclude-paths: ["test", "tests"]
     schedule:
