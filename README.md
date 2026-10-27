@@ -31,22 +31,19 @@ Please refer [stable branch](https://github.com/DraviaVemal/OpenXML-Office/tree/
 | Code Coverage     | [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/5b420a599805426ab8a990a1a741247a)](https://app.codacy.com/gh/DraviaVemal/OpenXML-Office/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_coverage) | Excel Files Generated | [![Generated](https://draviavemal.com/openxml-office/excel-count.svg)](https://docs.draviavemal.com/openxml-office/)                                                                                                                                   |
 | Package Downloads | [![Downloads](https://img.shields.io/nuget/dt/openxmloffice.Presentation.svg)](https://www.nuget.org/packages/openxmloffice.Presentation)                                                                                                    | Word Files Generated  | [![Generated](https://draviavemal.com/openxml-office/word-count.svg)](https://docs.draviavemal.com/openxml-office/)                                                                                                                                    |
 
-# v4.x Release and Targets 🚧🛠️
+# v4.x Packages and Support
 
-Docs - [Will Try to keep the alpha release documents updated as much possible](https://docs.draviavemal.com/openxml-office/4.0/)
+See the [v4.x documentation](https://docs.draviavemal.com/openxml-office/4.0/) for current project details.
 
-| Supported Languages | Min.Support Version | Readme link                                                                         | Packages                   | package link                                                       | Description                                                               |
-| ------------------- | ------------------- | ----------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| Rust                | 1.32                | [README](https://github.com/DraviaVemal/openxml-office/blob/alpha/rs/README.md)     | draviavemal-openxml_office | [Crates](https://crates.io/crates/draviavemal-openxml_office)      | Rust crate directly connecting to core lib                                |
-| C#                  | .net6.0             | [README](https://github.com/DraviaVemal/openxml-office/blob/alpha/cs/README.md)     | draviavemal.openxml-office | [Nuget](https://www.nuget.org/packages/draviavemal.openxml-office) | C# wrapper package wrote around FFI layer of rust                         |
-| Python              | 3.8                 | [README](https://github.com/DraviaVemal/openxml-office/blob/alpha/python/README.md) | Python                     | [PyPi](https://pypi.org/)                                          | Python Wrapper package wrote around FFI layer of rust using cffi          |
-| ----------------    | ----------          | ---------                                                                           | --------                   | ---------                                                          | -------                                                                   |
-| PHASE 2             | PHASE 2             | PHASE 2                                                                             | PHASE 2                    | PHASE 2                                                            | PHASE 2                                                                   |
-| ---------------     | -----------         | ---------                                                                           | --------                   | ----------                                                         | -------                                                                   |
-| Java                | 1.8                 | TODO                                                                                | Java                       | [Maven Central](https://mvnrepository.com/)                        | Java wrapper package wrote around FFI layer of rust                       |
-| Go                  | 1.22                | TODO                                                                                | Go                         | [Github](https://github.com/DraviaVemal/OpenXML-Office/)           | Go wrapper package wrote around FFI layer of rust                         |
-| TypeScript          |                     | TODO                                                                                | TypeScript                 | [npm](https://www.npmjs.com/)                                      | NAPI-RS is used to expose the core lib as node addon                      |
-|                     |                     |                                                                                     | Rust-API                   | [Docker Hub](https://hub.docker.com/)                              | API container running rust crate for HTTP support along with quic support |
+| Phase | Language | Minimum version | Package / documentation |
+| --- | --- | --- | --- |
+| 1 | Rust | See crate requirements | [Crate](https://crates.io/crates/draviavemal-openxml_office) · [README](rs/README.md) |
+| 1 | C# | .NET 10 | [NuGet](https://www.nuget.org/packages/draviavemal.openxml-office) · [README](cs/README.md) |
+| 1 | Python | Python 3.8 | [PyPI](https://pypi.org/project/draviavemal-openxml-office/) · [README](python/README.md) |
+| 1 | Go | Go 1.22.5 | [pkg.go.dev](https://pkg.go.dev/github.com/DraviaVemal/openxml-office/go/v4) · [README](go/README.md) |
+| 2 | Java | Java 8 | [Maven Central](https://mvnrepository.com/) · [README](java/README.md) |
+| 2 | TypeScript | TBD | [npm](https://www.npmjs.com/) · [README](ts/README.md) |
+| 2 | Rust HTTP API | TBD | [Docker Hub](https://hub.docker.com/) · [README](rs_api/README.md) |
 
 ## Contributing
 
