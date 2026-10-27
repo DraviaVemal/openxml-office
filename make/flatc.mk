@@ -17,7 +17,7 @@ flatc:
 	done
 
 	flatc -g --gen-all \
-		--go-module-name github.com/DraviaVemal/openxml-office/go/internal \
+		--go-module-name github.com/DraviaVemal/openxml-office/go/v4/internal \
 		-o $(GO_DIR)/internal \
 		$(FBS_DIR)/consolidated.fbs
 

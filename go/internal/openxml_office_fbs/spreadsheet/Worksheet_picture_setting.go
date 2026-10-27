@@ -5,7 +5,7 @@ package spreadsheet
 import (
 	flatbuffers "github.com/google/flatbuffers/go"
 
-	openxml_office_fbs__global "github.com/DraviaVemal/openxml-office/go/internal/openxml_office_fbs/global"
+	openxml_office_fbs__global "github.com/DraviaVemal/openxml-office/go/v4/internal/openxml_office_fbs/global"
 )
 
 type Worksheet_picture_setting struct {

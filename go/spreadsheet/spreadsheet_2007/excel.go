@@ -13,7 +13,7 @@ import (
 	"errors"
 	"unsafe"
 
-	fbs "github.com/DraviaVemal/openxml-office/go/internal/openxml_office_fbs/spreadsheet"
+	fbs "github.com/DraviaVemal/openxml-office/go/v4/internal/openxml_office_fbs/spreadsheet"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 )

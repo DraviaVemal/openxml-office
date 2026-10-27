@@ -19,7 +19,7 @@ import (
 
 	"github.com/xuri/excelize/v2"
 
-	"github.com/DraviaVemal/openxml-office/go/spreadsheet/spreadsheet_2007"
+	"github.com/DraviaVemal/openxml-office/go/v4/spreadsheet/spreadsheet_2007"
 )
 
 // Open -> edit -> save benchmark (the OfficeDocument archive path) against excelize v2.
