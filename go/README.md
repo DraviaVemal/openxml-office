@@ -1,62 +1,63 @@
-# OpenXML Office (Go Wrapper)
+# OpenXML Office Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/DraviaVemal/openxml-office.svg)](https://pkg.go.dev/github.com/DraviaVemal/openxml-office)
+[![Go Reference](https://pkg.go.dev/badge/github.com/DraviaVemal/openxml-office/go/v4.svg)](https://pkg.go.dev/github.com/DraviaVemal/openxml-office/go/v4)
 
-## Short Description
-OpenXML Office is a Go wrapper built around the Rust-based core implementation of OpenXML Office. It facilitates creating, manipulating, and managing OpenXML documents such as **Word documents (.docx)**, **Excel spreadsheets (.xlsx)**, and **PowerPoint presentations (.pptx)**, while leveraging the high performance of the Rust core through a C FFI layer.
+Go bindings for OpenXML Office, backed by the shared Rust core through CGO. The module currently exposes spreadsheet and presentation packages.
 
-## Mission
-My mission is to provide a seamless and efficient Go interface for OpenXML document processing by utilizing the Rust core. This wrapper is designed to:
+## Install
 
-- Bridge the performance benefits of Rust with the ease of use of Go.
-- Support cross-platform development with Go 1.22 and above.
-- Ensure feature parity with the Rust-based core package.
+Requires Go 1.22.5 or later, CGO, and a C toolchain for the target platform.
 
-## Package Details
+```sh
+go get github.com/DraviaVemal/openxml-office/go/v4@latest
+```
 
-- **Module:** `github.com/DraviaVemal/openxml-office/go/v4`
-- **Distribution:** [GitHub](https://github.com/DraviaVemal/openxml-office)
-- **Minimum Supported Version:** Go 1.22.5
+The module is published from the repository's `go/` subdirectory. Go release tags use the `go/` subdirectory prefix, for example `go/v4.0.0-alpha.26`.
 
-> **Note:** This wrapper relies on the C FFI layer of the Rust-based core package. The Rust CFFI and Go wrapper documentation are ongoing activities and may not yet fully reflect the implemented features. Refer to the main project documentation and source for the latest functionality.
+## Quick Start
 
-## Current Status
+```go
+package main
 
-- The shared Rust archive pipeline handles DOCX, XLSX and PPTX with lazy part loading and direct copying of unchanged entries.
-- Edited parts are compressed in parallel; relationship-aware renumbering uses shared package logic with an initial spreadsheet part-family registry.
-- `make bench-go` measures the shared pipeline with spreadsheet workloads against excelize v2. Set `BENCH_ITERATIONS` to change repetitions; `BENCH_RECORD=1` records release history.
-- Parsing and serializing large XML parts remain the main cost in the measured edit workloads.
+import "github.com/DraviaVemal/openxml-office/go/v4/spreadsheet/spreadsheet_2007"
 
-## Working Samples
+func main() {
+	excel, err := spreadsheet_2007.NewExcel()
+	if err != nil {
+		panic(err)
+	}
 
-To see sample code and working tests, please refer to the test files:
-[GitHub: Alpha Test Files](https://github.com/DraviaVemal/openxml-office/tree/release/tests/go)
+	worksheet, err := excel.AddSheet("Summary")
+	if err != nil {
+		panic(err)
+	}
+	if err := worksheet.SetCellRefValues("A1", []spreadsheet_2007.CellProperty{
+		{Value: "Revenue", DataType: spreadsheet_2007.CellDataTypeString},
+		{Value: "42", DataType: spreadsheet_2007.CellDataTypeNumber},
+	}); err != nil {
+		panic(err)
+	}
+	if err := worksheet.Flush(); err != nil {
+		panic(err)
+	}
+	if err := excel.SaveAs("report.xlsx"); err != nil {
+		panic(err)
+	}
+}
+```
 
-These tests demonstrate various use cases and can serve as a starting point for integrating the wrapper into your Go projects.
+## Packages
 
-## Additional Information
+- [Spreadsheet API](https://pkg.go.dev/github.com/DraviaVemal/openxml-office/go/v4/spreadsheet/spreadsheet_2007)
+- [Presentation API](https://pkg.go.dev/github.com/DraviaVemal/openxml-office/go/v4/presentation/presentation_2007)
+- [Source and tests](https://github.com/DraviaVemal/openxml-office/tree/release/go)
 
-This Go wrapper is located in the `go` directory and serves as a Go interface for the OpenXML Office project. It supports:
+The archive implementation is shared across OpenXML document formats. Parts are loaded on demand, unchanged ZIP entries are copied on save, and edited parts are compressed in parallel. The Go examples and benchmark workloads currently focus on spreadsheets.
 
-- **Go 1.22** (minimum)
+## Platforms
 
-### Platform Support
-
-- **Windows:** Supported
-- **Linux:** Supported
-- **Mac:** Supported
-
-For more information on the overarching project, visit the main repository:
-[GitHub: OpenXML Office Main Repository](https://github.com/DraviaVemal/openxml-office)
+Linux, macOS and Windows. CGO must be enabled, and builds need a C compiler and the native library for the target platform.
 
 ## License
 
-This project is dual-licensed. See the [LICENSE](https://github.com/DraviaVemal/openxml-office/blob/release/LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Whether it’s reporting bugs, suggesting improvements, or submitting pull requests, your help is greatly appreciated. For more details, see our [CONTRIBUTING](https://github.com/DraviaVemal/openxml-office/blob/release/CONTRIBUTING.md) guidelines.
-
----
-
-For inquiries, feedback, or contributions, feel free to message me via GitHub or submit an issue. Thank you for supporting the OpenXML Office project!
+Dual-licensed under [AGPL-3.0](../LICENSE) or a [commercial license](../COMMERCIAL-LICENSE.md).
