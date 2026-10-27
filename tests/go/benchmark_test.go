@@ -18,7 +18,7 @@ import (
 
 	"github.com/xuri/excelize/v2"
 
-	"github.com/DraviaVemal/openxml-office/go/spreadsheet/spreadsheet_2007"
+	"github.com/DraviaVemal/openxml-office/go/v4/spreadsheet/spreadsheet_2007"
 )
 
 func TestLanguageParityBenchmark(t *testing.T) {

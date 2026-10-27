@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DraviaVemal/openxml-office/go/spreadsheet/spreadsheet_2007"
+	"github.com/DraviaVemal/openxml-office/go/v4/spreadsheet/spreadsheet_2007"
 )
 
 // resultPath mirrors the C# test project layout (tests/cs/test_results).
